@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+/**
+ * Pure ONYX theme – four shades only.
+ * Primary (darkest) → Secondary → Tertiary → Quaternary (lightest).
+ */
+@theme {
+  /* Palette – use only these four colors across the site */
+  --color-primary: #5d3543;
+  --color-secondary: #785964;
+  --color-tertiary: #bcabb0;
+  --color-quaternary: #FFFFFF;
+
+  /* Semantic tokens derived from palette */
+  --color-background: #FFFFFF;
+  --color-foreground: #5d3543;
+  --color-border: #bcabb0;
+}
+
+:root {
+  /* Pure ONYX palette – use var(--color-primary) etc. in any component */
+  --color-primary: #5d3543;
+  --color-secondary: #785964;
+  --color-tertiary: #bcabb0;
+  --color-quaternary: #FFFFFF;
+
+  /* Legacy HSL tokens – pure white background */
+  --background: 0 0% 100%;
+  --foreground: 343 28% 27%;
+  --border: 340 12% 72%;
+}
+
+.dark {
+  /* Same four colors; inverted roles */
+  --background: var(--color-primary);
+  --foreground: var(--color-quaternary);
+  --border: var(--color-secondary);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-tertiary);
+  }
+  html {
+    background-color: #FFFFFF;
+    min-height: 100%;
+  }
+  body {
+    background-color: #FFFFFF;
+    color: var(--color-primary);
+    min-height: 100%;
+  }
+  .dark body {
+    background-color: var(--color-primary);
+    color: var(--color-quaternary);
+  }
+  .dark * {
+    border-color: var(--color-secondary);
+  }
+}
+
+/*
+ * Usage across components:
+ *
+ * Tailwind:  bg-primary, text-secondary, border-tertiary, bg-quaternary
+ *            ring-primary, placeholder-tertiary, divide-secondary, etc.
+ *
+ * Plain CSS: background-color: var(--color-primary);
+ *            color: var(--color-secondary);
+ *            border-color: var(--color-tertiary);
+ *            background: var(--color-quaternary);
+ */
