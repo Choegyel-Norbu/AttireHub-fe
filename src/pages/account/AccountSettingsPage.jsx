@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -71,6 +72,8 @@ export default function AccountSettingsPage() {
   const [addressError, setAddressError] = useState(null);
   const [addressSubmitting, setAddressSubmitting] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
+  const [addressToDelete, setAddressToDelete] = useState(null);
+  const [deleteConfirming, setDeleteConfirming] = useState(false);
 
   const profileForm = useForm({
     resolver: zodResolver(profileSchema),
@@ -229,15 +232,42 @@ export default function AccountSettingsPage() {
     }
   };
 
-  const removeAddress = (id) => {
-    const list = getAddressesFromStorage().filter((a) => a.id !== id && a.id !== String(id));
-    setAddressesInStorage(list);
-    syncAddressesFromStorage();
-    if (editingAddressId === id) {
-      addressForm.reset(emptyAddress);
-      setEditingAddressId(null);
+  const requestRemoveAddress = (addr) => setAddressToDelete(addr);
+
+  const cancelRemoveAddress = () => setAddressToDelete(null);
+
+  useEffect(() => {
+    if (!addressToDelete) return;
+    const onEscape = (e) => {
+      if (e.key === 'Escape') cancelRemoveAddress();
+    };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [addressToDelete]);
+
+  const confirmRemoveAddress = async () => {
+    if (!addressToDelete) return;
+    const id = addressToDelete.id;
+    const isLocalOnly = String(id).startsWith('local-');
+    setDeleteConfirming(true);
+    try {
+      if (!isLocalOnly) {
+        await addressService.deleteAddress(id);
+      }
+      const list = getAddressesFromStorage().filter((a) => a.id !== id && a.id !== String(id));
+      setAddressesInStorage(list);
+      syncAddressesFromStorage();
+      if (editingAddressId === id) {
+        addressForm.reset(emptyAddress);
+        setEditingAddressId(null);
+      }
+      showToast({ message: 'Address removed.', variant: 'success' });
+      setAddressToDelete(null);
+    } catch (err) {
+      showToast({ message: err?.message ?? 'Failed to remove address.', variant: 'error' });
+    } finally {
+      setDeleteConfirming(false);
     }
-    showToast({ message: 'Address removed.', variant: 'success' });
   };
 
   const startEditAddress = (addr) => {
@@ -404,7 +434,7 @@ export default function AccountSettingsPage() {
                     <Tooltip text="Remove address" side="top">
                       <button
                         type="button"
-                        onClick={() => removeAddress(addr.id)}
+                        onClick={() => requestRemoveAddress(addr)}
                         className="rounded-lg p-2 text-primary hover:bg-primary/10"
                         aria-label="Remove address"
                       >
@@ -500,6 +530,69 @@ export default function AccountSettingsPage() {
           </div>
         </form>
       </section>
+
+      {/* Delete address confirmation dialog — matches sign out dialog style */}
+      {addressToDelete &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-address-dialog-title"
+            aria-describedby="delete-address-dialog-desc"
+          >
+            <div
+              className="absolute inset-0 bg-quaternary/90 backdrop-blur-sm"
+              aria-hidden
+              onClick={cancelRemoveAddress}
+            />
+            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-tertiary bg-quaternary p-6 shadow-lg">
+              <h2 id="delete-address-dialog-title" className="text-lg font-semibold text-primary">
+                Remove address?
+              </h2>
+              <p id="delete-address-dialog-desc" className="mt-2 text-sm text-secondary">
+                Are you sure you want to remove this address? This action cannot be undone.
+              </p>
+              <div className="mt-4 rounded-lg border border-tertiary bg-quaternary p-3">
+                <p className="font-medium text-primary">
+                  {addressToDelete.streetAddress ?? addressToDelete.street_address}
+                </p>
+                <p className="mt-1 text-sm text-secondary">
+                  {[addressToDelete.city, addressToDelete.state, addressToDelete.postalCode ?? addressToDelete.postal_code, addressToDelete.country]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+              </div>
+              <div className="mt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={cancelRemoveAddress}
+                  disabled={deleteConfirming}
+                  className="flex-1 rounded-lg border border-tertiary bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmRemoveAddress}
+                  disabled={deleteConfirming}
+                  className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-70"
+                  style={{ backgroundColor: '#7BA4D0' }}
+                >
+                  {deleteConfirming ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      Removing…
+                    </span>
+                  ) : (
+                    'Remove'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

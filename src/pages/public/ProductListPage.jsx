@@ -58,6 +58,11 @@ export default function ProductListPage() {
     setPage(0);
   }, [searchParams]);
 
+  // Scroll to top when opening or when params change so content is visible (fixes mobile showing footer)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [searchParams]);
+
   useEffect(() => {
     getCategories()
       .then((tree) => setCategories(flattenCategoriesWithSlug(Array.isArray(tree) ? tree : [])))
@@ -69,6 +74,7 @@ export default function ProductListPage() {
     setError(null);
     try {
       const newArrivalsOnly = searchParams.get('newArrivalsOnly') === 'true';
+      const trending = searchParams.get('trending') === 'true';
       const params = {
         page,
         size: PAGE_SIZE,
@@ -78,6 +84,7 @@ export default function ProductListPage() {
         minPrice: appliedFilters.minPrice === '' ? undefined : Number(appliedFilters.minPrice),
         maxPrice: appliedFilters.maxPrice === '' ? undefined : Number(appliedFilters.maxPrice),
         newArrivalsOnly: newArrivalsOnly || undefined,
+        trending: trending || undefined,
       };
       const result = await getProducts(params);
       setProducts(result.content);
@@ -107,6 +114,7 @@ export default function ProductListPage() {
     if (filters.minPrice !== '') params.set('minPrice', filters.minPrice);
     if (filters.maxPrice !== '') params.set('maxPrice', filters.maxPrice);
     if (searchParams.get('newArrivalsOnly') === 'true') params.set('newArrivalsOnly', 'true');
+    if (searchParams.get('trending') === 'true') params.set('trending', 'true');
     setSearchParams(params, { replace: true });
   };
 

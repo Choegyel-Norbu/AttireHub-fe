@@ -141,7 +141,7 @@ export default function ProductDetailPage() {
           <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:gap-12">
             {/* Image + variant preview */}
             <div className="space-y-3">
-              <div className="relative mx-auto max-w-md overflow-hidden rounded-xl border border-tertiary bg-tertiary/10 p-4">
+              <div className="relative mx-auto max-w-md overflow-hidden rounded-xl bg-tertiary/10">
                 {(product?.newArrival === true || product?.new_arrival === true) && (
                   <span className="absolute left-6 top-6 z-10 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-quaternary shadow-sm">
                     New arrival
@@ -335,7 +335,7 @@ export default function ProductDetailPage() {
                     </select>
                   )}
                   {selectedVariant && (selectedVariant.stockQuantity ?? 0) <= 0 && (
-                    <p className="text-sm font-medium text-primary">This option is currently out of stock.</p>
+                    <p className="text-sm font-medium text-red-500">This option is currently out of stock.</p>
                   )}
                 </div>
               )}

@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import * as cartService from '@/services/cartService';
 
@@ -39,16 +39,21 @@ export const CartProvider = ({ children }) => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+  const clearCartState = useCallback(() => {
+    setState(emptyCartState);
+  }, []);
 
   const addToCart = async (variantId, quantity) => {
+    const addedQty = Math.max(1, Number(quantity) || 1);
     const data = await cartService.addCartItem(variantId, quantity);
-    setState((prev) => ({
-      ...prev,
-      ...applyCartToState(data),
-    }));
+    setState((prev) => {
+      const next = { ...prev, ...applyCartToState(data) };
+      // Ensure navbar count updates: use response totalItems or optimistic prev + added
+      if (next.totalItems <= 0 && addedQty > 0) {
+        next.totalItems = prev.totalItems + addedQty;
+      }
+      return next;
+    });
   };
 
   const updateQuantity = async (itemId, quantity) => {
@@ -93,6 +98,7 @@ export const CartProvider = ({ children }) => {
       value={{ 
         ...state, 
         fetchCart,
+        clearCartState,
         addToCart, 
         updateQuantity, 
         removeFromCart, 

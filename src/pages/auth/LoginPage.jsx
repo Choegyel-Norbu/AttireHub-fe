@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,6 +7,16 @@ import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '@/components/layout/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
+
+/** Returns webmail inbox URL for the given email, or Gmail as fallback. */
+function getInboxUrl(email) {
+  if (!email || typeof email !== 'string') return 'https://mail.google.com';
+  const domain = email.split('@')[1]?.toLowerCase() ?? '';
+  if (domain === 'gmail.com' || domain === 'googlemail.com') return 'https://mail.google.com';
+  if (['outlook.com', 'hotmail.com', 'hotmail.co.uk', 'live.com', 'msn.com', 'outlook.co.uk'].includes(domain)) return 'https://outlook.live.com';
+  if (domain.includes('yahoo')) return 'https://mail.yahoo.com';
+  return 'https://mail.google.com';
+}
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
@@ -24,10 +35,31 @@ export default function LoginPage() {
   const [authError, setAuthError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailNotVerified, setEmailNotVerified] = useState(null); // { message, email } when 403
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const prefilled = location.state && typeof location.state === 'object' ? location.state : {};
+
+  const closeEmailNotVerifiedDialog = () => setEmailNotVerified(null);
+
+  const openInbox = () => {
+    if (emailNotVerified?.email) {
+      window.open(getInboxUrl(emailNotVerified.email), '_blank', 'noopener,noreferrer');
+    } else {
+      window.open('https://mail.google.com', '_blank', 'noopener,noreferrer');
+    }
+    closeEmailNotVerifiedDialog();
+  };
+
+  useEffect(() => {
+    if (!emailNotVerified) return;
+    const onEscape = (e) => {
+      if (e.key === 'Escape') closeEmailNotVerifiedDialog();
+    };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [emailNotVerified]);
 
   const {
     register,
@@ -48,7 +80,15 @@ export default function LoginPage() {
       await login(data.email, data.password);
       navigate('/', { replace: true });
     } catch (err) {
-      setAuthError(err?.message ?? 'Sign in failed. Please check your email and password.');
+      if (err.statusCode === 403) {
+        setEmailNotVerified({
+          message: err.message,
+          email: data.email,
+        });
+        setAuthError(null);
+      } else {
+        setAuthError(err?.message ?? 'Sign in failed. Please check your email and password.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -150,6 +190,49 @@ export default function LoginPage() {
           By signing in, you agree to our terms of service and privacy policy.
         </p>
       </div>
+
+      {emailNotVerified &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="email-not-verified-title"
+            aria-describedby="email-not-verified-desc"
+          >
+            <div
+              className="absolute inset-0 bg-quaternary/90 backdrop-blur-sm"
+              aria-hidden
+              onClick={closeEmailNotVerifiedDialog}
+            />
+            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-tertiary bg-quaternary p-6 shadow-lg">
+              <h2 id="email-not-verified-title" className="text-lg font-semibold text-primary">
+                Verify your email
+              </h2>
+              <p id="email-not-verified-desc" className="mt-2 text-sm text-secondary">
+                {emailNotVerified.message}
+              </p>
+              <div className="mt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={closeEmailNotVerifiedDialog}
+                  className="flex-1 rounded-lg border border-tertiary bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={openInbox}
+                  className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: '#7BA4D0' }}
+                >
+                  Open email inbox
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </AuthLayout>
   );
 }

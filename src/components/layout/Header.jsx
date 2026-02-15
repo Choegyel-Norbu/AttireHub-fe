@@ -1,13 +1,12 @@
 import { useState, useEffect, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Menu, Search, User, LogOut, X, LayoutDashboard, ShoppingCart } from 'lucide-react';
+import { ShoppingBag, Menu, Search, User, LogOut, X, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { CartContext } from '@/context/CartContext';
 
 const NAV_LINKS = [
   { to: '/products', label: 'All Products' },
-  { to: '/products?newArrivalsOnly=true', label: 'New Arrivals' },
   { to: '/categories/sale', label: 'Sale' },
 ];
 
@@ -103,12 +102,12 @@ export default function Header() {
           <Link
             to="/cart"
             className="relative flex items-center justify-center rounded-full p-2 text-primary transition-colors hover:bg-tertiary/20 lg:p-2.5"
-            aria-label={`Cart, ${totalItems} items`}
+            aria-label={isAuthenticated && totalItems > 0 ? `Cart, ${totalItems} items` : 'Cart'}
           >
             <ShoppingCart className="h-5 w-5 shrink-0 lg:h-6 lg:w-6" aria-hidden />
-            {totalItems > 0 && (
+            {isAuthenticated && totalItems > 0 && (
               <span
-                className="absolute -right-0.5 -top-0.5 z-10 flex min-w-[1.25rem] items-center justify-center rounded-full bg-primary px-1 py-0.5 text-[10px] font-bold leading-none text-quaternary lg:-right-1 lg:-top-1 lg:min-w-[1.5rem] lg:px-1.5 lg:py-1 lg:text-xs"
+                className="absolute -right-0.5 -top-0.5 z-10 flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white lg:-right-1 lg:-top-1 lg:min-w-[1.5rem] lg:px-1.5 lg:py-1 lg:text-xs"
                 aria-hidden
               >
                 {totalItems > 99 ? '99+' : totalItems}
@@ -120,10 +119,9 @@ export default function Header() {
               {showDashboard && (
                 <Link
                   to="/admin/products"
-                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                  className="rounded-md px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
                 >
-                  <LayoutDashboard className="h-4 w-4" aria-hidden />
-                  <span>Dashboard</span>
+                  Dashboard
                 </Link>
               )}
               <Link
@@ -167,23 +165,21 @@ export default function Header() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="border-t border-tertiary bg-quaternary px-4 py-4 md:hidden">
+        <div className="border-t border-tertiary bg-tertiary px-4 py-4 md:hidden">
           <nav className="flex flex-col gap-2" aria-label="Mobile">
             <Link
               to="/cart"
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-primary hover:bg-tertiary/20"
+              className="rounded-md px-3 py-2 font-medium text-primary hover:bg-primary/10"
               onClick={() => setMobileOpen(false)}
             >
-              <ShoppingCart className="h-4 w-4" aria-hidden />
-              Cart {totalItems > 0 ? `(${totalItems})` : ''}
+              Cart {isAuthenticated && totalItems > 0 ? `(${totalItems})` : ''}
             </Link>
             {showDashboard && (
               <Link
                 to="/admin/products"
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-primary hover:bg-tertiary/20"
+                className="rounded-md px-3 py-2 font-medium text-primary hover:bg-primary/10"
                 onClick={() => setMobileOpen(false)}
               >
-                <LayoutDashboard className="h-4 w-4" aria-hidden />
                 Dashboard
               </Link>
             )}
@@ -191,7 +187,7 @@ export default function Header() {
               <Link
                 key={to}
                 to={to}
-                className="rounded-md px-3 py-2 text-primary hover:bg-tertiary/20"
+                className="rounded-md px-3 py-2 font-medium text-primary hover:bg-primary/10"
                 onClick={() => setMobileOpen(false)}
               >
                 {label}
@@ -214,7 +210,7 @@ export default function Header() {
           {!isAuthenticated && (
             <Link
               to="/login"
-              className="mt-4 block px-4 py-2 text-center text-sm font-medium text-primary hover:text-secondary"
+              className="mt-4 block px-4 py-2 text-center text-sm font-semibold text-primary hover:bg-primary/10"
               onClick={() => setMobileOpen(false)}
             >
               Sign in

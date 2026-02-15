@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1';
+// Ensure base URL ends with /api/v1 (backend expects this prefix)
+let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1';
+if (!API_BASE_URL.endsWith('/api/v1')) {
+  API_BASE_URL = API_BASE_URL.replace(/\/?$/, '') + '/api/v1';
+}
 
 const isNgrokUrl = /ngrok-free\.app|ngrok\.io/.test(API_BASE_URL);
 
@@ -32,7 +36,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
-    const isAuthRequest = /\/auth\/(login|register)$/.test(error.config?.url ?? '');
+    const isAuthRequest = /\/auth\/(login|register|verify-email)$/.test(error.config?.url ?? '');
     if (error.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
@@ -40,7 +44,7 @@ api.interceptors.response.use(
         window.location.href = '/login';
       }
     }
-    if (error.response?.status === 403) {
+    if (error.response?.status === 403 && !isAuthRequest) {
       console.error('Access forbidden');
     }
     return Promise.reject(error);

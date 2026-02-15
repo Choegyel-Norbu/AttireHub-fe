@@ -18,6 +18,7 @@ const editProductSchema = z.object({
   material: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  isTrending: z.boolean().optional(),
   imageUrl: z.string().optional().nullable(),
 });
 
@@ -58,6 +59,7 @@ export default function EditProductPage() {
       material: '',
       isActive: true,
       isFeatured: false,
+      isTrending: false,
       imageUrl: '',
     },
   });
@@ -88,6 +90,7 @@ export default function EditProductPage() {
         setValue('material', p?.material ?? '');
         setValue('isActive', p?.isActive !== false);
         setValue('isFeatured', Boolean(p?.featured ?? p?.isFeatured));
+        setValue('isTrending', Boolean(p?.trending ?? p?.isTrending));
         setValue('imageUrl', p?.imageUrl ?? '');
       })
       .catch((err) => {
@@ -120,6 +123,7 @@ export default function EditProductPage() {
         material: data.material?.trim() || null,
         isActive: data.isActive !== false,
         isFeatured: Boolean(data.isFeatured),
+        isTrending: Boolean(data.isTrending),
         imageUrl: data.imageUrl?.trim() || null,
       });
       const resolved = result?.data ?? result;
@@ -332,7 +336,7 @@ export default function EditProductPage() {
                     {...register('imageUrl')}
                   />
                 </div>
-                <div className="flex gap-6">
+                <div className="flex flex-col gap-3">
                   <label className="flex items-center gap-2">
                     <input type="checkbox" className="rounded border-tertiary text-primary" {...register('isActive')} />
                     <span className="text-sm font-medium text-primary">Active</span>
@@ -340,6 +344,10 @@ export default function EditProductPage() {
                   <label className="flex items-center gap-2">
                     <input type="checkbox" className="rounded border-tertiary text-primary" {...register('isFeatured')} />
                     <span className="text-sm font-medium text-primary">Featured</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" className="rounded border-tertiary text-primary" {...register('isTrending')} />
+                    <span className="text-sm font-medium text-primary">Trending</span>
                   </label>
                 </div>
               </div>

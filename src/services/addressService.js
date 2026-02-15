@@ -109,6 +109,23 @@ export async function setDefaultAddress(id, accessToken) {
 }
 
 /**
+ * Delete an address.
+ * @param {string | number} id - Address ID
+ * @param {string} accessToken - Optional access token
+ * @returns {Promise<void>}
+ */
+export async function deleteAddress(id, accessToken) {
+  try {
+    const config = accessToken
+      ? { headers: { Authorization: `Bearer ${accessToken}` } }
+      : {};
+    await api.delete(`${ADDRESSES_PATH}/${id}`, config);
+  } catch (err) {
+    throw new Error(getErrorMessage(err));
+  }
+}
+
+/**
  * Fetch all addresses for the current user (uses stored token).
  * @returns {Promise<Array<{ id: number, addressType: string, streetAddress: string, city: string, state: string, postalCode: string, country: string, isDefault: boolean }>>}
  */

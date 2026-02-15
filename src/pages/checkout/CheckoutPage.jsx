@@ -112,7 +112,7 @@ export default function CheckoutPage() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Link
-                  to={`/orders?highlight=${encodeURIComponent(placedOrder.orderNumber)}`}
+                  to={`/account/orders?highlight=${encodeURIComponent(placedOrder.orderNumber)}`}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90"
                 >
                   View order

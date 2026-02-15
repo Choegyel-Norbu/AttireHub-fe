@@ -115,6 +115,8 @@ export async function createProduct(body) {
  *   isActive?: boolean;
  *   isFeatured?: boolean;
  *   featured?: boolean;
+ *   isTrending?: boolean;
+ *   trending?: boolean;
  *   imageUrl?: string | null;
  * }} body
  * @returns {Promise<Record<string, unknown>>} Updated product (same shape as GET /products/{slug})
@@ -132,6 +134,8 @@ export async function updateProduct(id, body) {
     if (body.isActive !== undefined) payload.isActive = Boolean(body.isActive);
     if (body.featured !== undefined) payload.featured = Boolean(body.featured);
     else if (body.isFeatured !== undefined) payload.featured = Boolean(body.isFeatured);
+    if (body.trending !== undefined) payload.trending = Boolean(body.trending);
+    else if (body.isTrending !== undefined) payload.trending = Boolean(body.isTrending);
     if (body.imageUrl !== undefined) payload.imageUrl = body.imageUrl?.trim() || null;
 
     const response = await api.put(`${ADMIN_PRODUCTS_PATH}/${id}`, payload);

@@ -36,6 +36,7 @@ export default function CartPage() {
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState(null);
   const [itemToRemove, setItemToRemove] = useState(null);
+  const [showClearCartConfirm, setShowClearCartConfirm] = useState(false);
   const { show: showToast } = useToast();
 
   useEffect(() => {
@@ -52,6 +53,15 @@ export default function CartPage() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [itemToRemove]);
+
+  useEffect(() => {
+    if (!showClearCartConfirm) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setShowClearCartConfirm(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showClearCartConfirm]);
 
   const handleUpdateQty = async (itemId, newQty) => {
     if (newQty < 1) return;
@@ -91,8 +101,10 @@ export default function CartPage() {
     }
   };
 
-  const handleClearCart = async () => {
-    if (!window.confirm('Remove all items from your cart?')) return;
+  const handleClearCartClick = () => setShowClearCartConfirm(true);
+
+  const handleClearCartConfirm = async () => {
+    setShowClearCartConfirm(false);
     setError(null);
     setClearing(true);
     try {
@@ -139,7 +151,7 @@ export default function CartPage() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1 bg-quaternary px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]">
           <div className="flex items-center gap-2 text-secondary">
             <ShoppingCart className="h-5 w-5" aria-hidden />
             <h1 className="text-2xl font-semibold text-primary">Your cart</h1>
@@ -169,7 +181,8 @@ export default function CartPage() {
             </div>
           ) : (
             <>
-              <div className="mt-8 flex flex-col gap-4">
+            <div className="mt-8">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {items.map((item) => (
                   <article
                     key={item.id}
@@ -247,7 +260,31 @@ export default function CartPage() {
                 ))}
               </div>
 
-              {itemToRemove &&
+              <div className="mt-8 flex flex-col gap-4 border-t border-tertiary pt-8 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <p className="text-lg font-semibold text-primary">
+                    Subtotal: Nu {formatPrice(subtotal)} /-
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleClearCartClick}
+                    disabled={clearing || items.length === 0}
+                    className="text-sm font-medium text-secondary hover:text-primary disabled:opacity-50"
+                  >
+                    {clearing ? 'Clearing…' : 'Clear cart'}
+                  </button>
+                </div>
+                <Link
+                  to="/checkout"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90"
+                >
+                  Proceed to checkout
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+              </div>
+            </div>
+
+            {itemToRemove &&
                 createPortal(
                   <div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -291,28 +328,49 @@ export default function CartPage() {
                   document.body
                 )}
 
-              <div className="mt-8 flex flex-col gap-4 border-t border-tertiary pt-8 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-4">
-                  <p className="text-lg font-semibold text-primary">
-                    Subtotal: Nu {formatPrice(subtotal)} /-
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleClearCart}
-                    disabled={clearing || items.length === 0}
-                    className="text-sm font-medium text-secondary hover:text-primary disabled:opacity-50"
+            {showClearCartConfirm &&
+                createPortal(
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="clear-cart-title"
+                    aria-describedby="clear-cart-desc"
                   >
-                    {clearing ? 'Clearing…' : 'Clear cart'}
-                  </button>
-                </div>
-                <Link
-                  to="/checkout"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90"
-                >
-                  Proceed to checkout
-                  <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </div>
+                    <button
+                      type="button"
+                      className="absolute inset-0 bg-quaternary/90 backdrop-blur-sm"
+                      onClick={() => setShowClearCartConfirm(false)}
+                      aria-label="Close"
+                    />
+                    <div className="relative z-10 w-full max-w-sm rounded-2xl border border-tertiary bg-quaternary p-6 shadow-lg">
+                      <h2 id="clear-cart-title" className="text-lg font-semibold text-primary">
+                        Clear cart?
+                      </h2>
+                      <p id="clear-cart-desc" className="mt-2 text-sm text-secondary">
+                        Remove all items from your cart? This cannot be undone.
+                      </p>
+                      <div className="mt-6 flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowClearCartConfirm(false)}
+                          className="flex-1 rounded-lg border border-tertiary bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleClearCartConfirm}
+                          className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                          style={{ backgroundColor: '#7BA4D0' }}
+                        >
+                          Clear cart
+                        </button>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                )}
             </>
           )}
         </div>

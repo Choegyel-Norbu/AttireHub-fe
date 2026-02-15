@@ -15,6 +15,7 @@ const PRODUCTS_PATH = '/products';
  *   maxPrice?: number;
  *   search?: string;
  *   featured?: boolean;
+ *   trending?: boolean;
  *   newArrivalsOnly?: boolean;
  * }} ProductListParams
  */
@@ -79,6 +80,8 @@ export async function getProducts(params = {}) {
   if (params.search != null && params.search.trim()) searchParams.set('search', params.search.trim());
   if (params.featured === true) searchParams.set('featured', 'true');
   if (params.featured === false) searchParams.set('featured', 'false');
+  if (params.trending === true) searchParams.set('trending', 'true');
+  if (params.trending === false) searchParams.set('trending', 'false');
   if (params.newArrivalsOnly === true) searchParams.set('newArrivalsOnly', 'true');
 
   const query = searchParams.toString();
