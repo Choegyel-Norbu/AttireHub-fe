@@ -103,7 +103,7 @@ function OrderDetailRow({
 }) {
   return (
     <div className="px-4 py-4 sm:px-6">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-tertiary/50 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-3">
         <h3 className="text-sm font-semibold text-primary">Order details</h3>
         <button
           type="button"
@@ -147,10 +147,10 @@ function OrderDetailRow({
             <Package className="h-4 w-4" aria-hidden />
             Items
           </h4>
-          <div className="overflow-x-auto rounded-lg border border-tertiary">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-tertiary bg-tertiary/10">
+                <tr className="border-b border-border bg-tertiary/10">
                   <th className="py-2 pl-3 pr-2 text-left font-medium text-secondary">Product</th>
                   <th className="py-2 px-2 font-medium text-secondary">SKU</th>
                   <th className="py-2 px-2 font-medium text-secondary">Size</th>
@@ -163,7 +163,7 @@ function OrderDetailRow({
                 {(order.items || []).map((item) => (
                   <tr
                     key={item.id ?? `${item.sku}-${item.quantity}`}
-                    className="border-b border-tertiary/50 last:border-0"
+                    className="border-b border-border/50 last:border-0"
                   >
                     <td className="py-2 pl-3 pr-2 text-primary">{item.productName ?? '—'}</td>
                     <td className="py-2 px-2 font-mono text-secondary">{item.sku ?? '—'}</td>
@@ -180,7 +180,7 @@ function OrderDetailRow({
           </div>
         </div>
 
-        <div className="border-t border-tertiary/50 pt-3">
+        <div className="border-t border-border/50 pt-3">
           <div className="space-y-1 text-sm">
             <div className="flex justify-between text-secondary">
               <span>Subtotal</span>
@@ -212,13 +212,13 @@ function OrderDetailRow({
         </div>
 
         {canChangeStatus && (
-          <div className="space-y-3 border-t border-tertiary/50 pt-4">
+          <div className="space-y-3 border-t border-border/50 pt-4">
             <h4 className="text-sm font-semibold text-primary">Update status</h4>
             <div className="flex flex-wrap items-center gap-2">
               <select
                 value={newStatus}
                 onChange={(e) => setNewStatus(e.target.value)}
-                className="rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 aria-label="New status"
               >
                 <option value={order.status}>{order.status}</option>
@@ -248,7 +248,7 @@ function OrderDetailRow({
               )}
             </div>
             {cancelConfirm === order.orderNumber && (
-              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-tertiary bg-tertiary/10 p-3">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-tertiary/10 p-3">
                 <span className="text-sm text-primary">
                   Cancel this order? This action cannot be undone.
                 </span>
@@ -263,7 +263,7 @@ function OrderDetailRow({
                 <button
                   type="button"
                   onClick={() => setCancelConfirm(null)}
-                  className="rounded-lg border border-tertiary bg-quaternary px-3 py-1.5 text-sm font-medium text-primary hover:bg-tertiary/20"
+                  className="rounded-lg border border-border bg-quaternary px-3 py-1.5 text-sm font-medium text-primary hover:bg-tertiary/20"
                 >
                   No
                 </button>
@@ -405,7 +405,7 @@ export default function OrderManagementPage() {
                 setStatusFilter(e.target.value);
                 setPage(0);
               }}
-              className="rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               aria-label="Filter by status"
             >
               {STATUS_OPTIONS.map((opt) => (
@@ -417,7 +417,7 @@ export default function OrderManagementPage() {
           </section>
 
           {error && (
-            <div className="mt-6 rounded-lg border border-tertiary bg-quaternary p-4 text-sm text-primary">
+            <div className="mt-6 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">
               {error}
             </div>
           )}
@@ -429,10 +429,10 @@ export default function OrderManagementPage() {
             </div>
           ) : (
             <>
-              <div className="mt-6 overflow-x-auto rounded-xl border border-tertiary bg-quaternary">
+              <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-quaternary">
                 <table className="w-full min-w-[640px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-tertiary bg-tertiary/10">
+                    <tr className="border-b border-border bg-tertiary/10">
                       <th className="py-3 pl-4 pr-2 font-medium text-secondary">Order #</th>
                       <th className="py-3 px-2 font-medium text-secondary">Date</th>
                       <th className="py-3 px-2 font-medium text-secondary">Status</th>
@@ -455,7 +455,7 @@ export default function OrderManagementPage() {
                         const isExpanded = expandedOrderNumber === key;
                         return (
                           <Fragment key={order.id ?? order.orderNumber}>
-                            <tr className="border-b border-tertiary/50 transition-colors hover:bg-tertiary/10">
+                            <tr className="border-b border-border/50 transition-colors hover:bg-tertiary/10">
                               <td className="py-3 pl-4 pr-2 font-mono font-medium text-primary">
                                 {order.orderNumber ?? `#${order.id}`}
                               </td>
@@ -478,7 +478,7 @@ export default function OrderManagementPage() {
                                 <button
                                   type="button"
                                   onClick={() => toggleExpand(order)}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-tertiary bg-quaternary px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-quaternary px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
                                   aria-expanded={isExpanded}
                                   aria-label={isExpanded ? 'Collapse order details' : 'View order details'}
                                 >
@@ -492,7 +492,7 @@ export default function OrderManagementPage() {
                               </td>
                             </tr>
                             {isExpanded && order && (
-                              <tr className="border-b border-tertiary/50 bg-tertiary/5">
+                              <tr className="border-b border-border/50 bg-tertiary/5">
                                 <td colSpan={7} className="p-0 align-top">
                                   <OrderDetailRow
                                     order={order}
@@ -527,7 +527,7 @@ export default function OrderManagementPage() {
               </div>
 
               {totalPages > 1 && (
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-tertiary pt-6">
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
                   <p className="text-sm text-secondary">
                     Showing {from}–{to} of {totalElements}
                   </p>
@@ -536,7 +536,7 @@ export default function OrderManagementPage() {
                       type="button"
                       onClick={() => setPage((p) => Math.max(0, p - 1))}
                       disabled={page === 0}
-                      className="inline-flex items-center gap-1 rounded-lg border border-tertiary bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50"
                       aria-label="Previous page"
                     >
                       <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -549,7 +549,7 @@ export default function OrderManagementPage() {
                       type="button"
                       onClick={() => setPage((p) => p + 1)}
                       disabled={last}
-                      className="inline-flex items-center gap-1 rounded-lg border border-tertiary bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50"
                       aria-label="Next page"
                     >
                       Next

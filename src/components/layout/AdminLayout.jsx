@@ -14,7 +14,7 @@ export default function AdminLayout() {
       <div className="flex flex-1 flex-col lg:flex-row">
         {/* Left sidebar */}
         <aside
-          className="w-full shrink-0 border-b border-tertiary bg-quaternary lg:w-56 lg:border-b-0 lg:border-r"
+          className="w-full shrink-0 border-b border-border bg-quaternary lg:w-56 lg:border-b-0 lg:border-r"
           aria-label="Admin navigation"
         >
           <nav className="sticky top-0 p-4 lg:p-4">
@@ -30,7 +30,7 @@ export default function AdminLayout() {
                     className={({ isActive }) =>
                       `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                         isActive
-                          ? 'bg-tertiary/30 text-primary'
+                          ? 'bg-primary text-quaternary'
                           : 'text-primary hover:bg-tertiary/20'
                       }`
                     }

@@ -16,7 +16,7 @@ export default function AccountAddressesPage() {
       </p>
 
       {addresses.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-tertiary bg-quaternary p-8 text-center">
+        <div className="mt-8 rounded-2xl border border-border bg-quaternary p-8 text-center">
           <MapPin className="mx-auto h-12 w-12 text-tertiary" aria-hidden />
           <p className="mt-4 font-medium text-primary">No addresses saved</p>
           <p className="mt-1 text-sm text-secondary">
@@ -36,7 +36,7 @@ export default function AccountAddressesPage() {
             return (
               <li
                 key={addr.id}
-                className="rounded-2xl border border-tertiary bg-quaternary p-6 shadow-sm"
+                className="rounded-2xl border border-border bg-quaternary p-6 shadow-sm"
               >
                 {isDefault && (
                   <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">

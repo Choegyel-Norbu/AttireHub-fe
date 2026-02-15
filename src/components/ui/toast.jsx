@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const variantStyles = {
-  default: 'bg-quaternary border-tertiary text-primary',
+  default: 'bg-quaternary border-border text-primary',
   success: 'bg-quaternary border-green-600/50 text-primary',
   error: 'bg-quaternary border-red-600/50 text-primary',
   warning: 'bg-quaternary border-amber-600/50 text-primary',

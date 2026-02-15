@@ -14,7 +14,8 @@
   /* Semantic tokens derived from palette */
   --color-background: #FFFFFF;
   --color-foreground: #5d3543;
-  --color-border: #bcabb0;
+  /* Borders and lines: neutral gray (was tertiary) */
+  --color-border: #e0e0e0;
 }
 
 :root {
@@ -39,7 +40,7 @@
 
 @layer base {
   * {
-    border-color: var(--color-tertiary);
+    border-color: var(--color-border);
   }
   html {
     background-color: #FFFFFF;
@@ -55,18 +56,18 @@
     color: var(--color-quaternary);
   }
   .dark * {
-    border-color: var(--color-secondary);
+    border-color: #4b5563;
   }
 }
 
 /*
  * Usage across components:
  *
- * Tailwind:  bg-primary, text-secondary, border-tertiary, bg-quaternary
+ * Tailwind:  bg-primary, text-secondary, border-border (gray), bg-quaternary
  *            ring-primary, placeholder-tertiary, divide-secondary, etc.
  *
  * Plain CSS: background-color: var(--color-primary);
  *            color: var(--color-secondary);
- *            border-color: var(--color-tertiary);
+ *            border-color: var(--color-border);
  *            background: var(--color-quaternary);
  */

@@ -26,7 +26,7 @@ const loginSchema = z.object({
 function getInputClassName(error) {
   const base =
     'w-full rounded-lg border bg-quaternary px-4 py-3 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-tertiary focus:border-secondary focus:ring-secondary/20';
+  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
   const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
   return `${base} ${error ? invalid : normal}`;
 }
@@ -97,7 +97,7 @@ export default function LoginPage() {
   return (
     <AuthLayout title="Sign in" backgroundImage="/storeclothing.jpg">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-tertiary bg-quaternary p-8 shadow-sm sm:p-10">
+        <div className="rounded-2xl border border-border bg-quaternary p-8 shadow-sm sm:p-10">
           <div className="text-center">
             <h2 className="text-2xl font-semibold tracking-tight text-primary">
               Welcome back
@@ -205,7 +205,7 @@ export default function LoginPage() {
               aria-hidden
               onClick={closeEmailNotVerifiedDialog}
             />
-            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-tertiary bg-quaternary p-6 shadow-lg">
+            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-quaternary p-6 shadow-lg">
               <h2 id="email-not-verified-title" className="text-lg font-semibold text-primary">
                 Verify your email
               </h2>
@@ -216,7 +216,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={closeEmailNotVerifiedDialog}
-                  className="flex-1 rounded-lg border border-tertiary bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                  className="flex-1 rounded-lg border border-border bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
                 >
                   Close
                 </button>

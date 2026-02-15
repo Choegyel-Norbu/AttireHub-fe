@@ -33,7 +33,7 @@ const addProductSchema = z.object({
 function inputClass(error) {
   const base =
     'w-full rounded-lg border bg-quaternary px-4 py-2.5 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-tertiary focus:border-secondary focus:ring-secondary/20';
+  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
   const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
   return `${base} ${error ? invalid : normal}`;
 }
@@ -120,7 +120,7 @@ export default function AddProductPage() {
 
           {createdProduct ? (
             <div className="mt-8 space-y-6">
-              <div className="flex items-center gap-3 rounded-xl border border-tertiary bg-quaternary p-4">
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-quaternary p-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
                   <CheckCircle className="h-6 w-6 text-primary" aria-hidden />
                 </div>
@@ -135,7 +135,7 @@ export default function AddProductPage() {
                 </div>
               </div>
 
-              <section className="rounded-xl border border-tertiary bg-quaternary p-6">
+              <section className="rounded-xl border border-border bg-quaternary p-6">
                 <h3 className="flex items-center gap-2 text-base font-medium text-primary">
                   <Package className="h-4 w-4" aria-hidden />
                   Product details
@@ -190,7 +190,7 @@ export default function AddProductPage() {
                   </div>
                 </dl>
                 {createdProduct.description && (
-                  <div className="mt-4 border-t border-tertiary pt-4">
+                  <div className="mt-4 border-t border-border pt-4">
                     <dt className="text-xs font-medium uppercase tracking-wider text-tertiary">Description</dt>
                     <dd className="mt-1 text-sm text-primary">{createdProduct.description}</dd>
                   </div>
@@ -198,7 +198,7 @@ export default function AddProductPage() {
               </section>
 
               {Array.isArray(createdProduct.variants) && createdProduct.variants.length > 0 && (
-                <section className="rounded-xl border border-tertiary bg-quaternary p-6">
+                <section className="rounded-xl border border-border bg-quaternary p-6">
                   <h3 className="flex items-center gap-2 text-base font-medium text-primary">
                     <List className="h-4 w-4" aria-hidden />
                     Variants ({createdProduct.variants.length})
@@ -206,7 +206,7 @@ export default function AddProductPage() {
                   <div className="mt-4 overflow-x-auto">
                     <table className="w-full min-w-[400px] text-left text-sm">
                       <thead>
-                        <tr className="border-b border-tertiary">
+                        <tr className="border-b border-border">
                           <th className="pb-2 pr-4 font-medium text-secondary">SKU</th>
                           <th className="pb-2 pr-4 font-medium text-secondary">Size</th>
                           <th className="pb-2 pr-4 font-medium text-secondary">Color</th>
@@ -217,7 +217,7 @@ export default function AddProductPage() {
                       </thead>
                       <tbody>
                         {createdProduct.variants.map((v) => (
-                          <tr key={v.id ?? v.sku ?? `${v.size}-${v.color}`} className="border-b border-tertiary/50">
+                          <tr key={v.id ?? v.sku ?? `${v.size}-${v.color}`} className="border-b border-border/50">
                             <td className="py-2.5 pr-4 font-mono text-primary">{v.sku ?? '—'}</td>
                             <td className="py-2.5 pr-4 text-primary">{v.size}</td>
                             <td className="py-2.5 pr-4 text-primary">{v.color}</td>
@@ -248,7 +248,7 @@ export default function AddProductPage() {
                 <button
                   type="button"
                   onClick={() => setCreatedProduct(null)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-tertiary bg-quaternary px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
                 >
                   <Plus className="h-4 w-4" aria-hidden />
                   Add another product
@@ -267,7 +267,7 @@ export default function AddProductPage() {
             )}
 
             {/* Product details */}
-            <section className="rounded-xl border border-tertiary bg-quaternary p-6">
+            <section className="rounded-xl border border-border bg-quaternary p-6">
               <h2 className="text-lg font-medium text-primary">Product details</h2>
               <div className="mt-4 space-y-4">
                 <div>
@@ -396,11 +396,11 @@ export default function AddProductPage() {
                 </div>
                 <div className="flex gap-6">
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-tertiary text-primary" {...register('isActive')} />
+                    <input type="checkbox" className="rounded border-border text-primary" {...register('isActive')} />
                     <span className="text-sm font-medium text-primary">Active</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-tertiary text-primary" {...register('isFeatured')} />
+                    <input type="checkbox" className="rounded border-border text-primary" {...register('isFeatured')} />
                     <span className="text-sm font-medium text-primary">Featured</span>
                   </label>
                 </div>
@@ -408,7 +408,7 @@ export default function AddProductPage() {
             </section>
 
             {/* Variants */}
-            <section className="rounded-xl border border-tertiary bg-quaternary p-6">
+            <section className="rounded-xl border border-border bg-quaternary p-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-medium text-primary">Variants</h2>
                 <button
@@ -423,7 +423,7 @@ export default function AddProductPage() {
                       isActive: true,
                     })
                   }
-                  className="inline-flex items-center gap-1 rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm font-medium text-primary hover:bg-tertiary/20"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-3 py-2 text-sm font-medium text-primary hover:bg-tertiary/20"
                 >
                   <Plus className="h-4 w-4" aria-hidden />
                   Add variant
@@ -436,7 +436,7 @@ export default function AddProductPage() {
                 {fields.map((field, index) => (
                   <div
                     key={field.id}
-                    className="rounded-lg border border-tertiary p-4"
+                    className="rounded-lg border border-border p-4"
                   >
                     <div className="mb-3 flex items-center justify-between">
                       <span className="text-sm font-medium text-secondary">Variant {index + 1}</span>
@@ -513,7 +513,7 @@ export default function AddProductPage() {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          className="rounded border-tertiary text-primary"
+                          className="rounded border-border text-primary"
                           {...register(`variants.${index}.isActive`)}
                         />
                         <span className="text-xs font-medium text-primary">Variant active</span>
@@ -534,7 +534,7 @@ export default function AddProductPage() {
               </button>
               <Link
                 to="/admin"
-                className="rounded-lg border border-tertiary bg-quaternary px-6 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
+                className="rounded-lg border border-border bg-quaternary px-6 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
               >
                 Cancel
               </Link>

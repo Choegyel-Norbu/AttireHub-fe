@@ -24,7 +24,7 @@ const registerSchema = z
 function getInputClassName(error) {
   const base =
     'w-full rounded-lg border bg-quaternary px-4 py-3 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-tertiary focus:border-secondary focus:ring-secondary/20';
+  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
   const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
   return `${base} ${error ? invalid : normal}`;
 }
@@ -81,7 +81,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout title="Create account" backgroundImage="/storeclothing.jpg">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-tertiary bg-quaternary p-8 shadow-sm sm:p-10">
+        <div className="rounded-2xl border border-border bg-quaternary p-8 shadow-sm sm:p-10">
           <div className="text-center">
             <h2 className="text-2xl font-semibold tracking-tight text-primary">
               Create your account

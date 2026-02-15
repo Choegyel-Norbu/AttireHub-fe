@@ -48,7 +48,7 @@ export default function DashboardPage() {
             className={`flex flex-col rounded-xl border p-6 transition-colors hover:border-secondary ${
               primary
                 ? 'border-secondary bg-secondary/10 hover:bg-secondary/15'
-                : 'border-tertiary bg-quaternary hover:bg-tertiary/10'
+                : 'border-border bg-quaternary hover:bg-tertiary/10'
             }`}
           >
             <div

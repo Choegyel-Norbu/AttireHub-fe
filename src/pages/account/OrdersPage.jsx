@@ -94,7 +94,7 @@ export default function OrdersPage() {
       </p>
 
       {error && (
-        <div className="mt-6 rounded-lg border border-tertiary bg-quaternary p-4 text-sm text-primary">
+        <div className="mt-6 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">
           {error}
         </div>
       )}
@@ -105,7 +105,7 @@ export default function OrdersPage() {
           <span className="sr-only">Loading orders…</span>
         </div>
       ) : orders.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-tertiary bg-quaternary py-16 text-center">
+        <div className="mt-8 rounded-xl border border-border bg-quaternary py-16 text-center">
           <Package className="mx-auto h-12 w-12 text-tertiary" aria-hidden />
           <p className="mt-4 font-medium text-primary">No orders yet</p>
           <p className="mt-1 text-sm text-secondary">
@@ -118,7 +118,7 @@ export default function OrdersPage() {
             {orders.map((order) => (
               <div
                 key={order.id ?? order.orderNumber}
-                className="rounded-xl border border-tertiary bg-quaternary p-4 transition-colors hover:border-tertiary/80"
+                className="rounded-xl border border-border bg-quaternary p-4 transition-colors hover:border-border/80"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -145,7 +145,7 @@ export default function OrdersPage() {
                 <div className="mt-3">
                   <Link
                     to={`/account/orders/${encodeURIComponent(order.orderNumber ?? order.id)}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-tertiary bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
                   >
                     <Eye className="h-4 w-4" aria-hidden />
                     View details
@@ -156,7 +156,7 @@ export default function OrdersPage() {
           </div>
 
           {totalPages > 1 && (
-            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-tertiary pt-6">
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
               <p className="text-sm text-secondary">
                 Showing {from}–{to} of {totalElements}
               </p>
@@ -165,7 +165,7 @@ export default function OrdersPage() {
                   type="button"
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="inline-flex items-center gap-1 rounded-lg border border-tertiary bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
                   aria-label="Previous page"
                 >
                   <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -178,7 +178,7 @@ export default function OrdersPage() {
                   type="button"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={last}
-                  className="inline-flex items-center gap-1 rounded-lg border border-tertiary bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
                   aria-label="Next page"
                 >
                   Next

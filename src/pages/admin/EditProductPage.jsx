@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Package, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Package, CheckCircle, Loader2, Plus, Layers } from 'lucide-react';
 import * as adminProductService from '@/services/adminProductService';
 import { getProductBySlug } from '@/services/productService';
 import { getCategories, flattenCategoriesWithSlug } from '@/services/categoryService';
@@ -25,7 +25,7 @@ const editProductSchema = z.object({
 function inputClass(error) {
   const base =
     'w-full rounded-lg border bg-quaternary px-4 py-2.5 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-tertiary focus:border-secondary focus:ring-secondary/20';
+  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
   const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
   return `${base} ${error ? invalid : normal}`;
 }
@@ -41,6 +41,15 @@ export default function EditProductPage() {
   const [updatedProduct, setUpdatedProduct] = useState(null);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [variantAddError, setVariantAddError] = useState(null);
+  const [variantAdding, setVariantAdding] = useState(false);
+  const [newVariant, setNewVariant] = useState({
+    size: '',
+    color: '',
+    price: '',
+    stockQuantity: 0,
+    imageUrl: '',
+  });
 
   const {
     register,
@@ -130,8 +139,46 @@ export default function EditProductPage() {
       setUpdatedProduct(resolved);
     } catch (err) {
       setSubmitError(err?.message ?? 'Failed to update product.');
+} finally {
+    setIsSubmitting(false);
+    }
+  };
+
+  const handleAddVariant = async () => {
+    if (!product?.id) return;
+    setVariantAddError(null);
+    const size = String(newVariant.size).trim();
+    const color = String(newVariant.color).trim();
+    if (!size || !color) {
+      setVariantAddError('Size and color are required.');
+      return;
+    }
+    const price = Number(newVariant.price);
+    if (Number.isNaN(price) || price < 0) {
+      setVariantAddError('Price must be 0 or more.');
+      return;
+    }
+    const stockQuantity = Number(newVariant.stockQuantity) || 0;
+    if (stockQuantity < 0) {
+      setVariantAddError('Stock must be 0 or more.');
+      return;
+    }
+    setVariantAdding(true);
+    try {
+      await adminProductService.addVariant(product.id, {
+        size,
+        color,
+        price,
+        stockQuantity,
+        imageUrl: newVariant.imageUrl?.trim() || null,
+      });
+      const updated = await getProductBySlug(slug);
+      setProduct(updated);
+      setNewVariant({ size: '', color: '', price: '', stockQuantity: 0, imageUrl: '' });
+    } catch (err) {
+      setVariantAddError(err?.message ?? 'Failed to add variant.');
     } finally {
-      setIsSubmitting(false);
+      setVariantAdding(false);
     }
   };
 
@@ -163,7 +210,7 @@ export default function EditProductPage() {
     const p = updatedProduct;
     return (
       <>
-            <div className="flex items-center gap-3 rounded-xl border border-tertiary bg-quaternary p-4">
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-quaternary p-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
                 <CheckCircle className="h-6 w-6 text-primary" aria-hidden />
               </div>
@@ -183,7 +230,7 @@ export default function EditProductPage() {
               <button
                 type="button"
                 onClick={() => setUpdatedProduct(null)}
-                className="rounded-lg border border-tertiary bg-quaternary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
+                className="rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
               >
                 Continue editing
               </button>
@@ -199,17 +246,17 @@ export default function EditProductPage() {
             Edit product
           </h1>
           <p className="mt-1 text-sm text-secondary">
-            Update product details. Variants are managed separately.
+            Update product details. Add or view variants below.
           </p>
 
           {submitError && (
-            <div className="mt-6 rounded-lg border border-tertiary bg-quaternary p-4 text-sm text-primary">
+            <div className="mt-6 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">
               {submitError}
             </div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-8">
-            <section className="rounded-xl border border-tertiary bg-quaternary p-6">
+            <section className="rounded-xl border border-border bg-quaternary p-6">
               <h2 className="text-lg font-medium text-primary">Details</h2>
               <div className="mt-4 space-y-4">
                 <div>
@@ -338,18 +385,135 @@ export default function EditProductPage() {
                 </div>
                 <div className="flex flex-col gap-3">
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-tertiary text-primary" {...register('isActive')} />
+                    <input type="checkbox" className="rounded border-border text-primary" {...register('isActive')} />
                     <span className="text-sm font-medium text-primary">Active</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-tertiary text-primary" {...register('isFeatured')} />
+                    <input type="checkbox" className="rounded border-border text-primary" {...register('isFeatured')} />
                     <span className="text-sm font-medium text-primary">Featured</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-tertiary text-primary" {...register('isTrending')} />
+                    <input type="checkbox" className="rounded border-border text-primary" {...register('isTrending')} />
                     <span className="text-sm font-medium text-primary">Trending</span>
                   </label>
                 </div>
+              </div>
+            </section>
+
+            {/* Variants */}
+            <section className="rounded-xl border border-border bg-quaternary p-6">
+              <h2 className="flex items-center gap-2 text-lg font-medium text-primary">
+                <Layers className="h-5 w-5" aria-hidden />
+                Variants
+              </h2>
+              {Array.isArray(product.variants) && product.variants.length > 0 && (
+                <ul className="mt-4 space-y-2">
+                  {product.variants.map((v) => (
+                    <li
+                      key={v.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-quaternary px-3 py-2 text-sm"
+                    >
+                      <span className="font-medium text-primary">
+                        {[v.size, v.color].filter(Boolean).join(' · ')}
+                        {v.sku && ` (${v.sku})`}
+                      </span>
+                      <span className="text-secondary">
+                        Nu {typeof v.price === 'number' ? v.price.toLocaleString() : v.price} /- · Stock: {v.stockQuantity ?? 0}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {(!product.variants || product.variants.length === 0) && (
+                <p className="mt-4 text-sm text-secondary">No variants yet. Add one below.</p>
+              )}
+
+              <div className="mt-6 border-t border-border pt-6">
+                <h3 className="text-sm font-medium text-primary">Add variant</h3>
+                {variantAddError && (
+                  <p className="mt-2 text-sm text-primary" role="alert">
+                    {variantAddError}
+                  </p>
+                )}
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <label htmlFor="var-size" className="block text-sm font-medium text-primary">
+                      Size <span className="text-primary">*</span>
+                    </label>
+                    <input
+                      id="var-size"
+                      type="text"
+                      value={newVariant.size}
+                      onChange={(e) => setNewVariant((prev) => ({ ...prev, size: e.target.value }))}
+                      className={inputClass(false)}
+                      placeholder="e.g. M"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="var-color" className="block text-sm font-medium text-primary">
+                      Color <span className="text-primary">*</span>
+                    </label>
+                    <input
+                      id="var-color"
+                      type="text"
+                      value={newVariant.color}
+                      onChange={(e) => setNewVariant((prev) => ({ ...prev, color: e.target.value }))}
+                      className={inputClass(false)}
+                      placeholder="e.g. Red"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="var-price" className="block text-sm font-medium text-primary">
+                      Price <span className="text-primary">*</span>
+                    </label>
+                    <input
+                      id="var-price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newVariant.price}
+                      onChange={(e) => setNewVariant((prev) => ({ ...prev, price: e.target.value }))}
+                      className={inputClass(false)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="var-stock" className="block text-sm font-medium text-primary">
+                      Stock
+                    </label>
+                    <input
+                      id="var-stock"
+                      type="number"
+                      min="0"
+                      value={newVariant.stockQuantity}
+                      onChange={(e) => setNewVariant((prev) => ({ ...prev, stockQuantity: Number(e.target.value) || 0 }))}
+                      className={inputClass(false)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label htmlFor="var-imageUrl" className="block text-sm font-medium text-primary">
+                    Variant image URL
+                  </label>
+                  <input
+                    id="var-imageUrl"
+                    type="url"
+                    value={newVariant.imageUrl}
+                    onChange={(e) => setNewVariant((prev) => ({ ...prev, imageUrl: e.target.value }))}
+                    className={inputClass(false)}
+                    placeholder="https://..."
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddVariant}
+                  disabled={variantAdding}
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-70"
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  {variantAdding ? 'Adding…' : 'Add variant'}
+                </button>
               </div>
             </section>
 
@@ -363,7 +527,7 @@ export default function EditProductPage() {
               </button>
               <Link
                 to="/admin/products"
-                className="rounded-lg border border-tertiary bg-quaternary px-6 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
+                className="rounded-lg border border-border bg-quaternary px-6 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
               >
                 Cancel
               </Link>

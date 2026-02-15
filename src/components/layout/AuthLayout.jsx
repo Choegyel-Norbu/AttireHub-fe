@@ -24,7 +24,7 @@ export default function AuthLayout({ children, title, backgroundImage }) {
           />
         </>
       )}
-      <header className="relative z-10 border-b border-tertiary bg-quaternary">
+      <header className="relative z-10 border-b border-border bg-quaternary">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link
             to="/"

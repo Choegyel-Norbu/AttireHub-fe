@@ -193,7 +193,7 @@ export default function ProductManagementPage() {
           </div>
 
           {/* Filters */}
-          <section className="mt-8 rounded-xl border border-tertiary bg-quaternary p-4">
+          <section className="mt-8 rounded-xl border border-border bg-quaternary p-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tertiary" aria-hidden />
@@ -203,14 +203,14 @@ export default function ProductManagementPage() {
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                  className="w-full rounded-lg border border-tertiary bg-quaternary py-2 pl-9 pr-3 text-sm text-primary placeholder-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full rounded-lg border border-border bg-quaternary py-2 pl-9 pr-3 text-sm text-primary placeholder-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   aria-label="Search products"
                 />
               </div>
               <select
                 value={filters.category}
                 onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 aria-label="Filter by category"
               >
                 <option value="">All categories</option>
@@ -225,7 +225,7 @@ export default function ProductManagementPage() {
               <select
                 value={filters.sort}
                 onChange={(e) => handleFilterChange('sort', e.target.value)}
-                className="rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 aria-label="Sort by"
               >
                 {SORT_OPTIONS.map((opt) => (
@@ -237,7 +237,7 @@ export default function ProductManagementPage() {
               <select
                 value={filters.featured}
                 onChange={(e) => handleFilterChange('featured', e.target.value)}
-                className="rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 aria-label="Featured"
               >
                 <option value="">All</option>
@@ -253,7 +253,7 @@ export default function ProductManagementPage() {
                 placeholder="Min price"
                 value={filters.minPrice}
                 onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                className="w-28 rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary placeholder-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-28 rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary placeholder-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 aria-label="Minimum price"
               />
               <input
@@ -263,13 +263,13 @@ export default function ProductManagementPage() {
                 placeholder="Max price"
                 value={filters.maxPrice}
                 onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                className="w-28 rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary placeholder-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-28 rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary placeholder-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 aria-label="Maximum price"
               />
               <button
                 type="button"
                 onClick={applyFilters}
-                className="rounded-lg border border-tertiary bg-tertiary/20 px-4 py-2 text-sm font-medium text-primary hover:bg-tertiary/30"
+                className="rounded-lg border border-border bg-tertiary/20 px-4 py-2 text-sm font-medium text-primary hover:bg-tertiary/30"
               >
                 Apply filters
               </button>
@@ -277,7 +277,7 @@ export default function ProductManagementPage() {
           </section>
 
           {error && (
-            <div className="mt-6 rounded-lg border border-tertiary bg-quaternary p-4 text-sm text-primary">
+            <div className="mt-6 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">
               {error}
             </div>
           )}
@@ -289,10 +289,10 @@ export default function ProductManagementPage() {
             </div>
           ) : (
             <>
-              <div className="mt-6 overflow-x-auto rounded-xl border border-tertiary bg-quaternary">
+              <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-quaternary">
                 <table className="w-full min-w-[720px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-tertiary bg-tertiary/10">
+                    <tr className="border-b border-border bg-tertiary/10">
                       <th className="w-10 py-3 pl-4 pr-1 font-medium text-secondary" aria-label="Expand" />
                       <th className="py-3 pr-2 font-medium text-secondary">Product</th>
                       <th className="py-3 px-2 font-medium text-secondary">Slug</th>
@@ -317,7 +317,7 @@ export default function ProductManagementPage() {
                         const isExpanded = expandedId === p.id;
                         return (
                           <Fragment key={p.id}>
-                            <tr className="border-b border-tertiary/50 transition-colors hover:bg-tertiary/10">
+                            <tr className="border-b border-border/50 transition-colors hover:bg-tertiary/10">
                               <td className="w-10 py-3 pl-4 pr-1">
                                 {variants.length > 0 ? (
                                   <button
@@ -339,7 +339,7 @@ export default function ProductManagementPage() {
                               </td>
                               <td className="py-3 pr-2">
                                 <div className="flex items-center gap-3">
-                                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-tertiary bg-quaternary">
+                                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-quaternary">
                                     {p.imageUrl ? (
                                       <img
                                         src={p.imageUrl}
@@ -383,7 +383,7 @@ export default function ProductManagementPage() {
                               <td className="py-3 pl-2 pr-4">
                                 <Link
                                   to={`/admin/products/edit/${encodeURIComponent(p.slug ?? '')}`}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-tertiary bg-quaternary px-2.5 py-1.5 text-sm font-medium text-primary hover:bg-tertiary/20"
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-quaternary px-2.5 py-1.5 text-sm font-medium text-primary hover:bg-tertiary/20"
                                   aria-label={`Edit ${p.name}`}
                                 >
                                   <Pencil className="h-4 w-4" aria-hidden />
@@ -392,13 +392,13 @@ export default function ProductManagementPage() {
                               </td>
                             </tr>
                             {isExpanded && variants.length > 0 && (
-                              <tr className="border-b border-tertiary/50 bg-tertiary/5">
+                              <tr className="border-b border-border/50 bg-tertiary/5">
                                 <td colSpan={9} className="p-0">
                                   <div className="px-4 pb-4 pt-1">
-                                    <div className="overflow-x-auto rounded-lg border border-tertiary/50 bg-quaternary">
+                                    <div className="overflow-x-auto rounded-lg border border-border/50 bg-quaternary">
                                       <table className="w-full text-left text-sm">
                                         <thead>
-                                          <tr className="border-b border-tertiary/50 bg-tertiary/10">
+                                          <tr className="border-b border-border/50 bg-tertiary/10">
                                             <th className="py-2 pl-3 pr-2 font-medium text-secondary">SKU</th>
                                             <th className="py-2 px-2 font-medium text-secondary">Size</th>
                                             <th className="py-2 px-2 font-medium text-secondary">Color</th>
@@ -410,7 +410,7 @@ export default function ProductManagementPage() {
                                         </thead>
                                         <tbody>
                                           {variants.map((v) => (
-                                            <tr key={v.id} className="border-b border-tertiary/30 last:border-0">
+                                            <tr key={v.id} className="border-b border-border/30 last:border-0">
                                               <td className="py-2 pl-3 pr-2 font-mono text-primary">{v.sku ?? '—'}</td>
                                               <td className="py-2 px-2 text-primary">{v.size ?? '—'}</td>
                                               <td className="py-2 px-2 text-primary">{v.color ?? '—'}</td>
@@ -431,7 +431,7 @@ export default function ProductManagementPage() {
                                                 <button
                                                   type="button"
                                                   onClick={() => openEditVariant(p.id, p.name, v)}
-                                                  className="inline-flex items-center gap-1 rounded border border-tertiary bg-quaternary px-2 py-1 text-sm font-medium text-primary hover:bg-tertiary/20"
+                                                  className="inline-flex items-center gap-1 rounded border border-border bg-quaternary px-2 py-1 text-sm font-medium text-primary hover:bg-tertiary/20"
                                                   aria-label={`Edit variant ${v.sku ?? v.size}`}
                                                 >
                                                   <Pencil className="h-3.5 w-3.5" aria-hidden />
@@ -470,7 +470,7 @@ export default function ProductManagementPage() {
                           setSize(Number(e.target.value));
                           setPage(0);
                         }}
-                        className="rounded border border-tertiary bg-quaternary px-2 py-1 text-sm focus:border-primary focus:outline-none"
+                        className="rounded border border-border bg-quaternary px-2 py-1 text-sm focus:border-primary focus:outline-none"
                         aria-label="Items per page"
                       >
                         {PAGE_SIZE_OPTIONS.map((n) => (
@@ -523,7 +523,7 @@ export default function ProductManagementPage() {
                 onClick={closeEditVariant}
                 aria-label="Close modal"
               />
-              <div className="relative w-full max-w-md rounded-xl border border-tertiary bg-quaternary p-6 shadow-lg">
+              <div className="relative w-full max-w-md rounded-xl border border-border bg-quaternary p-6 shadow-lg">
                 <h2 id="edit-variant-title" className="text-lg font-semibold text-primary">
                   Edit variant — {editVariant.productName}
                 </h2>
@@ -540,7 +540,7 @@ export default function ProductManagementPage() {
                       type="text"
                       value={variantForm.sku}
                       onChange={(e) => setVariantForm((f) => ({ ...f, sku: e.target.value }))}
-                      className="mt-1 w-full rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="mt-1 w-full rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -553,7 +553,7 @@ export default function ProductManagementPage() {
                         type="text"
                         value={variantForm.size}
                         onChange={(e) => setVariantForm((f) => ({ ...f, size: e.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="mt-1 w-full rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div>
@@ -565,7 +565,7 @@ export default function ProductManagementPage() {
                         type="text"
                         value={variantForm.color}
                         onChange={(e) => setVariantForm((f) => ({ ...f, color: e.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="mt-1 w-full rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                   </div>
@@ -581,7 +581,7 @@ export default function ProductManagementPage() {
                         min="0"
                         value={variantForm.price}
                         onChange={(e) => setVariantForm((f) => ({ ...f, price: e.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="mt-1 w-full rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div>
@@ -594,7 +594,7 @@ export default function ProductManagementPage() {
                         min="0"
                         value={variantForm.stockQuantity}
                         onChange={(e) => setVariantForm((f) => ({ ...f, stockQuantity: e.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="mt-1 w-full rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                   </div>
@@ -607,7 +607,7 @@ export default function ProductManagementPage() {
                       type="url"
                       value={variantForm.imageUrl}
                       onChange={(e) => setVariantForm((f) => ({ ...f, imageUrl: e.target.value }))}
-                      className="mt-1 w-full rounded-lg border border-tertiary bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="mt-1 w-full rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       placeholder="https://..."
                     />
                   </div>
@@ -616,7 +616,7 @@ export default function ProductManagementPage() {
                       type="checkbox"
                       checked={variantForm.isActive}
                       onChange={(e) => setVariantForm((f) => ({ ...f, isActive: e.target.checked }))}
-                      className="rounded border-tertiary text-primary"
+                      className="rounded border-border text-primary"
                     />
                     <span className="text-sm font-medium text-primary">Active</span>
                   </label>
@@ -631,7 +631,7 @@ export default function ProductManagementPage() {
                     <button
                       type="button"
                       onClick={closeEditVariant}
-                      className="rounded-lg border border-tertiary bg-quaternary px-4 py-2 text-sm font-medium text-primary hover:bg-tertiary/20"
+                      className="rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary hover:bg-tertiary/20"
                     >
                       Cancel
                     </button>

@@ -72,7 +72,7 @@ export default function AccountLayout() {
                   </li>
                   {isAdmin(user) && (
                     <li>
-                      <div className="my-2 hidden border-t border-tertiary lg:block" />
+                      <div className="my-2 hidden border-t border-border lg:block" />
                       <NavLink
                         to="/admin/products"
                         className={({ isActive }) =>

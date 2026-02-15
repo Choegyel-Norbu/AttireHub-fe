@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ImageOff, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ImageOff, Loader2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
@@ -18,8 +18,26 @@ function formatPrice(value) {
     : value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Horizontal scroll carousel track; scrollbar hidden, use arrow buttons to scroll. */
+const carouselTrackClass =
+  'mt-6 flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-0 sm:mt-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+const SCROLL_AMOUNT = 280;
+const productCardClass =
+  'group flex flex-shrink-0 w-[48vw] min-w-[180px] max-w-[280px] sm:w-[220px] sm:min-w-[220px] sm:max-w-[280px] lg:w-[260px] lg:min-w-[260px] snap-start flex-col overflow-hidden rounded-lg bg-quaternary transition-all duration-200 ease-out hover:-translate-y-1 hover:bg-tertiary/10 hover:shadow-md';
+
 export default function HomePage() {
   const { isAuthenticated } = useAuth();
+  const featuredCarouselRef = useRef(null);
+  const trendingCarouselRef = useRef(null);
+  const newArrivalCarouselRef = useRef(null);
+
+  const scrollCarousel = (ref, direction) => {
+    const el = ref?.current;
+    if (!el) return;
+    const amount = direction === 'left' ? -SCROLL_AMOUNT : SCROLL_AMOUNT;
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [featuredLoading, setFeaturedLoading] = useState(true);
   const [trendingProducts, setTrendingProducts] = useState([]);
@@ -70,10 +88,6 @@ export default function HomePage() {
           className="absolute inset-0 h-full w-full object-cover"
           fetchPriority="high"
         />
-        <div
-          className="absolute inset-0 bg-primary/50"
-          aria-hidden
-        />
         <div className="relative z-10 flex min-h-[28rem] flex-col items-center justify-center px-4 py-20 text-center sm:min-h-[32rem] sm:py-28 lg:min-h-[36rem]">
           <h1 className="text-4xl font-bold tracking-tight text-quaternary sm:text-5xl lg:text-6xl">
             Style that fits your life
@@ -84,7 +98,8 @@ export default function HomePage() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-quaternary shadow-sm transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+              style={{ backgroundColor: '#7BA4D0' }}
             >
               Shop All
               <ArrowRight className="h-4 w-4" aria-hidden />
@@ -99,35 +114,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="border-t border-tertiary bg-quaternary py-16" aria-labelledby="categories-heading">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 id="categories-heading" className="text-center text-2xl font-semibold text-primary sm:text-3xl">
-            Shop by category
-          </h2>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {categories.map(({ id, name, slug }) => (
-              <Link
-                key={id}
-                to={`/products?category=${encodeURIComponent(slug)}`}
-                className="group relative overflow-hidden rounded-lg border border-tertiary bg-quaternary p-8 text-center transition-colors hover:border-secondary hover:bg-tertiary/10"
-              >
-                <span className="block text-lg font-semibold text-primary group-hover:text-secondary">
-                  {name}
-                </span>
-                <span className="mt-1 block text-sm text-secondary">View all products in this category</span>
-                <span className="mt-4 inline-flex items-center text-sm font-medium text-primary group-hover:text-secondary">
-                  Shop {name}
-                  <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Featured products */}
-      <section className="border-t border-tertiary bg-quaternary py-16" aria-labelledby="featured-heading">
+      <section className="border-t border-border bg-quaternary py-16" aria-labelledby="featured-heading">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between gap-4">
             <h2 id="featured-heading" className="text-2xl font-semibold text-primary sm:text-3xl">
@@ -140,20 +128,41 @@ export default function HomePage() {
               View all
             </Link>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-10 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="relative">
+            {!featuredLoading && featuredProducts.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel(featuredCarouselRef, 'left')}
+                  className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-quaternary shadow-md transition-colors hover:bg-tertiary/30 disabled:opacity-50 sm:h-12 sm:w-12"
+                  aria-label="Scroll featured products left"
+                >
+                  <ArrowLeft className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel(featuredCarouselRef, 'right')}
+                  className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-quaternary shadow-md transition-colors hover:bg-tertiary/30 disabled:opacity-50 sm:h-12 sm:w-12"
+                  aria-label="Scroll featured products right"
+                >
+                  <ArrowRight className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden />
+                </button>
+              </>
+            )}
+            <div ref={featuredCarouselRef} className={carouselTrackClass}>
             {featuredLoading ? (
-              <div className="col-span-full flex justify-center py-12">
+              <div className="flex w-full justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
                 <span className="sr-only">Loading featured products…</span>
               </div>
             ) : featuredProducts.length === 0 ? (
-              <p className="col-span-full text-center text-secondary">No featured products right now.</p>
+              <p className="w-full py-8 text-center text-secondary">No featured products right now.</p>
             ) : (
               featuredProducts.map((product) => (
                 <Link
                   key={product.id}
                   to={`/products/${encodeURIComponent(product.slug ?? product.id)}`}
-                  className="group flex flex-col overflow-hidden rounded-lg bg-quaternary transition-all duration-200 ease-out hover:-translate-y-1 hover:bg-tertiary/10 hover:shadow-md"
+                  className={productCardClass}
                 >
                   <div className="relative p-2 pb-0 sm:p-3 sm:pb-0">
                     {(product.newArrival === true || product.new_arrival === true) && (
@@ -189,6 +198,7 @@ export default function HomePage() {
                 </Link>
               ))
             )}
+            </div>
           </div>
           <Link
             to="/products"
@@ -200,7 +210,7 @@ export default function HomePage() {
       </section>
 
       {/* Trending products */}
-      <section className="border-t border-tertiary bg-quaternary py-16" aria-labelledby="trending-heading">
+      <section className="border-t border-border bg-quaternary py-16" aria-labelledby="trending-heading">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between gap-4">
             <h2 id="trending-heading" className="text-2xl font-semibold text-primary sm:text-3xl">
@@ -213,20 +223,41 @@ export default function HomePage() {
               View all
             </Link>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-10 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="relative">
+            {!trendingLoading && trendingProducts.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel(trendingCarouselRef, 'left')}
+                  className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-quaternary shadow-md transition-colors hover:bg-tertiary/30 disabled:opacity-50 sm:h-12 sm:w-12"
+                  aria-label="Scroll trending products left"
+                >
+                  <ArrowLeft className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel(trendingCarouselRef, 'right')}
+                  className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-quaternary shadow-md transition-colors hover:bg-tertiary/30 disabled:opacity-50 sm:h-12 sm:w-12"
+                  aria-label="Scroll trending products right"
+                >
+                  <ArrowRight className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden />
+                </button>
+              </>
+            )}
+            <div ref={trendingCarouselRef} className={carouselTrackClass}>
             {trendingLoading ? (
-              <div className="col-span-full flex justify-center py-12">
+              <div className="flex w-full justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
                 <span className="sr-only">Loading trending products…</span>
               </div>
             ) : trendingProducts.length === 0 ? (
-              <p className="col-span-full text-center text-secondary">No trending products right now.</p>
+              <p className="w-full py-8 text-center text-secondary">No trending products right now.</p>
             ) : (
               trendingProducts.map((product) => (
                 <Link
                   key={product.id}
                   to={`/products/${encodeURIComponent(product.slug ?? product.id)}`}
-                  className="group flex flex-col overflow-hidden rounded-lg bg-quaternary transition-all duration-200 ease-out hover:-translate-y-1 hover:bg-tertiary/10 hover:shadow-md"
+                  className={productCardClass}
                 >
                   <div className="relative p-2 pb-0 sm:p-3 sm:pb-0">
                     {(product.newArrival === true || product.new_arrival === true) && (
@@ -262,6 +293,7 @@ export default function HomePage() {
                 </Link>
               ))
             )}
+            </div>
           </div>
           <Link
             to="/products?trending=true"
@@ -273,7 +305,7 @@ export default function HomePage() {
       </section>
 
       {/* New arrival */}
-      <section className="border-t border-tertiary bg-quaternary py-16" aria-labelledby="new-arrival-heading">
+      <section className="border-t border-border bg-quaternary py-16" aria-labelledby="new-arrival-heading">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between gap-4">
             <h2 id="new-arrival-heading" className="text-2xl font-semibold text-primary sm:text-3xl">
@@ -286,20 +318,41 @@ export default function HomePage() {
               View all
             </Link>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-10 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="relative">
+            {!newArrivalLoading && newArrivalProducts.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel(newArrivalCarouselRef, 'left')}
+                  className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-quaternary shadow-md transition-colors hover:bg-tertiary/30 disabled:opacity-50 sm:h-12 sm:w-12"
+                  aria-label="Scroll new arrivals left"
+                >
+                  <ArrowLeft className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel(newArrivalCarouselRef, 'right')}
+                  className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-quaternary shadow-md transition-colors hover:bg-tertiary/30 disabled:opacity-50 sm:h-12 sm:w-12"
+                  aria-label="Scroll new arrivals right"
+                >
+                  <ArrowRight className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden />
+                </button>
+              </>
+            )}
+            <div ref={newArrivalCarouselRef} className={carouselTrackClass}>
             {newArrivalLoading ? (
-              <div className="col-span-full flex justify-center py-12">
+              <div className="flex w-full justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
                 <span className="sr-only">Loading new arrivals…</span>
               </div>
             ) : newArrivalProducts.length === 0 ? (
-              <p className="col-span-full text-center text-secondary">No new arrivals right now.</p>
+              <p className="w-full py-8 text-center text-secondary">No new arrivals right now.</p>
             ) : (
               newArrivalProducts.map((product) => (
                 <Link
                   key={product.id}
                   to={`/products/${encodeURIComponent(product.slug ?? product.id)}`}
-                  className="group flex flex-col overflow-hidden rounded-lg bg-quaternary transition-all duration-200 ease-out hover:-translate-y-1 hover:bg-tertiary/10 hover:shadow-md"
+                  className={productCardClass}
                 >
                   <div className="relative p-2 pb-0 sm:p-3 sm:pb-0">
                     <span className="absolute left-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-quaternary shadow-sm sm:left-4 sm:top-4 sm:px-2.5 sm:py-1 sm:text-xs">
@@ -333,6 +386,7 @@ export default function HomePage() {
                 </Link>
               ))
             )}
+            </div>
           </div>
           <Link
             to="/products?newArrivalsOnly=true"
@@ -343,8 +397,52 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Categories */}
+      <section
+        className="border-t border-border bg-gradient-to-b from-tertiary/5 to-quaternary py-20 sm:py-24"
+        aria-labelledby="categories-heading"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 id="categories-heading" className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+              Shop by category
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-secondary">
+              Find what you need across our curated collections
+            </p>
+          </div>
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
+            {categories.map(({ id, name, slug }) => (
+              <Link
+                key={id}
+                to={`/products?category=${encodeURIComponent(slug)}`}
+                className="group relative flex flex-col rounded-xl border border-border/60 bg-quaternary p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-secondary/50 hover:shadow-md sm:p-8"
+              >
+                <span
+                  className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-primary/20 transition-colors group-hover:bg-primary"
+                  aria-hidden
+                />
+                <span className="text-xl font-semibold tracking-tight text-primary transition-colors group-hover:text-secondary">
+                  {name}
+                </span>
+                <span className="mt-1 text-sm text-secondary">
+                  Browse the full {name} collection
+                </span>
+                <span className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors group-hover:text-secondary">
+                  Shop {name}
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                    aria-hidden
+                  />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA strip */}
-      <section className="border-t border-tertiary bg-primary py-12" aria-labelledby="cta-heading">
+      <section className="border-t border-border bg-primary py-12" aria-labelledby="cta-heading">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <h2 id="cta-heading" className="text-xl font-semibold text-quaternary sm:text-2xl">
             Free shipping on orders over $75

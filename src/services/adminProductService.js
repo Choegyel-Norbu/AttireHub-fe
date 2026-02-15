@@ -147,6 +147,39 @@ export async function updateProduct(id, body) {
 }
 
 /**
+ * Add a new variant to an existing product (admin).
+ * Calls POST /api/v1/admin/products/{productId}/variants.
+ * @param {number} productId - Product ID
+ * @param {{
+ *   size: string;
+ *   color: string;
+ *   price: number;
+ *   stockQuantity: number;
+ *   imageUrl?: string | null;
+ *   isActive?: boolean;
+ * }} body
+ * @returns {Promise<Record<string, unknown>>} Created variant (same shape as items in product detail variants[])
+ */
+export async function addVariant(productId, body) {
+  try {
+    const payload = {
+      size: String(body.size).trim(),
+      color: String(body.color).trim(),
+      price: Number(body.price),
+      stockQuantity: Number(body.stockQuantity) ?? 0,
+      imageUrl: body.imageUrl?.trim() || null,
+      isActive: body.isActive !== false,
+    };
+
+    const response = await api.post(`${ADMIN_PRODUCTS_PATH}/${productId}/variants`, payload);
+    const data = response?.data ?? response;
+    return data;
+  } catch (err) {
+    throw new Error(getVariantErrorMessage(err));
+  }
+}
+
+/**
  * Update an existing variant (admin). Only sent fields are updated.
  * @param {number} productId - Product ID
  * @param {number} variantId - Variant ID

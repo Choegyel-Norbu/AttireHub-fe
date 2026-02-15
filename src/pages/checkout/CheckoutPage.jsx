@@ -99,7 +99,7 @@ export default function CheckoutPage() {
         <Header />
         <main className="flex-1 bg-quaternary px-4 py-8 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl">
-            <div className="rounded-xl border border-tertiary bg-quaternary p-6 text-center sm:p-8">
+            <div className="rounded-xl border border-border bg-quaternary p-6 text-center sm:p-8">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary">
                 <Package className="h-7 w-7" aria-hidden />
               </div>
@@ -120,7 +120,7 @@ export default function CheckoutPage() {
                 </Link>
                 <Link
                   to="/products"
-                  className="inline-flex items-center justify-center rounded-lg border border-tertiary bg-quaternary px-5 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                  className="inline-flex items-center justify-center rounded-lg border border-border bg-quaternary px-5 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
                 >
                   Continue shopping
                 </Link>
@@ -148,12 +148,12 @@ export default function CheckoutPage() {
               <section className="rounded-xl bg-quaternary p-4">
                 <h2 className="text-lg font-semibold text-primary">Shipping address</h2>
                 {loadingAddresses ? (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-tertiary bg-tertiary/10 p-3 text-secondary">
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-tertiary/10 p-3 text-secondary">
                     <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
                     <span className="text-sm">Loading addresses…</span>
                   </div>
                 ) : addresses.length === 0 ? (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-tertiary bg-tertiary/10 p-3 text-secondary">
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-tertiary/10 p-3 text-secondary">
                     <MapPin className="h-5 w-5 shrink-0" aria-hidden />
                     <p className="text-sm">
                       No addresses found.{' '}
@@ -163,7 +163,7 @@ export default function CheckoutPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-3 space-y-2 rounded-lg border border-tertiary p-3">
+                  <div className="mt-3 space-y-2 rounded-lg border border-border p-3">
                     {(addresses.filter(
                       (a) => (a.addressType || a.type || '').toUpperCase() === 'SHIPPING'
                     ).length > 0
@@ -182,7 +182,7 @@ export default function CheckoutPage() {
                             value={addr.id}
                             checked={shippingAddressId === String(addr.id)}
                             onChange={() => setShippingAddressId(String(addr.id))}
-                            className="mt-1.5 h-4 w-4 border-tertiary text-primary focus:ring-primary"
+                            className="mt-1.5 h-4 w-4 border-border text-primary focus:ring-primary"
                             aria-label={`Select ${addr.streetAddress}, ${addr.city}`}
                           />
                           <div className="min-w-0 flex-1 text-sm">
@@ -213,7 +213,7 @@ export default function CheckoutPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Delivery instructions, leave at door, etc."
-                    className="w-full rounded-lg border border-tertiary bg-tertiary/10 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full rounded-lg border border-border bg-tertiary/10 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     aria-label="Order notes"
                   />
                 </div>
@@ -227,7 +227,7 @@ export default function CheckoutPage() {
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     placeholder="Enter coupon code"
-                    className="w-full rounded-lg border border-tertiary bg-tertiary/10 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full rounded-lg border border-border bg-tertiary/10 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     aria-label="Coupon code"
                   />
                 </div>
@@ -235,11 +235,11 @@ export default function CheckoutPage() {
             </div>
 
             <div className="lg:col-span-2">
-              <section className="sticky top-24 rounded-xl border border-tertiary bg-quaternary p-6">
+              <section className="sticky top-24 rounded-xl border border-border bg-quaternary p-6">
                 <h2 className="text-lg font-semibold text-primary">Order summary</h2>
                 <ul className="mt-4 space-y-3">
                   {items.map((item) => (
-                    <li key={item.id} className="flex gap-3 border-b border-tertiary/50 pb-3 last:border-0">
+                    <li key={item.id} className="flex gap-3 border-b border-border/50 pb-3 last:border-0">
                       <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-tertiary/20">
                         {item.imageUrl ? (
                           <img
@@ -267,7 +267,7 @@ export default function CheckoutPage() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-4 border-t border-tertiary pt-4">
+                <div className="mt-4 border-t border-border pt-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-secondary">Subtotal</span>
                     <span className="font-medium text-primary">

@@ -53,7 +53,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-tertiary bg-quaternary">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-quaternary">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link
@@ -91,7 +91,7 @@ export default function Header() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products..."
-              className="w-full rounded-xl border border-tertiary bg-quaternary py-2 pl-10 pr-4 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-secondary focus:ring-1 focus:ring-secondary"
+              className="w-full rounded-xl border border-border bg-quaternary py-2 pl-10 pr-4 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-secondary focus:ring-1 focus:ring-secondary"
               aria-label="Search products"
             />
           </div>
@@ -165,7 +165,7 @@ export default function Header() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="border-t border-tertiary bg-tertiary px-4 py-4 md:hidden">
+        <div className="border-t border-border bg-tertiary px-4 py-4 md:hidden">
           <nav className="flex flex-col gap-2" aria-label="Mobile">
             <Link
               to="/cart"
@@ -202,7 +202,7 @@ export default function Header() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products..."
-                className="w-full rounded-xl border border-tertiary bg-quaternary py-2 pl-10 pr-4 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-secondary focus:ring-1 focus:ring-secondary"
+                className="w-full rounded-xl border border-border bg-quaternary py-2 pl-10 pr-4 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-secondary focus:ring-1 focus:ring-secondary"
                 aria-label="Search products"
               />
             </div>
@@ -234,7 +234,7 @@ export default function Header() {
               aria-hidden
               onClick={handleLogoutCancel}
             />
-            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-tertiary bg-quaternary p-6 shadow-lg">
+            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-quaternary p-6 shadow-lg">
               <h2 id="logout-dialog-title" className="text-lg font-semibold text-primary">
                 Sign out?
               </h2>
@@ -245,7 +245,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={handleLogoutCancel}
-                  className="flex-1 rounded-lg border border-tertiary bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                  className="flex-1 rounded-lg border border-border bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
                 >
                   Cancel
                 </button>

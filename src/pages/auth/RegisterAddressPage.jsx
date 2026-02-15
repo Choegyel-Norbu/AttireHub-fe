@@ -25,7 +25,7 @@ const addressSchema = z.object({
 function getInputClassName(error) {
   const base =
     'w-full rounded-lg border bg-quaternary px-4 py-3 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-tertiary focus:border-secondary focus:ring-secondary/20';
+  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
   const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
   return `${base} ${error ? invalid : normal}`;
 }
@@ -96,7 +96,7 @@ export default function RegisterAddressPage() {
   return (
     <AuthLayout title="Add your address">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-tertiary bg-quaternary p-8 shadow-sm sm:p-10">
+        <div className="rounded-2xl border border-border bg-quaternary p-8 shadow-sm sm:p-10">
           <div className="text-center">
             <h2 className="text-2xl font-semibold tracking-tight text-primary">
               Add your address
@@ -227,7 +227,7 @@ export default function RegisterAddressPage() {
               <input
                 id="is-default"
                 type="checkbox"
-                className="h-4 w-4 rounded border-tertiary text-primary focus:ring-secondary"
+                className="h-4 w-4 rounded border-border text-primary focus:ring-secondary"
                 {...register('isDefault')}
               />
               <label htmlFor="is-default" className="text-sm font-medium text-primary">

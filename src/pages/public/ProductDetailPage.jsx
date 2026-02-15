@@ -113,7 +113,7 @@ export default function ProductDetailPage() {
             <p className="mt-2 text-sm text-secondary">{error ?? 'This product may have been removed or the link is invalid.'}</p>
             <Link
               to="/products"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg border border-tertiary bg-quaternary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden />
               Back to products
@@ -174,7 +174,7 @@ export default function ProductDetailPage() {
                         className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
                           isSelected
                             ? 'border-primary ring-2 ring-primary/30'
-                            : 'border-tertiary hover:border-secondary'
+                            : 'border-border hover:border-secondary'
                         }`}
                         aria-pressed={isSelected}
                         aria-label={[v.size, v.color].filter(Boolean).join(' ') || `Variant ${v.sku}`}
@@ -272,8 +272,8 @@ export default function ProductDetailPage() {
                                 isSelected
                                   ? 'border-primary bg-primary text-quaternary'
                                   : out
-                                    ? 'cursor-not-allowed border-tertiary text-tertiary'
-                                    : 'border-tertiary bg-quaternary text-primary hover:border-secondary hover:bg-tertiary/20'
+                                    ? 'cursor-not-allowed border-border text-tertiary'
+                                    : 'border-border bg-quaternary text-primary hover:border-secondary hover:bg-tertiary/20'
                               }`}
                             >
                               {size}
@@ -304,8 +304,8 @@ export default function ProductDetailPage() {
                                 isSelected
                                   ? 'border-primary bg-primary text-quaternary'
                                   : out
-                                    ? 'cursor-not-allowed border-tertiary text-tertiary'
-                                    : 'border-tertiary bg-quaternary text-primary hover:border-secondary hover:bg-tertiary/20'
+                                    ? 'cursor-not-allowed border-border text-tertiary'
+                                    : 'border-border bg-quaternary text-primary hover:border-secondary hover:bg-tertiary/20'
                               }`}
                             >
                               {color}
@@ -322,7 +322,7 @@ export default function ProductDetailPage() {
                         const v = activeVariants.find((x) => x.id === Number(e.target.value));
                         if (v) setSelectedVariant(v);
                       }}
-                      className="w-full rounded-lg border border-tertiary bg-quaternary px-4 py-2.5 text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-quaternary px-4 py-2.5 text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       aria-label="Select variant"
                     >
                       <option value="">Select option</option>
@@ -347,7 +347,7 @@ export default function ProductDetailPage() {
                     <p className="text-sm text-primary">{cartError}</p>
                   )}
                 <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center rounded-lg border border-tertiary bg-quaternary">
+                  <div className="flex items-center rounded-lg border border-border bg-quaternary">
                     <button
                       type="button"
                       onClick={() => setQuantity((q) => Math.max(1, q - 1))}

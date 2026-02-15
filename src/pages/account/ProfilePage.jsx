@@ -63,7 +63,7 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       {/* Profile Header */}
-      <div className="relative overflow-hidden rounded-2xl border border-tertiary bg-quaternary p-6 shadow-sm sm:p-10">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-quaternary p-6 shadow-sm sm:p-10">
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
           {/* Avatar */}
           <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary shadow-sm sm:h-32 sm:w-32 sm:text-4xl">
@@ -103,7 +103,7 @@ export default function ProfilePage() {
       {/* Content Grid */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Intro / About */}
-        <div className="rounded-2xl border border-tertiary bg-quaternary p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-quaternary p-6 shadow-sm">
           <h2 className="text-lg font-bold text-primary">Intro</h2>
           <div className="mt-4 space-y-4">
             <div className="flex items-center gap-3 text-primary">
@@ -119,7 +119,7 @@ export default function ProfilePage() {
               <span>{roleLabel} Account</span>
             </div>
           </div>
-          <div className="mt-6 border-t border-tertiary pt-4">
+          <div className="mt-6 border-t border-border pt-4">
              <Link to="/account/settings" className="block w-full rounded-xl bg-tertiary/10 py-2 text-center text-sm font-semibold text-primary hover:bg-tertiary/20">
                Edit Details
              </Link>
@@ -127,19 +127,19 @@ export default function ProfilePage() {
         </div>
 
         {/* Address Preview */}
-        <div className="rounded-2xl border border-tertiary bg-quaternary p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-quaternary p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-primary">Default Address</h2>
           </div>
           
           <div className="mt-4">
             {addressLoading ? (
-              <div className="flex items-center justify-center gap-2 rounded-xl border border-tertiary py-8">
+              <div className="flex items-center justify-center gap-2 rounded-xl border border-border py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-secondary" aria-hidden />
                 <span className="text-sm text-secondary">Loading address…</span>
               </div>
             ) : defaultAddress ? (
-              <div className="relative overflow-hidden rounded-xl border border-tertiary bg-tertiary/5 p-4">
+              <div className="relative overflow-hidden rounded-xl border border-border bg-tertiary/5 p-4">
                 <div className="flex gap-3">
                   <MapPin className="mt-1 h-5 w-5 shrink-0 text-primary" />
                   <div>
@@ -165,7 +165,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-tertiary py-8 text-center">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-8 text-center">
                 <Map className="h-8 w-8 text-tertiary" />
                 <p className="mt-2 text-sm text-secondary">No address set</p>
                 <Link to="/account/settings" className="mt-2 text-sm font-medium text-primary hover:underline">

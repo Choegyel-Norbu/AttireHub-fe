@@ -39,7 +39,7 @@ const addressSchema = z.object({
 function getInputClassName(error) {
   const base =
     'w-full rounded-xl border bg-quaternary px-4 py-3 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-tertiary focus:border-secondary focus:ring-secondary/20';
+  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
   const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
   return `${base} ${error ? invalid : normal}`;
 }
@@ -298,7 +298,7 @@ export default function AccountSettingsPage() {
       </div>
 
       {/* Profile */}
-      <section className="rounded-2xl border border-tertiary bg-quaternary p-6 shadow-sm sm:p-8">
+      <section className="rounded-2xl border border-border bg-quaternary p-6 shadow-sm sm:p-8">
         <h2 className="text-lg font-semibold text-primary">Profile</h2>
         <p className="mt-1 text-sm text-secondary">Name and phone. Email is used to sign in.</p>
         {profileLoading ? (
@@ -348,7 +348,7 @@ export default function AccountSettingsPage() {
                 value={email}
                 readOnly
                 disabled
-                className="w-full rounded-xl border border-tertiary bg-tertiary/20 px-4 py-3 text-primary opacity-90"
+                className="w-full rounded-xl border border-border bg-tertiary/20 px-4 py-3 text-primary opacity-90"
               />
             </div>
             <div>
@@ -377,7 +377,7 @@ export default function AccountSettingsPage() {
       </section>
 
       {/* Addresses */}
-      <section className="rounded-2xl border border-tertiary bg-quaternary p-6 shadow-sm sm:p-8">
+      <section className="rounded-2xl border border-border bg-quaternary p-6 shadow-sm sm:p-8">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-primary">
           <MapPin className="h-5 w-5" aria-hidden /> Addresses
         </h2>
@@ -396,7 +396,7 @@ export default function AccountSettingsPage() {
               return (
                 <li
                   key={addr.id}
-                  className="flex flex-wrap items-start justify-between gap-2 rounded-xl border border-tertiary bg-quaternary p-4"
+                  className="flex flex-wrap items-start justify-between gap-2 rounded-xl border border-border bg-quaternary p-4"
                 >
                   <div>
                     {isDefault && (
@@ -504,7 +504,7 @@ export default function AccountSettingsPage() {
             <input
               id="addr-default"
               type="checkbox"
-              className="h-4 w-4 rounded border-tertiary text-primary focus:ring-secondary"
+              className="h-4 w-4 rounded border-border text-primary focus:ring-secondary"
               {...addressForm.register('isDefault')}
             />
             <label htmlFor="addr-default" className="text-sm font-medium text-primary">Set as default</label>
@@ -522,7 +522,7 @@ export default function AccountSettingsPage() {
               <button
                 type="button"
                 onClick={() => { addressForm.reset(emptyAddress); setEditingAddressId(null); }}
-                className="rounded-xl border border-tertiary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
+                className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
               >
                 Cancel
               </button>
@@ -546,14 +546,14 @@ export default function AccountSettingsPage() {
               aria-hidden
               onClick={cancelRemoveAddress}
             />
-            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-tertiary bg-quaternary p-6 shadow-lg">
+            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-quaternary p-6 shadow-lg">
               <h2 id="delete-address-dialog-title" className="text-lg font-semibold text-primary">
                 Remove address?
               </h2>
               <p id="delete-address-dialog-desc" className="mt-2 text-sm text-secondary">
                 Are you sure you want to remove this address? This action cannot be undone.
               </p>
-              <div className="mt-4 rounded-lg border border-tertiary bg-quaternary p-3">
+              <div className="mt-4 rounded-lg border border-border bg-quaternary p-3">
                 <p className="font-medium text-primary">
                   {addressToDelete.streetAddress ?? addressToDelete.street_address}
                 </p>
@@ -568,7 +568,7 @@ export default function AccountSettingsPage() {
                   type="button"
                   onClick={cancelRemoveAddress}
                   disabled={deleteConfirming}
-                  className="flex-1 rounded-lg border border-tertiary bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50"
+                  className="flex-1 rounded-lg border border-border bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50"
                 >
                   Cancel
                 </button>

@@ -49,7 +49,7 @@ export default function VerifyEmailPage() {
   const content = () => {
     if (status === 'no-token' || (status === 'idle' && !token)) {
       return (
-        <div className="rounded-2xl border border-tertiary bg-quaternary p-8 shadow-sm sm:p-10 text-center">
+        <div className="rounded-2xl border border-border bg-quaternary p-8 shadow-sm sm:p-10 text-center">
           <XCircle className="mx-auto h-12 w-12 text-primary" aria-hidden />
           <h2 className="mt-4 text-xl font-semibold text-primary">Invalid verification link</h2>
           <p className="mt-2 text-sm text-secondary">
@@ -64,7 +64,7 @@ export default function VerifyEmailPage() {
             </Link>
             <Link
               to="/register"
-              className="inline-flex justify-center rounded-lg border border-tertiary bg-quaternary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/30"
+              className="inline-flex justify-center rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/30"
             >
               Create account
             </Link>
@@ -75,7 +75,7 @@ export default function VerifyEmailPage() {
 
     if (status === 'loading' || (status === 'idle' && token)) {
       return (
-        <div className="rounded-2xl border border-tertiary bg-quaternary p-8 shadow-sm sm:p-10 text-center">
+        <div className="rounded-2xl border border-border bg-quaternary p-8 shadow-sm sm:p-10 text-center">
           <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" aria-hidden />
           <h2 className="mt-4 text-xl font-semibold text-primary">Verifying your email…</h2>
           <p className="mt-2 text-sm text-secondary">Please wait a moment.</p>
@@ -85,7 +85,7 @@ export default function VerifyEmailPage() {
 
     if (status === 'success') {
       return (
-        <div className="rounded-2xl border border-tertiary bg-quaternary p-8 shadow-sm sm:p-10 text-center">
+        <div className="rounded-2xl border border-border bg-quaternary p-8 shadow-sm sm:p-10 text-center">
           <CheckCircle className="mx-auto h-12 w-12 text-green-600" aria-hidden />
           <h2 className="mt-4 text-xl font-semibold text-primary">Email verified</h2>
           <p className="mt-2 text-sm text-secondary">{message}</p>
@@ -101,7 +101,7 @@ export default function VerifyEmailPage() {
 
     if (status === 'error') {
       return (
-        <div className="rounded-2xl border border-tertiary bg-quaternary p-8 shadow-sm sm:p-10 text-center">
+        <div className="rounded-2xl border border-border bg-quaternary p-8 shadow-sm sm:p-10 text-center">
           <XCircle className="mx-auto h-12 w-12 text-primary" aria-hidden />
           <h2 className="mt-4 text-xl font-semibold text-primary">Verification failed</h2>
           <p className="mt-2 text-sm text-secondary" role="alert">
@@ -116,7 +116,7 @@ export default function VerifyEmailPage() {
             </Link>
             <Link
               to="/register"
-              className="inline-flex justify-center rounded-lg border border-tertiary bg-quaternary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/30"
+              className="inline-flex justify-center rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/30"
             >
               Create account
             </Link>

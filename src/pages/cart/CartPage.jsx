@@ -161,13 +161,13 @@ export default function CartPage() {
           </p>
 
           {error && (
-            <div className="mt-4 rounded-lg border border-tertiary bg-quaternary p-4 text-sm text-primary">
+            <div className="mt-4 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">
               {error}
             </div>
           )}
 
           {items.length === 0 && isAuthenticated ? (
-            <div className="mt-8 rounded-xl border border-tertiary bg-quaternary py-16 text-center">
+            <div className="mt-8 rounded-xl border border-border bg-quaternary py-16 text-center">
               <ShoppingCart className="mx-auto h-12 w-12 text-tertiary" aria-hidden />
               <p className="mt-4 font-medium text-primary">Your cart is empty</p>
               <p className="mt-1 text-sm text-secondary">Add items from the store to get started.</p>
@@ -189,7 +189,7 @@ export default function CartPage() {
                     className="flex flex-col gap-3 rounded-xl bg-quaternary p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-4"
                   >
                     <div className="flex flex-1 gap-3 sm:min-w-0 sm:flex-initial sm:flex-none">
-                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-tertiary bg-tertiary/10 sm:h-24 sm:w-24">
+                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-tertiary/10 sm:h-24 sm:w-24">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -213,8 +213,8 @@ export default function CartPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-tertiary/50 pt-3 sm:border-0 sm:justify-end sm:pt-0">
-                      <div className="flex items-center rounded-lg border border-tertiary bg-quaternary">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-3 sm:border-0 sm:justify-end sm:pt-0">
+                      <div className="flex items-center rounded-lg border border-border bg-quaternary">
                         <button
                           type="button"
                           onClick={() => handleUpdateQty(item.id, Math.max(1, item.quantity - 1))}
@@ -260,7 +260,7 @@ export default function CartPage() {
                 ))}
               </div>
 
-              <div className="mt-8 flex flex-col gap-4 border-t border-tertiary pt-8 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-8 flex flex-col gap-4 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
                   <p className="text-lg font-semibold text-primary">
                     Subtotal: Nu {formatPrice(subtotal)} /-
@@ -299,7 +299,7 @@ export default function CartPage() {
                       onClick={() => setItemToRemove(null)}
                       aria-label="Close"
                     />
-                    <div className="relative z-10 w-full max-w-sm rounded-2xl border border-tertiary bg-quaternary p-6 shadow-lg">
+                    <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-quaternary p-6 shadow-lg">
                       <h2 id="remove-item-title" className="text-lg font-semibold text-primary">
                         Remove from cart?
                       </h2>
@@ -310,7 +310,7 @@ export default function CartPage() {
                         <button
                           type="button"
                           onClick={() => setItemToRemove(null)}
-                          className="flex-1 rounded-lg border border-tertiary bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                          className="flex-1 rounded-lg border border-border bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
                         >
                           Cancel
                         </button>
@@ -343,7 +343,7 @@ export default function CartPage() {
                       onClick={() => setShowClearCartConfirm(false)}
                       aria-label="Close"
                     />
-                    <div className="relative z-10 w-full max-w-sm rounded-2xl border border-tertiary bg-quaternary p-6 shadow-lg">
+                    <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-quaternary p-6 shadow-lg">
                       <h2 id="clear-cart-title" className="text-lg font-semibold text-primary">
                         Clear cart?
                       </h2>
@@ -354,7 +354,7 @@ export default function CartPage() {
                         <button
                           type="button"
                           onClick={() => setShowClearCartConfirm(false)}
-                          className="flex-1 rounded-lg border border-tertiary bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                          className="flex-1 rounded-lg border border-border bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
                         >
                           Cancel
                         </button>

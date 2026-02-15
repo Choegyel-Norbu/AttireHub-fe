@@ -391,7 +391,7 @@ export default function ProductListPage() {
           </div>
 
           {error && (
-            <div className="mt-6 rounded-lg border border-tertiary bg-quaternary p-4 text-sm text-primary">
+            <div className="mt-6 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">
               {error}
             </div>
           )}
@@ -402,7 +402,7 @@ export default function ProductListPage() {
               <span className="sr-only">Loading products…</span>
             </div>
           ) : products.length === 0 ? (
-            <div className="mt-12 rounded-xl border border-tertiary bg-quaternary py-16 text-center">
+            <div className="mt-12 rounded-xl border border-border bg-quaternary py-16 text-center">
               <Package className="mx-auto h-12 w-12 text-tertiary" aria-hidden />
               <p className="mt-4 font-medium text-primary">No products found</p>
               <p className="mt-1 text-sm text-secondary">
@@ -471,7 +471,7 @@ export default function ProductListPage() {
               </ul>
 
               {totalPages > 1 && (
-                <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-tertiary pt-8">
+                <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-8">
                   <p className="text-sm text-secondary">
                     Showing {from}–{to} of {totalElements}
                   </p>
@@ -480,7 +480,7 @@ export default function ProductListPage() {
                       type="button"
                       onClick={() => setPage((prev) => Math.max(0, prev - 1))}
                       disabled={page === 0}
-                      className="inline-flex items-center gap-1 rounded-lg border border-tertiary bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
+                      className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
                       aria-label="Previous page"
                     >
                       <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -493,7 +493,7 @@ export default function ProductListPage() {
                       type="button"
                       onClick={() => setPage((prev) => prev + 1)}
                       disabled={last}
-                      className="inline-flex items-center gap-1 rounded-lg border border-tertiary bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
+                      className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
                       aria-label="Next page"
                     >
                       Next

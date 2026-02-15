@@ -109,7 +109,7 @@ export default function OrderDetailPage() {
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Back to orders
       </Link>
-      <div className="mt-6 rounded-xl border border-tertiary bg-quaternary p-6">
+      <div className="mt-6 rounded-xl border border-border bg-quaternary p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="flex items-center gap-2 text-lg font-bold text-primary">
@@ -122,13 +122,13 @@ export default function OrderDetailPage() {
         </div>
 
         {items.length > 0 && (
-          <div className="mt-6 border-t border-tertiary pt-4">
+          <div className="mt-6 border-t border-border pt-4">
             <h2 className="text-sm font-semibold text-primary">Items</h2>
             <ul className="mt-3 space-y-3">
               {items.map((item, idx) => (
                 <li
                   key={item.id ?? idx}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-tertiary p-3"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3"
                 >
                   <div>
                     <p className="font-medium text-primary">
@@ -150,7 +150,7 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        <div className="mt-6 border-t border-tertiary pt-4 text-right">
+        <div className="mt-6 border-t border-border pt-4 text-right">
           <p className="text-base font-semibold text-primary">
             Total: Nu {formatPrice(total)} /-
           </p>
