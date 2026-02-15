@@ -165,7 +165,7 @@ export default function HomePage() {
                 >
                   <div className="relative p-2 pb-0 sm:p-3 sm:pb-0">
                     {(product.newArrival === true || product.new_arrival === true) && (
-                      <span className="absolute left-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-quaternary shadow-sm sm:left-4 sm:top-4 sm:px-2.5 sm:py-1 sm:text-xs">
+                      <span className="absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm sm:left-4 sm:top-4 sm:px-2.5 sm:py-1 sm:text-xs" style={{ backgroundColor: '#80B5AE' }}>
                         New arrival
                       </span>
                     )}
@@ -260,7 +260,7 @@ export default function HomePage() {
                 >
                   <div className="relative p-2 pb-0 sm:p-3 sm:pb-0">
                     {(product.newArrival === true || product.new_arrival === true) && (
-                      <span className="absolute left-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-quaternary shadow-sm sm:left-4 sm:top-4 sm:px-2.5 sm:py-1 sm:text-xs">
+                      <span className="absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm sm:left-4 sm:top-4 sm:px-2.5 sm:py-1 sm:text-xs" style={{ backgroundColor: '#80B5AE' }}>
                         New arrival
                       </span>
                     )}
@@ -354,7 +354,7 @@ export default function HomePage() {
                   className={productCardClass}
                 >
                   <div className="relative p-2 pb-0 sm:p-3 sm:pb-0">
-                    <span className="absolute left-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-quaternary shadow-sm sm:left-4 sm:top-4 sm:px-2.5 sm:py-1 sm:text-xs">
+                    <span className="absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm sm:left-4 sm:top-4 sm:px-2.5 sm:py-1 sm:text-xs" style={{ backgroundColor: '#80B5AE' }}>
                       New arrival
                     </span>
                     <div className="aspect-[3/4] w-full overflow-hidden rounded-lg bg-tertiary/20 sm:aspect-[4/5]">
