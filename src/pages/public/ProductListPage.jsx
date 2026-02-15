@@ -252,7 +252,7 @@ export default function ProductListPage() {
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center gap-2 text-secondary">
             <Package className="h-6 w-6" aria-hidden />
-            <h1 className="text-2xl font-semibold text-primary sm:text-3xl">
+            <h1 className="text-lg font-semibold text-primary sm:text-xl">
               {searchParams.get('newArrivalsOnly') === 'true' ? 'New arrivals' : 'All products'}
             </h1>
           </div>
@@ -427,7 +427,7 @@ export default function ProductListPage() {
                     >
                       <div className="relative p-2 pb-0 sm:p-3 sm:pb-0">
                         {(p.newArrival === true || p.new_arrival === true) && (
-                          <span className="absolute left-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-quaternary shadow-sm sm:left-4 sm:top-4 sm:px-2.5 sm:py-1 sm:text-xs">
+                          <span className="absolute left-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-quaternary shadow-sm sm:left-4 sm:top-4 sm:px-2.5 sm:py-1 sm:text-[10px]">
                             New arrival
                           </span>
                         )}

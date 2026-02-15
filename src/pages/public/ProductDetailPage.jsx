@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useParams } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -12,6 +13,7 @@ import {
   ShoppingCart,
   Tag,
   Layers,
+  CheckCircle,
 } from 'lucide-react';
 
 function formatPrice(value) {
@@ -62,6 +64,15 @@ export default function ProductDetailPage() {
     window.scrollTo(0, 0);
   }, [slug]);
 
+  useEffect(() => {
+    if (!addedToCart) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setAddedToCart(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [addedToCart]);
+
   const variants = Array.isArray(product?.variants) ? product.variants : [];
   const activeVariants = variants.filter((v) => v.isActive !== false && v.active !== false);
   const sizes = [...new Set(activeVariants.map((v) => v.size).filter(Boolean))];
@@ -84,7 +95,6 @@ export default function ProductDetailPage() {
       try {
         await addToCart(selectedVariant.id, quantity);
         setAddedToCart(true);
-        setTimeout(() => setAddedToCart(false), 3000);
       } catch (err) {
         setCartError(err?.message ?? 'Failed to add to cart. Please try again.');
       }
@@ -391,6 +401,54 @@ export default function ProductDetailPage() {
         </div>
       </main>
       <Footer />
+
+      {/* Added to cart success dialog */}
+      {addedToCart &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex min-h-screen items-start justify-center pt-[18%] p-4 sm:pt-[14%] lg:pt-[10%]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="added-to-cart-title"
+            aria-describedby="added-to-cart-desc"
+          >
+            <div
+              className="absolute inset-0"
+              aria-hidden
+              onClick={() => setAddedToCart(false)}
+            />
+            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-quaternary p-6 shadow-xl">
+              <div className="flex flex-col items-center text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#80B5AE]/20" aria-hidden>
+                  <CheckCircle className="h-8 w-8 text-[#80B5AE]" aria-hidden />
+                </div>
+                <h2 id="added-to-cart-title" className="mt-4 text-lg font-semibold text-primary">
+                  Added to cart
+                </h2>
+                <p id="added-to-cart-desc" className="mt-1 text-sm text-secondary">
+                  {product?.name} has been added to your cart.
+                </p>
+                <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row">
+                  <Link
+                    to="/cart"
+                    onClick={() => setAddedToCart(false)}
+                    className="flex-1 rounded-lg bg-[#80B5AE] px-4 py-2.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    View cart
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setAddedToCart(false)}
+                    className="flex-1 rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                  >
+                    Continue shopping
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

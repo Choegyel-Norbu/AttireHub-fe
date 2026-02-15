@@ -164,12 +164,12 @@ export default function Header() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="border-t border-border bg-tertiary px-4 py-4 md:hidden">
+        <div className="border-t border-white/20 px-4 py-4 md:hidden" style={{ backgroundColor: '#80B5AE' }}>
           <nav className="flex flex-col gap-2" aria-label="Mobile">
             {isAuthenticated && (
               <Link
                 to="/profile"
-                className="rounded-md px-3 py-2 font-medium text-primary hover:bg-primary/10"
+                className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
                 onClick={() => setMobileOpen(false)}
               >
                 Profile
@@ -177,7 +177,7 @@ export default function Header() {
             )}
             <Link
               to="/cart"
-              className="rounded-md px-3 py-2 font-medium text-primary hover:bg-primary/10"
+              className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
               onClick={() => setMobileOpen(false)}
             >
               Cart
@@ -185,7 +185,7 @@ export default function Header() {
             {showDashboard && (
               <Link
                 to="/admin/products"
-                className="rounded-md px-3 py-2 font-medium text-primary hover:bg-primary/10"
+                className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
                 onClick={() => setMobileOpen(false)}
               >
                 Dashboard
@@ -195,7 +195,7 @@ export default function Header() {
               <Link
                 key={to}
                 to={to}
-                className="rounded-md px-3 py-2 font-medium text-primary hover:bg-primary/10"
+                className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
                 onClick={() => setMobileOpen(false)}
               >
                 {label}
@@ -204,21 +204,32 @@ export default function Header() {
           </nav>
           <form onSubmit={handleSearch} className="mt-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tertiary" aria-hidden />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white" aria-hidden />
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products..."
-                className="w-full rounded-xl border border-border bg-quaternary py-2 pl-10 pr-4 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-secondary focus:ring-1 focus:ring-secondary"
+                className="w-full rounded-xl border border-white/30 bg-white/95 py-2 pl-10 pr-4 text-sm text-primary placeholder-secondary outline-none transition-colors focus:border-white focus:ring-1 focus:ring-white/50"
                 aria-label="Search products"
               />
             </div>
           </form>
-          {!isAuthenticated && (
+          {isAuthenticated ? (
+            <button
+              type="button"
+              className="mt-4 block w-full rounded-md px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-white/20"
+              onClick={() => {
+                setMobileOpen(false);
+                handleLogoutClick();
+              }}
+            >
+              Sign out
+            </button>
+          ) : (
             <Link
               to="/login"
-              className="mt-4 block px-4 py-2 text-center text-sm font-semibold text-primary hover:bg-primary/10"
+              className="mt-4 block w-full rounded-md px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/20"
               onClick={() => setMobileOpen(false)}
             >
               Sign in
