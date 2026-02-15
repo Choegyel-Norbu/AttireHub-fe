@@ -30,6 +30,10 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     if (totalItems === 0 && !placedOrder) {
       navigate('/cart', { replace: true });
       return;

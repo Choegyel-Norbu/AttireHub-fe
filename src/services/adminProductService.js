@@ -191,6 +191,7 @@ export async function addVariant(productId, body) {
  *   stockQuantity?: number;
  *   imageUrl?: string | null;
  *   isActive?: boolean;
+ *   discount?: number;
  * }} body
  * @returns {Promise<Record<string, unknown>>} Updated variant (same shape as items in product detail variants[])
  */
@@ -204,6 +205,7 @@ export async function updateVariant(productId, variantId, body) {
     if (body.stockQuantity !== undefined) payload.stockQuantity = Number(body.stockQuantity) || 0;
     if (body.imageUrl !== undefined) payload.imageUrl = body.imageUrl?.trim() || null;
     if (body.isActive !== undefined) payload.isActive = Boolean(body.isActive);
+    if (body.discount !== undefined) payload.discount = Number(body.discount) || 0;
 
     const response = await api.put(
       `${ADMIN_PRODUCTS_PATH}/${productId}/variants/${variantId}`,

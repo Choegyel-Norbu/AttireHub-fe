@@ -52,6 +52,8 @@ export default function ProductManagementPage() {
       stockQuantity: variant.stockQuantity ?? 0,
       imageUrl: variant.imageUrl ?? '',
       isActive: variant.isActive !== false && variant.active !== false,
+      applyDiscount: (variant.discount ?? 0) > 0,
+      discount: variant.discount ?? '',
     });
     setVariantSubmitError(null);
   };
@@ -76,6 +78,7 @@ export default function ProductManagementPage() {
         stockQuantity: variantForm.stockQuantity != null ? Number(variantForm.stockQuantity) : undefined,
         imageUrl: variantForm.imageUrl?.trim() || null,
         isActive: variantForm.isActive,
+        discount: variantForm.applyDiscount ? (Number(variantForm.discount) || 0) : 0,
       });
       closeEditVariant();
       fetchProducts();
@@ -584,8 +587,8 @@ export default function ProductManagementPage() {
                         className="mt-1 w-full rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
-                    <div>
-                      <label htmlFor="variant-stock" className="block text-xs font-medium text-secondary">
+<div>
+                    <label htmlFor="variant-stock" className="block text-xs font-medium text-secondary">
                         Stock
                       </label>
                       <input
@@ -598,6 +601,44 @@ export default function ProductManagementPage() {
                       />
                     </div>
                   </div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={variantForm.applyDiscount}
+                      onChange={(e) => setVariantForm((f) => ({ ...f, applyDiscount: e.target.checked }))}
+                      className="rounded border-border text-primary"
+                    />
+                    <span className="text-sm font-medium text-primary">Apply discount</span>
+                  </label>
+                  {variantForm.applyDiscount && (
+                    <>
+                      <div>
+                        <label htmlFor="variant-discount" className="block text-xs font-medium text-secondary">
+                          Discount amount
+                        </label>
+                        <input
+                          id="variant-discount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={variantForm.discount}
+                          onChange={(e) => setVariantForm((f) => ({ ...f, discount: e.target.value }))}
+                          className="mt-1 w-full rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                          placeholder="e.g. 10"
+                        />
+                      </div>
+                      {(() => {
+                        const priceNum = variantForm.price !== '' ? Number(variantForm.price) : NaN;
+                        const discountNum = variantForm.discount !== '' ? Number(variantForm.discount) : 0;
+                        const discountedPrice = !Number.isNaN(priceNum) && discountNum >= 0 ? Math.max(0, priceNum - discountNum) : null;
+                        return discountedPrice !== null ? (
+                          <p className="text-sm text-secondary">
+                            Discounted price: <span className="font-semibold text-primary">Nu {discountedPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} /-</span>
+                          </p>
+                        ) : null;
+                      })()}
+                    </>
+                  )}
                   <div>
                     <label htmlFor="variant-imageUrl" className="block text-xs font-medium text-secondary">
                       Image URL

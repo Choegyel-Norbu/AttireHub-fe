@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useParams } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { getProductBySlug } from '@/services/productService';
+import { getProductBySlug, getProducts } from '@/services/productService';
 import { useCart } from '@/hooks/useCart';
 import {
   ArrowLeft,
@@ -33,6 +33,8 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [cartError, setCartError] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
 
   const fetchProduct = useCallback(async () => {
     if (!slug) return;
@@ -64,6 +66,26 @@ export default function ProductDetailPage() {
     window.scrollTo(0, 0);
   }, [slug]);
 
+  const categorySlug = product?.categorySlug ?? product?.category_slug ?? null;
+
+  useEffect(() => {
+    if (!categorySlug) {
+      setRelatedProducts([]);
+      setRelatedLoading(false);
+      return;
+    }
+    setRelatedLoading(true);
+    getProducts({ category: categorySlug, size: 8 })
+      .then((res) => {
+        const list = res?.content ?? [];
+        const currentSlug = product?.slug ?? product?.id;
+        const filtered = list.filter((p) => String(p.slug ?? p.id) !== String(currentSlug));
+        setRelatedProducts(filtered.slice(0, 8));
+      })
+      .catch(() => setRelatedProducts([]))
+      .finally(() => setRelatedLoading(false));
+  }, [categorySlug, product?.slug, product?.id]);
+
   useEffect(() => {
     if (!addedToCart) return;
     const onKeyDown = (e) => {
@@ -78,9 +100,13 @@ export default function ProductDetailPage() {
   const sizes = [...new Set(activeVariants.map((v) => v.size).filter(Boolean))];
   const colors = [...new Set(activeVariants.map((v) => v.color).filter(Boolean))];
 
-  const displayPrice = selectedVariant != null && typeof selectedVariant.price === 'number'
+  const actualPrice = selectedVariant != null && typeof selectedVariant.price === 'number'
     ? selectedVariant.price
     : product?.basePrice;
+  const discountAmount = selectedVariant?.discount ?? 0;
+  const hasDiscount = typeof discountAmount === 'number' && discountAmount > 0;
+  const priceAfterDiscount = hasDiscount ? actualPrice - discountAmount : actualPrice;
+  const displayPrice = priceAfterDiscount;
   const displayImage = selectedVariant?.imageUrl || product?.imageUrl || activeVariants[0]?.imageUrl;
   const maxQty = selectedVariant != null && typeof selectedVariant.stockQuantity === 'number'
     ? Math.max(0, selectedVariant.stockQuantity)
@@ -146,7 +172,8 @@ export default function ProductDetailPage() {
         <div className="mx-auto max-w-6xl">
           <Link
             to="/products"
-            className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary"
+            className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80"
+            style={{ color: '#80B5AE' }}
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
             Back to products
@@ -157,7 +184,7 @@ export default function ProductDetailPage() {
             <div className="space-y-3">
               <div className="relative mx-auto max-w-md overflow-hidden rounded-xl bg-tertiary/10">
                 {(product?.newArrival === true || product?.new_arrival === true) && (
-                  <span className="absolute left-6 top-6 z-10 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-quaternary shadow-sm">
+                  <span className="absolute left-6 top-6 z-10 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm" style={{ backgroundColor: '#80B5AE' }}>
                     New arrival
                   </span>
                 )}
@@ -187,9 +214,10 @@ export default function ProductDetailPage() {
                         onClick={() => setSelectedVariant(v)}
                         className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
                           isSelected
-                            ? 'border-primary ring-2 ring-primary/30'
+                            ? 'ring-2'
                             : 'border-border hover:border-secondary'
                         }`}
+                        style={isSelected ? { borderColor: '#80B5AE', boxShadow: '0 0 0 2px rgba(128, 181, 174, 0.3)' } : undefined}
                         aria-pressed={isSelected}
                         aria-label={[v.size, v.color].filter(Boolean).join(' ') || `Variant ${v.sku}`}
                       >
@@ -216,28 +244,38 @@ export default function ProductDetailPage() {
               {product.categoryName && (
                 <Link
                   to={`/categories/${product.categorySlug || ''}`}
-                  className="text-sm font-medium text-secondary hover:text-primary"
+                  className="text-sm font-medium transition-colors hover:opacity-80"
+                  style={{ color: '#80B5AE' }}
                 >
                   {product.categoryName}
                 </Link>
               )}
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-semibold text-primary sm:text-3xl">
-                  {product.name}
-                </h1>
-                {(product.newArrival === true || product.new_arrival === true) && (
-                  <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold uppercase tracking-wide text-quaternary">
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-semibold text-primary sm:text-3xl">
+                    {product.name}
+                  </h1>
+{(product.newArrival === true || product.new_arrival === true) && (
+                  <span className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white" style={{ backgroundColor: '#80B5AE' }}>
                     New arrival
                   </span>
                 )}
+                </div>
+                <p className="shrink-0 text-xl font-semibold">
+                  {hasDiscount ? (
+                    <span className="flex flex-col items-end gap-0.5">
+                      <span className="line-through text-red-500">Nu {formatPrice(actualPrice)} /-</span>
+                      <span className="text-sm text-secondary">After discount <span className="text-lg" style={{ color: '#80B5AE', fontWeight: 600 }}>Nu {formatPrice(priceAfterDiscount)} /-</span></span>
+                    </span>
+                  ) : (
+                    <span style={{ color: '#80B5AE' }}>Nu {formatPrice(displayPrice)} /-</span>
+                  )}
+                </p>
               </div>
-              <p className="mt-4 text-xl font-semibold text-primary">
-                Nu {formatPrice(displayPrice)} /-
-              </p>
 
               {product.description && (
                 <div className="mt-6">
-                  <h2 className="text-sm font-medium uppercase tracking-wider text-secondary">Description</h2>
+                  <h2 className="text-sm font-medium uppercase tracking-wider" style={{ color: '#80B5AE' }}>Description</h2>
                   <p className="mt-2 text-primary whitespace-pre-wrap">{product.description}</p>
                 </div>
               )}
@@ -253,7 +291,7 @@ export default function ProductDetailPage() {
                   )}
                   {product.material && (
                     <div className="flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-tertiary" aria-hidden />
+                      <Layers className="h-4 w-4" style={{ color: '#80B5AE' }} aria-hidden />
                       <span className="text-secondary">Material:</span>
                       <span className="font-medium text-primary">{product.material}</span>
                     </div>
@@ -264,10 +302,10 @@ export default function ProductDetailPage() {
               {/* Variant selection */}
               {activeVariants.length > 0 && (
                 <div className="mt-8 space-y-4">
-                  <h2 className="text-sm font-medium uppercase tracking-wider text-secondary">Options</h2>
+                  <h2 className="text-sm font-medium uppercase tracking-wider" style={{ color: '#80B5AE' }}>Options</h2>
                   {sizes.length > 1 && (
                     <div>
-                      <span className="block text-sm font-medium text-primary">Size</span>
+                      <span className="block text-sm font-medium" style={{ color: '#80B5AE' }}>Size</span>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {sizes.map((size) => {
                           const variant =
@@ -284,11 +322,12 @@ export default function ProductDetailPage() {
                               disabled={out}
                               className={`min-w-[2.5rem] rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
                                 isSelected
-                                  ? 'border-primary bg-primary text-quaternary'
+                                  ? 'text-white'
                                   : out
                                     ? 'cursor-not-allowed border-border text-tertiary'
                                     : 'border-border bg-quaternary text-primary hover:border-secondary hover:bg-tertiary/20'
                               }`}
+                            style={isSelected ? { borderColor: '#80B5AE', backgroundColor: '#80B5AE' } : undefined}
                             >
                               {size}
                             </button>
@@ -299,7 +338,7 @@ export default function ProductDetailPage() {
                   )}
                   {colors.length > 1 && (
                     <div>
-                      <span className="block text-sm font-medium text-primary">Color</span>
+                      <span className="block text-sm font-medium" style={{ color: '#80B5AE' }}>Color</span>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {colors.map((color) => {
                           const variant =
@@ -316,11 +355,12 @@ export default function ProductDetailPage() {
                               disabled={out}
                               className={`min-w-[2.5rem] rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
                                 isSelected
-                                  ? 'border-primary bg-primary text-quaternary'
+                                  ? 'text-white'
                                   : out
                                     ? 'cursor-not-allowed border-border text-tertiary'
                                     : 'border-border bg-quaternary text-primary hover:border-secondary hover:bg-tertiary/20'
                               }`}
+                            style={isSelected ? { borderColor: '#80B5AE', backgroundColor: '#80B5AE' } : undefined}
                             >
                               {color}
                             </button>
@@ -336,16 +376,21 @@ export default function ProductDetailPage() {
                         const v = activeVariants.find((x) => x.id === Number(e.target.value));
                         if (v) setSelectedVariant(v);
                       }}
-                      className="w-full rounded-lg border border-border bg-quaternary px-4 py-2.5 text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-quaternary px-4 py-2.5 text-primary focus:border-[#80B5AE] focus:outline-none focus:ring-2 focus:ring-[#80B5AE]/40"
                       aria-label="Select variant"
                     >
                       <option value="">Select option</option>
-                      {activeVariants.map((v) => (
-                        <option key={v.id} value={v.id} disabled={(v.stockQuantity ?? 0) <= 0}>
-                          {[v.size, v.color].filter(Boolean).join(' / ')} — Nu {formatPrice(v.price)} /-
-                          {(v.stockQuantity ?? 0) <= 0 ? ' (Out of stock)' : ''}
-                        </option>
-                      ))}
+                      {activeVariants.map((v) => {
+                        const vDiscount = v.discount ?? 0;
+                        const vHasDiscount = typeof vDiscount === 'number' && vDiscount > 0;
+                        const vDisplayPrice = vHasDiscount ? v.price - vDiscount : v.price;
+                        return (
+                          <option key={v.id} value={v.id} disabled={(v.stockQuantity ?? 0) <= 0}>
+                            {[v.size, v.color].filter(Boolean).join(' / ')} — Nu {formatPrice(vDisplayPrice)} /-{vHasDiscount ? ` (was Nu ${formatPrice(v.price)} /-)` : ''}
+                            {(v.stockQuantity ?? 0) <= 0 ? ' (Out of stock)' : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   )}
                   {selectedVariant && (selectedVariant.stockQuantity ?? 0) <= 0 && (
@@ -388,7 +433,8 @@ export default function ProductDetailPage() {
                     type="button"
                     onClick={handleAddToCart}
                     disabled={!canAddToCart || outOfStock || (activeVariants.length > 0 && !selectedVariant)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: '#80B5AE' }}
                   >
                     <ShoppingCart className="h-4 w-4" aria-hidden />
                     {addedToCart ? 'Added to cart' : outOfStock ? 'Out of stock' : 'Add to cart'}
@@ -398,6 +444,62 @@ export default function ProductDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Related products - always show when product is loaded */}
+          <section className="mt-16 border-t border-border pt-12" aria-labelledby="related-products-heading">
+            <h2 id="related-products-heading" className="text-xl font-semibold text-primary sm:text-2xl">
+              Related products
+            </h2>
+            {!categorySlug ? (
+              <p className="mt-4 text-sm text-secondary">No category for this product.</p>
+            ) : relatedLoading ? (
+              <div className="mt-6 flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
+                <span className="sr-only">Loading related products…</span>
+              </div>
+            ) : relatedProducts.length === 0 ? (
+              <p className="mt-4 text-sm text-secondary">No related products in this category.</p>
+            ) : (
+                <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                  {relatedProducts.map((p) => {
+                    const firstVariant = Array.isArray(p.variants) && p.variants.length > 0 ? p.variants[0] : null;
+                    const vDiscount = firstVariant?.discount ?? 0;
+                    const pPrice = firstVariant && (vDiscount ?? 0) > 0
+                      ? (firstVariant.price - (firstVariant.discount ?? 0))
+                      : (p.basePrice ?? 0);
+                    return (
+                      <Link
+                        key={p.id}
+                        to={`/products/${encodeURIComponent(p.slug ?? p.id)}`}
+                        className="group flex flex-col overflow-hidden rounded-lg border border-border bg-quaternary transition-all hover:border-[#80B5AE]/50 hover:shadow-md"
+                      >
+                        <div className="aspect-[3/4] w-full overflow-hidden rounded-t-lg bg-tertiary/20">
+                          {p.imageUrl ? (
+                            <img
+                              src={p.imageUrl}
+                              alt=""
+                              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-tertiary">
+                              <ImageOff className="h-12 w-12" aria-hidden />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-1 flex-col p-3">
+                          <h3 className="line-clamp-2 text-sm font-medium text-primary group-hover:text-secondary">
+                            {p.name}
+                          </h3>
+                          <p className="mt-1 text-sm font-semibold" style={{ color: '#80B5AE' }}>
+                            Nu {formatPrice(pPrice)} /-
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+            )}
+          </section>
         </div>
       </main>
       <Footer />
