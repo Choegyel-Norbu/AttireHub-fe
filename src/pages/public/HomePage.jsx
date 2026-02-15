@@ -80,7 +80,7 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col">
       <Header />
 
-      {/* Hero */}
+      {/* Hero – inspired by Anna Stone & Jud capsule look */}
       <section className="relative min-h-[28rem] overflow-hidden sm:min-h-[32rem] lg:min-h-[36rem]">
         <img
           src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1200&q=80"
@@ -89,26 +89,25 @@ export default function HomePage() {
           fetchPriority="high"
         />
         <div className="relative z-10 flex min-h-[28rem] flex-col items-center justify-center px-4 py-20 text-center sm:min-h-[32rem] sm:py-28 lg:min-h-[36rem]">
-          <h1 className="text-4xl font-bold tracking-tight text-quaternary sm:text-5xl lg:text-6xl">
-            Style that fits your life
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl">
+            <span className="font-extralight tracking-[0.35em] sm:tracking-[0.4em] text-white">
+              ATTIREHUB
+            </span>
+            <span className="font-bold tracking-tight text-black">&nbsp;& STYLE.</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-quaternary/90">
-            Discover curated clothing and accessories. Quality fabrics, timeless designs.
+          <p
+            className="mx-auto mt-4 max-w-2xl text-base sm:text-lg"
+            style={{ color: '#666666' }}
+          >
+            Introducing the Capsule Collection
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-10">
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
-              style={{ backgroundColor: '#7BA4D0' }}
+              className="inline-block rounded-md px-8 py-4 text-sm font-medium uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: '#80B5AE' }}
             >
-              Shop All
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
-            <Link
-              to="/categories/sale"
-              className="inline-flex items-center rounded-md border-2 border-quaternary bg-transparent px-6 py-3 text-sm font-semibold text-quaternary transition-colors hover:bg-quaternary/10"
-            >
-              View Sale
+              Shop Now
             </Link>
           </div>
         </div>

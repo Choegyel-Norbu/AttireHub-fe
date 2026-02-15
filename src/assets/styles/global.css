@@ -22,6 +22,7 @@
   /* Pure ONYX palette – use var(--color-primary) etc. in any component */
   --color-primary: #5d3543;
   --color-secondary: #785964;
+  /* #80B5AE */
   --color-tertiary: #bcabb0;
   --color-quaternary: #FFFFFF;
 
@@ -70,4 +71,12 @@
  *            color: var(--color-secondary);
  *            border-color: var(--color-border);
  *            background: var(--color-quaternary);
+ */
+
+/*
+ * Navbar colors (from reference: white nav + teal promo bar):
+ *   Primary nav bar background:  #FFFFFF
+ *   Promo banner / accent (teal): #80B5AE
+ *   Promo / logo accent text:     #80B5AE (muted teal, same as banner)
+ *   Nav links / icons:            dark grey / black (#333333 or #000000)
  */

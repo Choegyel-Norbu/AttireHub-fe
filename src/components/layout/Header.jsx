@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Menu, Search, User, LogOut, X, ShoppingCart } from 'lucide-react';
+import { Menu, Search, User, LogOut, X, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { CartContext } from '@/context/CartContext';
 
@@ -58,10 +58,9 @@ export default function Header() {
         {/* Logo */}
         <Link
           to="/"
-          className="flex items-center gap-2 text-primary transition-opacity hover:opacity-80"
+          className="text-primary transition-opacity hover:opacity-80"
           aria-label="AttireHub Home"
         >
-          <ShoppingBag className="h-8 w-8" aria-hidden />
           <span className="text-xl font-semibold tracking-tight">AttireHub</span>
         </Link>
 
@@ -167,12 +166,21 @@ export default function Header() {
       {mobileOpen && (
         <div className="border-t border-border bg-tertiary px-4 py-4 md:hidden">
           <nav className="flex flex-col gap-2" aria-label="Mobile">
+            {isAuthenticated && (
+              <Link
+                to="/profile"
+                className="rounded-md px-3 py-2 font-medium text-primary hover:bg-primary/10"
+                onClick={() => setMobileOpen(false)}
+              >
+                Profile
+              </Link>
+            )}
             <Link
               to="/cart"
               className="rounded-md px-3 py-2 font-medium text-primary hover:bg-primary/10"
               onClick={() => setMobileOpen(false)}
             >
-              Cart {isAuthenticated && totalItems > 0 ? `(${totalItems})` : ''}
+              Cart
             </Link>
             {showDashboard && (
               <Link
