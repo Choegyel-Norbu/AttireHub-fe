@@ -46,6 +46,10 @@ export default function CartPage() {
   }, [isAuthenticated, fetchCart]);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     if (!itemToRemove) return;
     const onKeyDown = (e) => {
       if (e.key === 'Escape') setItemToRemove(null);

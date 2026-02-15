@@ -58,6 +58,10 @@ export default function ProductDetailPage() {
     fetchProduct();
   }, [fetchProduct]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
+
   const variants = Array.isArray(product?.variants) ? product.variants : [];
   const activeVariants = variants.filter((v) => v.isActive !== false && v.active !== false);
   const sizes = [...new Set(activeVariants.map((v) => v.size).filter(Boolean))];
