@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
 /**
- * Pure ONYX theme – four shades only.
  * Primary (darkest) → Secondary → Tertiary → Quaternary (lightest).
  */
 @theme {
@@ -80,3 +79,16 @@
  *   Promo / logo accent text:     #80B5AE (muted teal, same as banner)
  *   Nav links / icons:            dark grey / black (#333333 or #000000)
  */
+
+/* Product detail main image: diagonal shine sweep on hover */
+@keyframes product-image-shine {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+.group:hover .product-image-shine {
+  animation: product-image-shine 0.7s ease-out forwards;
+}

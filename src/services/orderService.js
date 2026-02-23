@@ -54,13 +54,17 @@ export async function createOrder(body) {
 
 /**
  * List current user's orders (paginated).
- * @param {{ page?: number; size?: number }} params
+ * @param {{ page?: number; size?: number; status?: string }} params
  * @returns {Promise<{ content: Order[]; totalElements: number; totalPages: number; last: boolean }>}
  */
 export async function getOrders(params = {}) {
   const page = params.page ?? 0;
   const size = params.size ?? 10;
-  const response = await api.get(ORDERS_PATH, { params: { page, size } });
+  const requestParams = { page, size };
+  if (params.status != null && String(params.status).trim() !== '') {
+    requestParams.status = String(params.status).trim();
+  }
+  const response = await api.get(ORDERS_PATH, { params: requestParams });
   const data = response?.data ?? response;
   const content = Array.isArray(data?.content) ? data.content : (Array.isArray(data) ? data : []);
   return {

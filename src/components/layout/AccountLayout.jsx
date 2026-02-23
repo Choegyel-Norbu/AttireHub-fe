@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
-import { User, Settings, Shield, Package, ChevronRight } from 'lucide-react';
+import { User, Settings, Shield, Package, ChevronRight, Bell } from 'lucide-react';
 
 function isAdmin(user) {
   return user?.role === 'ADMIN' || user?.role === 'ROLE_ADMIN';
@@ -56,6 +56,20 @@ export default function AccountLayout() {
                       </NavLink>
                     </li>
                   )}
+                  <li>
+                    <NavLink
+                      to="/account/notifications"
+                      className={({ isActive }) =>
+                        `flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium transition-colors lg:flex-initial lg:justify-start lg:px-3 ${
+                          isActive ? 'bg-primary text-quaternary' : 'text-primary hover:bg-tertiary/20'
+                        }`
+                      }
+                    >
+                      <Bell className="h-4 w-4 shrink-0" aria-hidden />
+                      <span>Notifications</span>
+                      <ChevronRight className="hidden h-4 w-4 shrink-0 opacity-70 lg:block" aria-hidden />
+                    </NavLink>
+                  </li>
                   <li>
                     <NavLink
                       to="/account/settings"

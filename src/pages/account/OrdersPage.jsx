@@ -5,6 +5,17 @@ import { Package, Loader2, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
 const PAGE_SIZE = 10;
 
+const STATUS_OPTIONS = [
+  { value: '', label: 'All statuses' },
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'PROCESSING', label: 'Processing' },
+  { value: 'SHIPPED', label: 'Shipped' },
+  { value: 'DELIVERED', label: 'Delivered' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'RETURNED', label: 'Returned' },
+];
+
 function formatPrice(value) {
   if (typeof value !== 'number') return '—';
   return Number.isInteger(value)
@@ -58,12 +69,17 @@ export default function OrdersPage() {
   const [last, setLast] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('');
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await getOrders({ page, size: PAGE_SIZE });
+      const result = await getOrders({
+        page,
+        size: PAGE_SIZE,
+        status: statusFilter.trim() || undefined,
+      });
       setOrders(result.content);
       setTotalElements(result.totalElements);
       setTotalPages(result.totalPages);
@@ -74,7 +90,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, statusFilter]);
 
   useEffect(() => {
     fetchOrders();
@@ -92,6 +108,28 @@ export default function OrdersPage() {
       <p className="mt-1 text-sm text-secondary">
         View your order history and tracking status.
       </p>
+
+      <section className="mt-6 flex flex-wrap items-center gap-3">
+        <label htmlFor="order-status-filter" className="text-sm font-medium text-primary">
+          Status
+        </label>
+        <select
+          id="order-status-filter"
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(0);
+          }}
+          className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          aria-label="Filter by status"
+        >
+          {STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value || 'all'} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </section>
 
       {error && (
         <div className="mt-6 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">

@@ -10,6 +10,7 @@ import HomePage from '@/pages/public/HomePage';
 import ProductListPage from '@/pages/public/ProductListPage';
 import ProductDetailPage from '@/pages/public/ProductDetailPage';
 import CategoryPage from '@/pages/public/CategoryPage';
+import SalesPage from '@/pages/public/SalesPage';
 import SearchPage from '@/pages/public/SearchPage';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
@@ -20,6 +21,7 @@ import VerifyEmailPage from '@/pages/auth/VerifyEmailPage';
 import ProfilePage from '@/pages/account/ProfilePage';
 import OrdersPage from '@/pages/account/OrdersPage';
 import OrderDetailPage from '@/pages/account/OrderDetailPage';
+import NotificationsPage from '@/pages/account/NotificationsPage';
 import AccountSettingsPage from '@/pages/account/AccountSettingsPage';
 import AccountAddressesPage from '@/pages/account/AccountAddressesPage';
 import CartPage from '@/pages/cart/CartPage';
@@ -56,6 +58,7 @@ function App() {
             <Route path="/products" element={<ProductListPage />} />
             <Route path="/products/:slug" element={<ProductDetailPage />} />
             <Route path="/categories/:slug" element={<CategoryPage />} />
+            <Route path="/sale" element={<SalesPage />} />
             <Route path="/search" element={<SearchPage />} />
             
             {/* Auth routes */}
@@ -74,6 +77,7 @@ function App() {
                 <Route path="/account/addresses" element={<AccountAddressesPage />} />
                 <Route path="/account/orders" element={<OrdersPage />} />
                 <Route path="/account/orders/:orderNumber" element={<OrderDetailPage />} />
+                <Route path="/account/notifications" element={<NotificationsPage />} />
               </Route>
             </Route>
             

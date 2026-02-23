@@ -29,15 +29,16 @@ const STATUS_OPTIONS = [
   { value: 'RETURNED', label: 'Returned' },
 ];
 
-const NEXT_STATUS = {
-  PENDING: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: ['PROCESSING', 'CANCELLED'],
-  PROCESSING: ['SHIPPED'],
-  SHIPPED: ['DELIVERED'],
-  DELIVERED: [],
-  CANCELLED: [],
-  RETURNED: [],
-};
+/** Statuses that can be set in the "Update status" dropdown in view details (includes Shipped and Delivered). */
+const UPDATE_STATUS_OPTIONS = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'PROCESSING', label: 'Processing' },
+  { value: 'SHIPPED', label: 'Shipped' },
+  { value: 'DELIVERED', label: 'Delivered' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'RETURNED', label: 'Returned' },
+];
 
 function formatPrice(value) {
   if (typeof value !== 'number') return '—';
@@ -96,7 +97,7 @@ function OrderDetailRow({
   cancelConfirm,
   setCancelConfirm,
   canChangeStatus,
-  nextOptions,
+  updateStatusOptions,
   onUpdateStatus,
   onCancelOrder,
   onClose,
@@ -221,10 +222,9 @@ function OrderDetailRow({
                 className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 aria-label="New status"
               >
-                <option value={order.status}>{order.status}</option>
-                {nextOptions.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
+                {updateStatusOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
@@ -336,7 +336,8 @@ export default function OrderManagementPage() {
       setExpandedOrderNumber(null);
     } else {
       setExpandedOrderNumber(key);
-      setNewStatus(order.status || '');
+      const status = (order.status || '').toUpperCase();
+      setNewStatus(UPDATE_STATUS_OPTIONS.some((o) => o.value === status) ? status : (order.status || ''));
     }
   };
 
@@ -506,11 +507,11 @@ export default function OrderManagementPage() {
                                     cancelConfirm={cancelConfirm}
                                     setCancelConfirm={setCancelConfirm}
                                     canChangeStatus={
-                                      !['CANCELLED', 'RETURNED', 'DELIVERED'].includes(
+                                      !['CANCELLED', 'RETURNED'].includes(
                                         (order.status || '').toUpperCase()
                                       )
                                     }
-                                    nextOptions={NEXT_STATUS[(order.status || '').toUpperCase()] || []}
+                                    updateStatusOptions={UPDATE_STATUS_OPTIONS}
                                     onUpdateStatus={handleUpdateStatus}
                                     onCancelOrder={handleCancelOrder}
                                     onClose={closeDetail}

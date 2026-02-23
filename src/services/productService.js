@@ -17,6 +17,7 @@ const PRODUCTS_PATH = '/products';
  *   featured?: boolean;
  *   trending?: boolean;
  *   newArrivalsOnly?: boolean;
+ *   onSale?: boolean;
  * }} ProductListParams
  */
 
@@ -83,6 +84,7 @@ export async function getProducts(params = {}) {
   if (params.trending === true) searchParams.set('trending', 'true');
   if (params.trending === false) searchParams.set('trending', 'false');
   if (params.newArrivalsOnly === true) searchParams.set('newArrivalsOnly', 'true');
+  if (params.onSale === true) searchParams.set('onSale', 'true');
 
   const query = searchParams.toString();
   const url = query ? `${PRODUCTS_PATH}?${query}` : PRODUCTS_PATH;

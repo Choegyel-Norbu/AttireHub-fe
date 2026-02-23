@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { getProductBySlug, getProducts } from '@/services/productService';
+import { getProductReviews } from '@/services/reviewService';
 import { useCart } from '@/hooks/useCart';
 import {
   ArrowLeft,
@@ -14,6 +15,8 @@ import {
   Tag,
   Layers,
   CheckCircle,
+  Star,
+  MessageSquare,
 } from 'lucide-react';
 
 function formatPrice(value) {
@@ -23,8 +26,11 @@ function formatPrice(value) {
     : value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const REVIEWS_PAGE_SIZE = 10;
+
 export default function ProductDetailPage() {
   const { slug } = useParams();
+  const location = useLocation();
   const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +42,18 @@ export default function ProductDetailPage() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
 
+  // Reviews (read-only list)
+  const [reviewsPage, setReviewsPage] = useState({
+    content: [],
+    page: 0,
+    totalElements: 0,
+    totalPages: 0,
+    last: true,
+  });
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState(null);
+  const [reviewPageIndex, setReviewPageIndex] = useState(0);
+
   const fetchProduct = useCallback(async () => {
     if (!slug) return;
     setLoading(true);
@@ -44,11 +62,7 @@ export default function ProductDetailPage() {
       const data = await getProductBySlug(slug);
       setProduct(data);
       const variants = Array.isArray(data?.variants) ? data.variants.filter((v) => v.isActive !== false && v.active !== false) : [];
-      if (variants.length === 1) {
-        setSelectedVariant(variants[0]);
-      } else {
-        setSelectedVariant(null);
-      }
+      setSelectedVariant(variants.length > 0 ? variants[0] : null);
       setQuantity(1);
     } catch (err) {
       setError(err?.message ?? 'Product not found.');
@@ -65,6 +79,13 @@ export default function ProductDetailPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [slug]);
+
+  useEffect(() => {
+    if (location.hash === '#reviews' && !loading && product) {
+      const el = document.getElementById('reviews');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [location.hash, loading, product]);
 
   const categorySlug = product?.categorySlug ?? product?.category_slug ?? null;
 
@@ -85,6 +106,43 @@ export default function ProductDetailPage() {
       .catch(() => setRelatedProducts([]))
       .finally(() => setRelatedLoading(false));
   }, [categorySlug, product?.slug, product?.id]);
+
+  const productId = product?.id != null ? Number(product.id) : null;
+  const prevProductIdRef = useRef(null);
+  const fetchReviews = useCallback(
+    (page = 0) => {
+      if (productId == null) return;
+      setReviewsLoading(true);
+      setReviewsError(null);
+      getProductReviews(productId, { page, size: REVIEWS_PAGE_SIZE })
+        .then((data) =>
+          setReviewsPage({
+            content: data.content ?? [],
+            page: data.page ?? 0,
+            totalElements: data.totalElements ?? 0,
+            totalPages: data.totalPages ?? 0,
+            last: data.last ?? true,
+          })
+        )
+        .catch((err) => {
+          setReviewsError(err?.message ?? 'Failed to load reviews.');
+          setReviewsPage((prev) => ({ ...prev, content: [] }));
+        })
+        .finally(() => setReviewsLoading(false));
+    },
+    [productId]
+  );
+
+  useEffect(() => {
+    if (productId == null) return;
+    const isNewProduct = prevProductIdRef.current !== productId;
+    if (isNewProduct) {
+      prevProductIdRef.current = productId;
+      setReviewPageIndex(0);
+    }
+    const pageToFetch = isNewProduct ? 0 : reviewPageIndex;
+    fetchReviews(pageToFetch);
+  }, [productId, reviewPageIndex, fetchReviews]);
 
   useEffect(() => {
     if (!addedToCart) return;
@@ -182,25 +240,52 @@ export default function ProductDetailPage() {
           <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:gap-12">
             {/* Image + variant preview */}
             <div className="space-y-3">
-              <div className="relative mx-auto max-w-md overflow-hidden rounded-xl bg-tertiary/10">
+              <div className="group relative mx-auto max-w-md overflow-hidden rounded-xl bg-tertiary/10 transition-shadow duration-300 hover:shadow-[0_12px_40px_-12px_rgba(128,181,174,0.35)]">
                 {(product?.newArrival === true || product?.new_arrival === true) && (
                   <span className="absolute left-6 top-6 z-10 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm" style={{ backgroundColor: '#80B5AE' }}>
                     New arrival
                   </span>
                 )}
+                {outOfStock && (
+                  <span
+                    className="absolute right-6 top-6 z-10 flex items-center gap-1.5 rounded-lg border-2 border-white/90 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg backdrop-blur-sm"
+                    style={{ backgroundColor: 'rgba(45, 45, 48, 0.95)' }}
+                    aria-hidden
+                  >
+                    Out of stock
+                  </span>
+                )}
                 <div className="aspect-square w-full overflow-hidden rounded-lg">
                   {displayImage ? (
-                    <img
-                      src={displayImage}
-                      alt={selectedVariant ? [selectedVariant.size, selectedVariant.color].filter(Boolean).join(' ') : 'Product'}
-                      className="h-full w-full object-cover"
-                    />
+                    <>
+                      <img
+                        src={displayImage}
+                        alt={selectedVariant ? [selectedVariant.size, selectedVariant.color].filter(Boolean).join(' ') : 'Product'}
+                        className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                      />
+                      <span
+                        className="product-image-shine pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                        style={{
+                          background: 'linear-gradient(105deg, transparent 0%, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%, transparent 100%)',
+                          backgroundSize: '200% 100%',
+                          backgroundPosition: '-200% 0',
+                        }}
+                        aria-hidden
+                      />
+                    </>
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-tertiary">
                       <ImageOff className="h-24 w-24" aria-hidden />
                     </div>
                   )}
                 </div>
+                <span
+                  className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  style={{
+                    boxShadow: 'inset 0 0 0 1px rgba(128, 181, 174, 0.25)',
+                  }}
+                  aria-hidden
+                />
               </div>
               {activeVariants.length > 1 && (
                 <div className="flex flex-wrap gap-2">
@@ -255,23 +340,40 @@ export default function ProductDetailPage() {
                   <h1 className="text-2xl font-semibold text-primary sm:text-3xl">
                     {product.name}
                   </h1>
-{(product.newArrival === true || product.new_arrival === true) && (
-                  <span className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white" style={{ backgroundColor: '#80B5AE' }}>
-                    New arrival
-                  </span>
-                )}
+                  {(product.newArrival === true || product.new_arrival === true) && (
+                    <span className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white" style={{ backgroundColor: '#80B5AE' }}>
+                      New arrival
+                    </span>
+                  )}
                 </div>
                 <p className="shrink-0 text-xl font-semibold">
                   {hasDiscount ? (
-                    <span className="flex flex-col items-end gap-0.5">
-                      <span className="line-through text-red-500">Nu {formatPrice(actualPrice)} /-</span>
-                      <span className="text-sm text-secondary">After discount <span className="text-lg" style={{ color: '#80B5AE', fontWeight: 600 }}>Nu {formatPrice(priceAfterDiscount)} /-</span></span>
+                    <span className="inline-flex flex-row items-baseline gap-2">
+                      <span className="text-lg font-semibold line-through text-red-500">Nu {formatPrice(actualPrice)} /-</span>
+                      <span className="text-lg font-semibold" style={{ color: '#80B5AE' }}>Nu {formatPrice(priceAfterDiscount)} /-</span>
                     </span>
                   ) : (
                     <span style={{ color: '#80B5AE' }}>Nu {formatPrice(displayPrice)} /-</span>
                   )}
                 </p>
               </div>
+
+              {(product.averageRating != null || (product.reviewCount != null && Number(product.reviewCount) > 0)) && (
+                <div className="mt-2 flex items-center gap-2 text-sm text-secondary">
+                  <span className="flex items-center gap-0.5" aria-label={`Rating: ${Number(product.averageRating ?? 0).toFixed(1)} out of 5`}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-3 w-3 ${star <= (product.averageRating ?? 0) ? 'fill-amber-400 text-amber-400' : 'text-tertiary'}`}
+                        aria-hidden
+                      />
+                    ))}
+                  </span>
+                  <span>{Number(product.averageRating ?? 0).toFixed(1)}</span>
+                  <span>·</span>
+                  <span>{Number(product.reviewCount ?? 0)} review{Number(product.reviewCount ?? 0) !== 1 ? 's' : ''}</span>
+                </div>
+              )}
 
               {product.description && (
                 <div className="mt-6">
@@ -444,6 +546,90 @@ export default function ProductDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Reviews */}
+          <section id="reviews" className="mt-16 border-t border-border pt-12 scroll-mt-6" aria-labelledby="reviews-heading">
+            <h2 id="reviews-heading" className="text-xl font-semibold text-primary sm:text-2xl flex items-center gap-2">
+              Reviews
+            </h2>
+            {/* <p className="mt-2 text-sm text-secondary">
+              You can leave a review from your order details once your order is shipped or delivered.
+            </p> */}
+
+            {reviewsError && (
+              <p className="mt-4 text-sm text-red-500" role="alert">
+                {reviewsError}
+              </p>
+            )}
+
+            {reviewsLoading ? (
+              <div className="mt-6 flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
+                <span className="sr-only">Loading reviews…</span>
+              </div>
+            ) : reviewsPage.content.length === 0 ? (
+              <p className="mt-6 text-sm text-secondary">No reviews yet. Be the first to review this product.</p>
+            ) : (
+              <ul className="mt-6 space-y-4">
+                {reviewsPage.content.map((review) => (
+                    <li
+                      key={review.id}
+                      className="rounded-xl border border-border bg-quaternary/30 p-4 sm:p-5"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="flex gap-0.5" aria-label={`${review.rating} out of 5 stars`}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-3 w-3 ${star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-tertiary'}`}
+                                aria-hidden
+                              />
+                            ))}
+                          </span>
+                          <span className="font-medium text-primary">{review.userDisplayName ?? 'Customer'}</span>
+                          {review.verifiedPurchase && (
+                            <span className="rounded bg-[#80B5AE]/20 px-2 py-0.5 text-xs font-medium" style={{ color: '#80B5AE' }}>
+                              Verified purchase
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-sm text-secondary">
+                          {review.createdAt ? new Date(review.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : ''}
+                        </span>
+                      </div>
+                      {review.comment && (
+                        <p className="mt-2 text-primary whitespace-pre-wrap">{review.comment}</p>
+                      )}
+                    </li>
+                  ))}
+              </ul>
+            )}
+
+            {!reviewsLoading && reviewsPage.totalPages > 1 && (
+              <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Reviews pagination">
+                <button
+                  type="button"
+                  onClick={() => setReviewPageIndex((p) => Math.max(0, p - 1))}
+                  disabled={reviewsPage.page <= 0}
+                  className="rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary hover:bg-tertiary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-secondary">
+                  Page {reviewsPage.page + 1} of {reviewsPage.totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setReviewPageIndex((p) => p + 1)}
+                  disabled={reviewsPage.last}
+                  className="rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary hover:bg-tertiary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+          </section>
 
           {/* Related products - always show when product is loaded */}
           <section className="mt-16 border-t border-border pt-12" aria-labelledby="related-products-heading">

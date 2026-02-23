@@ -1,13 +1,14 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Search, User, LogOut, X, ShoppingCart } from 'lucide-react';
+import { Menu, Search, User, LogOut, X, ShoppingCart, Bell } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { CartContext } from '@/context/CartContext';
+import { getNotifications } from '@/services/notificationService';
 
 const NAV_LINKS = [
   { to: '/products', label: 'All Products' },
-  { to: '/categories/sale', label: 'Sale' },
+  { to: '/sale', label: 'Sale' },
 ];
 
 function isAdmin(user) {
@@ -18,11 +19,38 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { isAuthenticated, user, logout } = useAuth();
   const showDashboard = isAuthenticated && isAdmin(user);
   const cart = useContext(CartContext);
   const totalItems = cart?.totalItems ?? 0;
   const navigate = useNavigate();
+
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const result = await getNotifications({ read: false, page: 0, size: 1 });
+      setUnreadCount(result.totalElements ?? 0);
+    } catch {
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
+  useEffect(() => {
+    const onFocus = () => fetchUnreadCount();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [fetchUnreadCount]);
+
+  useEffect(() => {
+    const onUpdated = () => fetchUnreadCount();
+    window.addEventListener('notifications-updated', onUpdated);
+    return () => window.removeEventListener('notifications-updated', onUpdated);
+  }, [fetchUnreadCount]);
 
   const handleLogoutClick = () => setShowLogoutConfirm(true);
 
@@ -98,6 +126,23 @@ export default function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-4">
+          {isAuthenticated && (
+            <Link
+              to="/account/notifications"
+              className="relative flex items-center justify-center rounded-full p-2 text-primary transition-colors hover:bg-tertiary/20 lg:p-2.5"
+              aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
+            >
+              <Bell className="h-5 w-5 shrink-0 lg:h-6 lg:w-6" aria-hidden />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute -right-0.5 -top-0.5 z-10 flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white lg:-right-1 lg:-top-1 lg:min-w-[1.5rem] lg:px-1.5 lg:py-1 lg:text-xs"
+                  aria-hidden
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
           <Link
             to="/cart"
             className="relative flex items-center justify-center rounded-full p-2 text-primary transition-colors hover:bg-tertiary/20 lg:p-2.5"
@@ -167,13 +212,27 @@ export default function Header() {
         <div className="border-t border-white/20 px-4 py-4 md:hidden" style={{ backgroundColor: '#80B5AE' }}>
           <nav className="flex flex-col gap-2" aria-label="Mobile">
             {isAuthenticated && (
-              <Link
-                to="/profile"
-                className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
-                onClick={() => setMobileOpen(false)}
-              >
-                Profile
-              </Link>
+              <>
+                <Link
+                  to="/profile"
+                  className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Profile
+                </Link>
+                <Link
+                  to="/account/notifications"
+                  className="flex items-center justify-between rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Notifications
+                  {unreadCount > 0 && (
+                    <span className="rounded-full bg-white/30 px-2 py-0.5 text-xs font-semibold">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+              </>
             )}
             <Link
               to="/cart"

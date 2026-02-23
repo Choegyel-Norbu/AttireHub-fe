@@ -5,7 +5,7 @@ const FOOTER_LINKS = {
   Shop: [
     { to: '/products', label: 'All Products' },
     { to: '/categories/new-arrivals', label: 'New Arrivals' },
-    { to: '/categories/sale', label: 'Sale' },
+    { to: '/sale', label: 'Sale' },
     { to: '/cart', label: 'Cart' },
   ],
   Help: [
