@@ -161,7 +161,7 @@ export default function CheckoutPage() {
                     <MapPin className="h-5 w-5 shrink-0" aria-hidden />
                     <p className="text-sm">
                       No addresses found.{' '}
-                      <Link to="/register/address" className="font-medium text-primary hover:underline">
+                      <Link to="/account/settings#addresses" className="font-medium text-primary hover:underline">
                         Add an address
                       </Link>
                     </p>

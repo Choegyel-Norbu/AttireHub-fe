@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getOrders } from '@/services/orderService';
+import { getOrders, cancelOrder } from '@/services/orderService';
+import { updateOrderStatus } from '@/services/adminOrderService';
 import { Link } from 'react-router-dom';
-import { Package, Loader2, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Package, Loader2, ChevronLeft, ChevronRight, Eye, XCircle, PackageCheck } from 'lucide-react';
+import { useToast } from '@/hooks/useToast';
 
 const PAGE_SIZE = 10;
 
@@ -62,6 +64,7 @@ function StatusBadge({ status }) {
 }
 
 export default function OrdersPage() {
+  const { show: showToast } = useToast();
   const [orders, setOrders] = useState([]);
   const [page, setPage] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -70,6 +73,10 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [cancelConfirmOrderNumber, setCancelConfirmOrderNumber] = useState(null);
+  const [cancellingOrderNumber, setCancellingOrderNumber] = useState(null);
+  const [deliverConfirmOrderNumber, setDeliverConfirmOrderNumber] = useState(null);
+  const [deliveringOrderNumber, setDeliveringOrderNumber] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -91,6 +98,51 @@ export default function OrdersPage() {
       setLoading(false);
     }
   }, [page, statusFilter]);
+
+  const canCancelOrder = useCallback((order) => {
+    const status = (order?.status ?? '').toString().trim().toUpperCase();
+    return status === 'PENDING' || status === 'CONFIRMED';
+  }, []);
+
+  const canMarkDelivered = useCallback((order) => {
+    const status = (order?.status ?? '').toString().trim().toUpperCase();
+    return status === 'SHIPPED';
+  }, []);
+
+  const handleCancelOrder = useCallback(async () => {
+    if (!cancelConfirmOrderNumber) return;
+    setCancellingOrderNumber(cancelConfirmOrderNumber);
+    setError(null);
+    try {
+      await cancelOrder(cancelConfirmOrderNumber);
+      setCancelConfirmOrderNumber(null);
+      showToast({ message: 'Your order has been cancelled successfully. No further charges will be made.', variant: 'success' });
+      await fetchOrders();
+    } catch (err) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to cancel order.';
+      showToast({ message: msg || 'We couldn\'t cancel this order. It may have already been processed—please contact support if you need help.', variant: 'error' });
+    } finally {
+      setCancellingOrderNumber(null);
+    }
+  }, [cancelConfirmOrderNumber, fetchOrders, showToast]);
+
+  const handleMarkDelivered = useCallback(async (orderNumber) => {
+    const toConfirm = orderNumber ?? deliverConfirmOrderNumber;
+    if (!toConfirm) return;
+    setDeliveringOrderNumber(toConfirm);
+    setError(null);
+    try {
+      await updateOrderStatus(toConfirm, 'DELIVERED');
+      setDeliverConfirmOrderNumber(null);
+      showToast({ message: 'Delivery confirmed. Thank you for confirming you received your order!', variant: 'success' });
+      await fetchOrders();
+    } catch (err) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to mark order as delivered.';
+      showToast({ message: msg || 'We couldn\'t update the delivery status. Please try again or contact support.', variant: 'error' });
+    } finally {
+      setDeliveringOrderNumber(null);
+    }
+  }, [deliverConfirmOrderNumber, fetchOrders, showToast]);
 
   useEffect(() => {
     fetchOrders();
@@ -120,7 +172,7 @@ export default function OrdersPage() {
             setStatusFilter(e.target.value);
             setPage(0);
           }}
-          className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
           aria-label="Filter by status"
         >
           {STATUS_OPTIONS.map((opt) => (
@@ -180,14 +232,46 @@ export default function OrdersPage() {
                     {order.items.map((i) => i.productName ?? i.product_name).filter(Boolean).join(', ') || 'Items'}
                   </p>
                 )}
-                <div className="mt-3">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   <Link
                     to={`/account/orders/${encodeURIComponent(order.orderNumber ?? order.id)}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 cursor-pointer"
                   >
                     <Eye className="h-4 w-4" aria-hidden />
                     View details
                   </Link>
+                  {canCancelOrder(order) && (
+                    <button
+                      type="button"
+                      onClick={() => setCancelConfirmOrderNumber(order.orderNumber ?? String(order.id))}
+                      disabled={cancellingOrderNumber != null}
+                      className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 cursor-pointer"
+                      aria-label={`Cancel order ${order.orderNumber ?? order.id}`}
+                    >
+                      {cancellingOrderNumber === (order.orderNumber ?? String(order.id)) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      ) : (
+                        <XCircle className="h-4 w-4" aria-hidden />
+                      )}
+                      Cancel order
+                    </button>
+                  )}
+                  {canMarkDelivered(order) && (
+                    <button
+                      type="button"
+                      onClick={() => setDeliverConfirmOrderNumber(order.orderNumber ?? String(order.id))}
+                      disabled={deliveringOrderNumber != null}
+                      className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50 cursor-pointer"
+                      aria-label={`Mark order ${order.orderNumber ?? order.id} as delivered`}
+                    >
+                      {deliveringOrderNumber === (order.orderNumber ?? String(order.id)) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      ) : (
+                        <PackageCheck className="h-4 w-4" aria-hidden />
+                      )}
+                      I received it — mark delivered
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -203,7 +287,7 @@ export default function OrdersPage() {
                   type="button"
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent cursor-pointer"
                   aria-label="Previous page"
                 >
                   <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -216,7 +300,7 @@ export default function OrdersPage() {
                   type="button"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={last}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent cursor-pointer"
                   aria-label="Next page"
                 >
                   Next
@@ -226,6 +310,90 @@ export default function OrdersPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Confirm delivery dialog */}
+      {deliverConfirmOrderNumber && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="deliver-confirm-dialog-title"
+          aria-describedby="deliver-confirm-dialog-desc"
+        >
+          <div className="w-full max-w-md rounded-xl border border-border bg-quaternary p-6 shadow-lg">
+            <h2 id="deliver-confirm-dialog-title" className="text-lg font-semibold text-primary">
+              Confirm delivery
+            </h2>
+            <p id="deliver-confirm-dialog-desc" className="mt-2 text-sm text-secondary">
+              Have you received order <strong className="text-primary">{deliverConfirmOrderNumber}</strong>? 
+              Confirm to mark it as delivered.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => handleMarkDelivered()}
+                disabled={deliveringOrderNumber != null}
+                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:bg-green-700 disabled:opacity-50 cursor-pointer"
+              >
+                {deliveringOrderNumber ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : null}
+                Yes, I received it
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeliverConfirmOrderNumber(null)}
+                disabled={deliveringOrderNumber != null}
+                className="rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel order confirmation */}
+      {cancelConfirmOrderNumber && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-order-dialog-title"
+          aria-describedby="cancel-order-dialog-desc"
+        >
+          <div className="w-full max-w-md rounded-xl border border-border bg-quaternary p-6 shadow-lg">
+            <h2 id="cancel-order-dialog-title" className="text-lg font-semibold text-primary">
+              Cancel order?
+            </h2>
+            <p id="cancel-order-dialog-desc" className="mt-2 text-sm text-secondary">
+              Are you sure you want to cancel order <strong className="text-primary">{cancelConfirmOrderNumber}</strong>?
+              This action cannot be undone.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleCancelOrder}
+                disabled={cancellingOrderNumber != null}
+                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:bg-red-700 disabled:opacity-50 cursor-pointer"
+              >
+                {cancellingOrderNumber ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : null}
+                Yes, cancel order
+              </button>
+              <button
+                type="button"
+                onClick={() => setCancelConfirmOrderNumber(null)}
+                disabled={cancellingOrderNumber != null}
+                className="rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 cursor-pointer"
+              >
+                Keep order
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

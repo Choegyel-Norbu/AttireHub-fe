@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -84,6 +85,18 @@ export default function AccountSettingsPage() {
     resolver: zodResolver(addressSchema),
     defaultValues: emptyAddress,
   });
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash !== '#addresses') return;
+    const el = document.getElementById('addresses');
+    if (!el) return;
+    const id = requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [location.hash]);
 
   useEffect(() => {
     let cancelled = false;
@@ -290,7 +303,7 @@ export default function AccountSettingsPage() {
       <div>
         <div className="flex items-center gap-2 text-secondary">
           <Settings className="h-6 w-6" aria-hidden />
-          <h1 className="text-2xl font-semibold text-primary sm:text-3xl">Settings</h1>
+          <h1 className="text-base font-semibold text-primary">Settings</h1>
         </div>
         <p className="mt-1 text-sm text-secondary">
           Update your profile and addresses.
@@ -377,7 +390,7 @@ export default function AccountSettingsPage() {
       </section>
 
       {/* Addresses */}
-      <section className="rounded-2xl border border-border bg-quaternary p-6 shadow-sm sm:p-8">
+      <section id="addresses" className="rounded-2xl border border-border bg-quaternary p-6 shadow-sm sm:p-8">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-primary">
           <MapPin className="h-5 w-5" aria-hidden /> Addresses
         </h2>

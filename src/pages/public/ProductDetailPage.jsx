@@ -640,7 +640,7 @@ export default function ProductDetailPage() {
               <p className="mt-4 text-sm text-secondary">No category for this product.</p>
             ) : relatedLoading ? (
               <div className="mt-6 flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />                                        
                 <span className="sr-only">Loading related products…</span>
               </div>
             ) : relatedProducts.length === 0 ? (
