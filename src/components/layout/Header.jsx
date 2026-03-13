@@ -78,6 +78,13 @@ export default function Header() {
     return () => window.removeEventListener('notifications-updated', onUpdated);
   }, [fetchUnreadCount]);
 
+  // Allow other components (e.g. profile page) to request logout confirmation
+  useEffect(() => {
+    const handler = () => setShowLogoutConfirm(true);
+    window.addEventListener('request-logout', handler);
+    return () => window.removeEventListener('request-logout', handler);
+  }, []);
+
   const handleLogoutClick = () => setShowLogoutConfirm(true);
 
   const handleLogoutConfirm = () => {

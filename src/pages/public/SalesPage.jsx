@@ -167,6 +167,7 @@ export default function SalesPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
+                    className="max-w-[210px] mx-auto w-full"
                   >
                     <ProductCard product={p} />
                   </motion.div>

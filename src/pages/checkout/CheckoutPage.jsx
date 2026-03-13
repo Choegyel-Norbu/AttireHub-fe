@@ -33,6 +33,13 @@ export default function CheckoutPage() {
     window.scrollTo(0, 0);
   }, []);
 
+// Ensure we start at top when showing confirmation view
+useEffect(() => {
+  if (placedOrder) {
+    window.scrollTo(0, 0);
+  }
+}, [placedOrder]);
+
   useEffect(() => {
     if (totalItems === 0 && !placedOrder) {
       navigate('/cart', { replace: true });
@@ -99,32 +106,33 @@ export default function CheckoutPage() {
 
   if (placedOrder) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
-        <main className="flex-1 bg-quaternary px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl">
-            <div className="rounded-xl border border-border bg-quaternary p-6 text-center sm:p-8">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary">
-                <Package className="h-7 w-7" aria-hidden />
+        <main className="flex-1">
+          <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="rounded-xl border border-border bg-white p-6 text-center sm:p-8 shadow-sm">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Package className="h-6 w-6" aria-hidden />
               </div>
-              <h1 className="mt-4 text-2xl font-semibold text-primary">Thank you for your order</h1>
-              <p className="mt-2 text-secondary">
-                Order number: <strong className="text-primary">{placedOrder.orderNumber}</strong>
+              <h1 className="mt-4 font-serif text-2xl text-primary">Thank you for your order</h1>
+              <p className="mt-2 text-sm text-secondary">
+                Order number:{' '}
+                <strong className="text-primary">{placedOrder.orderNumber}</strong>
               </p>
-              <p className="mt-1 text-sm text-secondary">
+              <p className="mt-1 text-xs text-secondary">
                 Total: Nu {formatPrice(placedOrder.total)} /-
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Link
                   to={`/account/orders?highlight=${encodeURIComponent(placedOrder.orderNumber)}`}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary"
                 >
                   View order
-                  <ArrowRight className="h-4 w-4" aria-hidden />
+                  <ArrowRight className="h-3 w-3" aria-hidden />
                 </Link>
                 <Link
                   to="/products"
-                  className="inline-flex items-center justify-center rounded-lg border border-border bg-quaternary px-5 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                  className="inline-flex items-center justify-center rounded-full border border-border px-5 py-2 text-xs font-semibold uppercase tracking-wider text-primary hover:bg-gray-50"
                 >
                   Continue shopping
                 </Link>
@@ -138,26 +146,33 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-white">
       <Header />
-      <main className="flex-1 bg-quaternary px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex items-center gap-2 text-secondary">
-            <Package className="h-6 w-6" aria-hidden />
-            <h1 className="text-2xl font-semibold text-primary sm:text-3xl">Checkout</h1>
+      <main className="flex-1">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between border-b border-border pb-4">
+            <div className="flex items-center gap-2 text-secondary">
+              <Package className="h-5 w-5" aria-hidden />
+              <h1 className="font-serif text-3xl text-primary">Checkout</h1>
+            </div>
+            <p className="text-xs font-medium text-secondary">
+              {totalItems} {totalItems === 1 ? 'item' : 'items'}
+            </p>
           </div>
 
-          <form onSubmit={handlePlaceOrder} className="mt-8 grid gap-8 lg:grid-cols-5">
-            <div className="lg:col-span-3 flex flex-col gap-4">
-              <section className="rounded-xl bg-quaternary p-4">
-                <h2 className="text-lg font-semibold text-primary">Shipping address</h2>
+          <form onSubmit={handlePlaceOrder} className="mt-8 grid gap-8 lg:grid-cols-12">
+            <div className="lg:col-span-7 flex flex-col gap-4">
+              <section className="rounded-xl border border-border bg-white p-4 sm:p-5">
+                <h2 className="text-sm font-semibold text-primary uppercase tracking-wide">
+                  Shipping address
+                </h2>
                 {loadingAddresses ? (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-tertiary/10 p-3 text-secondary">
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-gray-50 p-3 text-secondary">
                     <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
                     <span className="text-sm">Loading addresses…</span>
                   </div>
                 ) : addresses.length === 0 ? (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-tertiary/10 p-3 text-secondary">
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-gray-50 p-3 text-secondary">
                     <MapPin className="h-5 w-5 shrink-0" aria-hidden />
                     <p className="text-sm">
                       No addresses found.{' '}
@@ -178,7 +193,7 @@ export default function CheckoutPage() {
                     ).map((addr) => (
                         <label
                           key={addr.id}
-                          className="flex cursor-pointer items-start gap-3 rounded-lg bg-tertiary/10 p-3 transition-colors has-[:checked]:bg-primary/5 has-[:checked]:ring-2 has-[:checked]:ring-primary/30"
+                          className="flex cursor-pointer items-start gap-3 rounded-lg bg-gray-50 p-3 transition-colors has-[:checked]:bg-primary/5 has-[:checked]:ring-2 has-[:checked]:ring-primary/30"
                         >
                           <input
                             type="radio"
@@ -208,8 +223,10 @@ export default function CheckoutPage() {
                 )}
               </section>
 
-              <section className="rounded-xl bg-quaternary p-4">
-                <h2 className="text-lg font-semibold text-primary">Order notes (optional)</h2>
+              <section className="rounded-xl border border-border bg-white p-4 sm:p-5">
+                <h2 className="text-sm font-semibold text-primary uppercase tracking-wide">
+                  Order notes (optional)
+                </h2>
                 <div className="mt-3">
                   <input
                     type="text"
@@ -217,34 +234,36 @@ export default function CheckoutPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Delivery instructions, leave at door, etc."
-                    className="w-full rounded-lg border border-border bg-tertiary/10 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full rounded-lg border border-border bg-gray-50 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     aria-label="Order notes"
                   />
                 </div>
               </section>
 
-              <section className="rounded-xl bg-quaternary p-4">
-                <h2 className="text-lg font-semibold text-primary">Coupon (optional)</h2>
+              <section className="rounded-xl border border-border bg-white p-4 sm:p-5">
+                <h2 className="text-sm font-semibold text-primary uppercase tracking-wide">
+                  Coupon (optional)
+                </h2>
                 <div className="mt-3">
                   <input
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     placeholder="Enter coupon code"
-                    className="w-full rounded-lg border border-border bg-tertiary/10 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full rounded-lg border border-border bg-gray-50 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     aria-label="Coupon code"
                   />
                 </div>
               </section>
             </div>
 
-            <div className="lg:col-span-2">
-              <section className="sticky top-24 rounded-xl border border-border bg-quaternary p-6">
-                <h2 className="text-lg font-semibold text-primary">Order summary</h2>
+            <div className="lg:col-span-5">
+              <section className="sticky top-24 rounded-xl bg-gray-50 p-6">
+                <h2 className="font-serif text-lg font-medium text-primary">Order Summary</h2>
                 <ul className="mt-4 space-y-3">
                   {items.map((item) => (
                     <li key={item.id} className="flex gap-3 border-b border-border/50 pb-3 last:border-0">
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-tertiary/20">
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-sm bg-gray-100">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -285,7 +304,7 @@ export default function CheckoutPage() {
 
                 {error && (
                   <div
-                    className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+                    className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800"
                     role="alert"
                   >
                     {error}
@@ -300,24 +319,24 @@ export default function CheckoutPage() {
                     addresses.length === 0 ||
                     !shippingAddressId?.trim()
                   }
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-secondary px-4 py-3 text-sm font-semibold text-quaternary transition-colors hover:bg-primary disabled:opacity-50 cursor-pointer"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   {placing ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                       Placing order…
                     </>
                   ) : (
                     <>
                       Place order — Nu {formatPrice(subtotal)} /-
-                      <ArrowRight className="h-4 w-4" aria-hidden />
+                      <ArrowRight className="h-3 w-3" aria-hidden />
                     </>
                   )}
                 </button>
 
                 <Link
                   to="/cart"
-                  className="mt-3 block text-center text-sm font-medium text-primary hover:text-secondary"
+                  className="mt-3 block text-center text-xs font-medium text-secondary hover:text-primary"
                 >
                   ← Back to cart
                 </Link>

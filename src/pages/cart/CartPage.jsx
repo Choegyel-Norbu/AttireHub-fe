@@ -132,10 +132,10 @@ export default function CartPage() {
       <Header />
       
       <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between border-b border-border pb-6">
-            <h1 className="font-serif text-4xl text-primary">Shopping Bag</h1>
-            <p className="text-sm font-medium text-secondary">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between border-b border-border pb-4">
+            <h1 className="font-serif text-3xl text-primary">Shopping Bag</h1>
+            <p className="text-xs font-medium text-secondary">
               {totalItems} {totalItems === 1 ? 'Item' : 'Items'}
             </p>
           </div>
@@ -157,7 +157,7 @@ export default function CartPage() {
               </Link>
             </div>
           ) : (
-            <div className="mt-12 lg:grid lg:grid-cols-12 lg:gap-16">
+            <div className="mt-8 lg:grid lg:grid-cols-12 lg:gap-10">
               {/* Cart Items */}
               <div className="lg:col-span-8">
                 <ul className="divide-y divide-border">
@@ -168,9 +168,9 @@ export default function CartPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="flex py-8"
+                      className="flex py-6"
                     >
-                      <div className="h-32 w-24 shrink-0 overflow-hidden rounded-sm border border-border bg-gray-50 sm:h-40 sm:w-32">
+                      <div className="h-24 w-20 shrink-0 overflow-hidden rounded-sm border border-border bg-gray-50 sm:h-28 sm:w-24">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -184,15 +184,15 @@ export default function CartPage() {
                         )}
                       </div>
 
-                      <div className="ml-6 flex flex-1 flex-col justify-between">
+                      <div className="ml-4 flex flex-1 flex-col justify-between">
                         <div className="flex justify-between">
                           <div>
-                            <h3 className="font-serif text-lg font-medium text-primary">
+                            <h3 className="font-serif text-base font-medium text-primary">
                               <Link to={`/products/${item.productId}`} className="hover:underline">
                                 {item.productName}
                               </Link>
                             </h3>
-                            <p className="mt-1 text-sm text-secondary">
+                            <p className="mt-1 text-xs text-secondary">
                               {[item.size, item.color].filter(Boolean).join(' | ')}
                             </p>
                           </div>
@@ -210,7 +210,7 @@ export default function CartPage() {
                             >
                               <Minus className="h-3 w-3" />
                             </button>
-                            <span className="mx-3 min-w-[1.5rem] text-center text-sm font-medium text-primary">
+                            <span className="mx-3 min-w-[1.5rem] text-center text-xs font-medium text-primary">
                               {item.quantity}
                             </span>
                             <button
@@ -224,7 +224,7 @@ export default function CartPage() {
 
                           <button
                             onClick={() => handleRemoveClick(item)}
-                            className="text-xs font-medium text-secondary underline hover:text-red-600"
+                            className="text-[11px] font-medium text-secondary underline hover:text-red-600"
                           >
                             Remove
                           </button>
@@ -245,10 +245,10 @@ export default function CartPage() {
               </div>
 
               {/* Order Summary */}
-              <div className="mt-16 rounded-xl bg-gray-50 p-8 lg:col-span-4 lg:mt-0">
-                <h2 className="font-serif text-xl font-medium text-primary">Order Summary</h2>
+              <div className="mt-10 rounded-xl bg-gray-50 p-6 lg:col-span-4 lg:mt-0">
+                <h2 className="font-serif text-lg font-medium text-primary">Order Summary</h2>
                 
-                <dl className="mt-8 space-y-4 text-sm text-secondary">
+                <dl className="mt-6 space-y-3 text-sm text-secondary">
                   <div className="flex justify-between">
                     <dt>Subtotal</dt>
                     <dd className="font-medium text-primary">Nu {formatPrice(subtotal)}</dd>

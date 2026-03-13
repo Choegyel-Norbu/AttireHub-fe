@@ -30,7 +30,7 @@ function getInitials(name) {
 }
 
 export default function ProfilePage() {
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser } = useAuth();
   const [addresses, setAddresses] = useState(() => getAddressesFromStorage());
   const [addressLoading, setAddressLoading] = useState(true);
 
@@ -100,8 +100,9 @@ export default function ProfilePage() {
             >
               Edit Profile
             </Link>
-            <button 
-              onClick={logout}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('request-logout'))}
               className="rounded-full border border-transparent px-4 py-2 text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-50"
             >
               Sign Out
