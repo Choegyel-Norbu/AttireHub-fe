@@ -1,8 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import Header from '@/components/layout/Header';
-import { Package, ShoppingCart, ChevronRight } from 'lucide-react';
+import { Package, ShoppingCart, ChevronRight, LayoutDashboard } from 'lucide-react';
 
 const SIDEBAR_ITEMS = [
+  { to: '/admin', end: true, label: 'Overview', icon: LayoutDashboard },
   { to: '/admin/products', end: false, label: 'Products', icon: Package },
   { to: '/admin/orders', end: true, label: 'Orders', icon: ShoppingCart },
 ];

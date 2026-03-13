@@ -1,13 +1,15 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Search, User, LogOut, X, ShoppingCart, Bell } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Menu, Search, User, LogOut, X, ShoppingBag, Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { CartContext } from '@/context/CartContext';
 import { getNotifications } from '@/services/notificationService';
 
 const NAV_LINKS = [
-  { to: '/products', label: 'All Products' },
+  { to: '/products', label: 'Collection' },
+  { to: '/products?newArrivalsOnly=true', label: 'New Arrivals' },
   { to: '/sale', label: 'Sale' },
 ];
 
@@ -17,24 +19,48 @@ function isAdmin(user) {
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
+  
   const { isAuthenticated, user, logout } = useAuth();
   const showDashboard = isAuthenticated && isAdmin(user);
   const cart = useContext(CartContext);
   const totalItems = cart?.totalItems ?? 0;
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+    setSearchOpen(false);
+  }, [location]);
 
   const fetchUnreadCount = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !isAdmin(user)) return;
     try {
-      const result = await getNotifications({ read: false, page: 0, size: 1 });
+      const result = await getNotifications({
+        read: false,
+        type: 'NEW_ORDER',
+        page: 0,
+        size: 1,
+      });
       setUnreadCount(result.totalElements ?? 0);
     } catch {
       setUnreadCount(0);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     fetchUnreadCount();
@@ -62,284 +88,285 @@ export default function Header() {
 
   const handleLogoutCancel = () => setShowLogoutConfirm(false);
 
-  useEffect(() => {
-    if (!showLogoutConfirm) return;
-    const onEscape = (e) => {
-      if (e.key === 'Escape') handleLogoutCancel();
-    };
-    document.addEventListener('keydown', onEscape);
-    return () => document.removeEventListener('keydown', onEscape);
-  }, [showLogoutConfirm]);
-
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
-      setMobileOpen(false);
+      setSearchOpen(false);
     }
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-quaternary">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Link
-          to="/"
-          className="text-primary transition-opacity hover:opacity-80"
-          aria-label="AttireHub Home"
-        >
-          <span className="text-xl font-semibold tracking-tight">AttireHub</span>
-        </Link>
+    <>
+      <header 
+        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+          scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-white'
+        }`}
+      >
+        {/* Promo Bar */}
+        <div className="bg-primary px-4 py-2 text-center text-[10px] font-bold uppercase tracking-widest text-white sm:text-xs">
+          Complimentary shipping on orders over $75
+        </div>
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Main">
-          {NAV_LINKS.map(({ to, label }) => (
-            <Link
-              key={to}
-              to={to}
-              className="text-sm font-medium text-primary transition-colors hover:text-secondary"
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Search (desktop) */}
-        <form
-          onSubmit={handleSearch}
-          className="hidden flex-1 max-w-xs lg:block lg:max-w-sm"
-          role="search"
-        >
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tertiary" aria-hidden />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products..."
-              className="w-full rounded-xl border border-border bg-quaternary py-2 pl-10 pr-4 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-secondary focus:ring-1 focus:ring-secondary"
-              aria-label="Search products"
-            />
-          </div>
-        </form>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 sm:gap-4">
-          {isAuthenticated && (
-            <Link
-              to="/account/notifications"
-              className="relative flex items-center justify-center rounded-full p-2 text-primary transition-colors hover:bg-tertiary/20 lg:p-2.5"
-              aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
-            >
-              <Bell className="h-5 w-5 shrink-0 lg:h-6 lg:w-6" aria-hidden />
-              {unreadCount > 0 && (
-                <span
-                  className="absolute -right-0.5 -top-0.5 z-10 flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white lg:-right-1 lg:-top-1 lg:min-w-[1.5rem] lg:px-1.5 lg:py-1 lg:text-xs"
-                  aria-hidden
-                >
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </Link>
-          )}
-          <Link
-            to="/cart"
-            className="relative flex items-center justify-center rounded-full p-2 text-primary transition-colors hover:bg-tertiary/20 lg:p-2.5"
-            aria-label={isAuthenticated && totalItems > 0 ? `Cart, ${totalItems} items` : 'Cart'}
-          >
-            <ShoppingCart className="h-5 w-5 shrink-0 lg:h-6 lg:w-6" aria-hidden />
-            {isAuthenticated && totalItems > 0 && (
-              <span
-                className="absolute -right-0.5 -top-0.5 z-10 flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold leading-none text-white lg:-right-1 lg:-top-1 lg:min-w-[1.5rem] lg:px-1.5 lg:py-1 lg:text-xs"
-                aria-hidden
-              >
-                {totalItems > 99 ? '99+' : totalItems}
-              </span>
-            )}
-          </Link>
-          {isAuthenticated ? (
-            <div className="hidden items-center gap-2 sm:flex">
-              {showDashboard && (
-                <Link
-                  to="/admin/products"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
-                >
-                  Dashboard
-                </Link>
-              )}
-              <Link
-                to="/profile"
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
-              >
-                <User className="h-4 w-4" aria-hidden />
-                <span className="max-w-[100px] truncate">
-                  {[user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.name || user?.email}
-                </span>
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogoutClick}
-                className="rounded-md p-2 transition-colors hover:opacity-80"
-                style={{ color: '#7BA4D0' }}
-                aria-label="Sign out"
-              >
-                <LogOut className="h-4 w-4" aria-hidden />
-              </button>
-            </div>
-          ) : (
-            <Link
-              to="/login"
-              className="hidden px-4 py-2 text-sm font-medium text-primary transition-colors hover:text-secondary sm:inline-flex"
-            >
-              Sign in
-            </Link>
-          )}
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          {/* Mobile Menu Button */}
           <button
             type="button"
-            className="rounded-md p-2 text-primary transition-colors hover:bg-tertiary/20 md:hidden"
-            onClick={() => setMobileOpen((o) => !o)}
-            aria-expanded={mobileOpen}
-            aria-label="Toggle menu"
+            className="p-2 -ml-2 text-primary lg:hidden"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
           >
-            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            <Menu className="h-6 w-6" strokeWidth={1.5} />
           </button>
-        </div>
-      </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="border-t border-white/20 px-4 py-4 md:hidden" style={{ backgroundColor: '#80B5AE' }}>
-          <nav className="flex flex-col gap-2" aria-label="Mobile">
-            {isAuthenticated && (
-              <>
-                <Link
-                  to="/profile"
-                  className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Profile
-                </Link>
-                <Link
-                  to="/account/notifications"
-                  className="flex items-center justify-between rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Notifications
-                  {unreadCount > 0 && (
-                    <span className="rounded-full bg-white/30 px-2 py-0.5 text-xs font-semibold">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                </Link>
-              </>
-            )}
-            <Link
-              to="/cart"
-              className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
-              onClick={() => setMobileOpen(false)}
-            >
-              Cart
-            </Link>
-            {showDashboard && (
-              <Link
-                to="/admin/products"
-                className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
-                onClick={() => setMobileOpen(false)}
-              >
-                Dashboard
-              </Link>
-            )}
+          {/* Desktop Nav (Left) */}
+          <nav className="hidden items-center gap-8 lg:flex">
             {NAV_LINKS.map(({ to, label }) => (
               <Link
                 key={to}
                 to={to}
-                className="rounded-md px-3 py-2 font-medium text-white hover:bg-white/20"
-                onClick={() => setMobileOpen(false)}
+                className="text-sm font-medium text-secondary transition-colors hover:text-primary"
               >
                 {label}
               </Link>
             ))}
           </nav>
-          <form onSubmit={handleSearch} className="mt-4">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white" aria-hidden />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products..."
-                className="w-full rounded-xl border border-white/30 bg-white/95 py-2 pl-10 pr-4 text-sm text-primary placeholder-secondary outline-none transition-colors focus:border-white focus:ring-1 focus:ring-white/50"
-                aria-label="Search products"
-              />
-            </div>
-          </form>
-          {isAuthenticated ? (
-            <button
-              type="button"
-              className="mt-4 block w-full rounded-md px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-white/20"
-              onClick={() => {
-                setMobileOpen(false);
-                handleLogoutClick();
-              }}
-            >
-              Sign out
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              className="mt-4 block w-full rounded-md px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/20"
-              onClick={() => setMobileOpen(false)}
-            >
-              Sign in
-            </Link>
-          )}
-        </div>
-      )}
 
-      {/* Logout confirmation dialog — portaled to body so it centers in the viewport */}
-      {showLogoutConfirm &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="logout-dialog-title"
-            aria-describedby="logout-dialog-desc"
+          {/* Logo (Center) */}
+          <Link
+            to="/"
+            className="absolute left-1/2 -translate-x-1/2 font-serif text-2xl font-medium tracking-tight text-primary lg:static lg:transform-none lg:text-3xl"
+            aria-label="AttireHub Home"
           >
-            <div
-              className="absolute inset-0 bg-quaternary/90 backdrop-blur-sm"
-              aria-hidden
-              onClick={handleLogoutCancel}
+            AttireHub
+          </Link>
+
+          {/* Actions (Right) */}
+          <div className="flex items-center gap-1 sm:gap-4">
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="p-2 text-primary transition-colors hover:text-secondary"
+              aria-label="Search"
+            >
+              <Search className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+
+            {isAuthenticated ? (
+              <div className="hidden items-center gap-4 sm:flex">
+                {showDashboard && (
+                  <Link
+                    to="/admin/products"
+                    className="text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary"
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                <Link
+                  to="/account/notifications"
+                  className="relative p-2 text-primary transition-colors hover:text-secondary"
+                >
+                  <Bell className="h-5 w-5" strokeWidth={1.5} />
+                  {unreadCount > 0 && (
+                    <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+                  )}
+                </Link>
+                <Link
+                  to="/profile"
+                  className="p-2 text-primary transition-colors hover:text-secondary"
+                >
+                  <User className="h-5 w-5" strokeWidth={1.5} />
+                </Link>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="hidden text-sm font-medium text-primary hover:text-secondary sm:block"
+              >
+                Sign In
+              </Link>
+            )}
+
+            <Link
+              to="/cart"
+              className="relative p-2 text-primary transition-colors hover:text-secondary"
+              aria-label="Cart"
+            >
+              <ShoppingBag className="h-5 w-5" strokeWidth={1.5} />
+              {totalItems > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
+          </div>
+        </div>
+
+        {/* Search Overlay */}
+        <AnimatePresence>
+          {searchOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-border bg-white overflow-hidden"
+            >
+              <div className="mx-auto max-w-7xl px-4 py-8">
+                <form onSubmit={handleSearch} className="relative mx-auto max-w-2xl">
+                  <input
+                    type="search"
+                    autoFocus
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search for products..."
+                    className="w-full border-b border-primary/20 bg-transparent py-4 text-center text-xl text-primary placeholder:text-tertiary focus:border-primary focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 text-sm font-bold uppercase tracking-wider text-primary"
+                  >
+                    Search
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+
+      {/* Mobile Menu Drawer */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileOpen(false)}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm lg:hidden"
             />
-            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-quaternary p-6 shadow-lg">
-              <h2 id="logout-dialog-title" className="text-lg font-semibold text-primary">
-                Sign out?
-              </h2>
-              <p id="logout-dialog-desc" className="mt-2 text-sm text-secondary">
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 z-50 w-full max-w-xs bg-white p-6 shadow-xl lg:hidden"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <span className="font-serif text-xl font-medium text-primary">Menu</span>
+                <button onClick={() => setMobileOpen(false)}>
+                  <X className="h-6 w-6 text-primary" strokeWidth={1.5} />
+                </button>
+              </div>
+
+              <nav className="flex flex-col gap-6">
+                {NAV_LINKS.map(({ to, label }) => (
+                  <Link
+                    key={to}
+                    to={to}
+                    className="text-lg font-medium text-primary"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {label}
+                  </Link>
+                ))}
+                
+                <div className="my-2 h-px bg-border" />
+
+                {isAuthenticated ? (
+                  <>
+                    <Link
+                      to="/profile"
+                      className="flex items-center gap-3 text-lg font-medium text-primary"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <User className="h-5 w-5" />
+                      Profile
+                    </Link>
+                    <Link
+                      to="/account/notifications"
+                      className="flex items-center gap-3 text-lg font-medium text-primary"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <Bell className="h-5 w-5" />
+                      Notifications
+                      {unreadCount > 0 && (
+                        <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                    {showDashboard && (
+                      <Link
+                        to="/admin/products"
+                        className="text-lg font-medium text-primary"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        Dashboard
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleLogoutClick}
+                      className="flex items-center gap-3 text-lg font-medium text-red-600"
+                    >
+                      <LogOut className="h-5 w-5" />
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="text-lg font-medium text-primary"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                )}
+              </nav>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleLogoutCancel}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white p-6 shadow-2xl"
+            >
+              <h2 className="text-lg font-serif font-medium text-primary">Sign Out</h2>
+              <p className="mt-2 text-sm text-secondary">
                 Are you sure you want to sign out of your account?
               </p>
               <div className="mt-6 flex gap-3">
                 <button
-                  type="button"
                   onClick={handleLogoutCancel}
-                  className="flex-1 rounded-lg border border-border bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                  className="flex-1 rounded-full border border-border px-4 py-2.5 text-sm font-medium text-primary hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
-                  type="button"
                   onClick={handleLogoutConfirm}
-                  className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: '#7BA4D0' }}
+                  className="flex-1 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-secondary"
                 >
-                  Sign out
+                  Sign Out
                 </button>
               </div>
-            </div>
-          </div>,
-          document.body
+            </motion.div>
+          </div>
         )}
-    </header>
+      </AnimatePresence>
+    </>
   );
 }

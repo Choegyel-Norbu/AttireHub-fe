@@ -60,8 +60,9 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Inline review state: which product's form is expanded, form values, and saved reviews per product
+  // Inline review state: which product/variant form is expanded, form values, and saved reviews per product
   const [expandedReviewProductId, setExpandedReviewProductId] = useState(null);
+  const [expandedReviewVariantId, setExpandedReviewVariantId] = useState(null);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState(null);
@@ -121,8 +122,9 @@ export default function OrderDetailPage() {
     });
   }, [order?.id, canReview, userId]);
 
-  const openReviewForm = useCallback((productId, existingReview) => {
+  const openReviewForm = useCallback((productId, existingReview, variantId = null) => {
     setExpandedReviewProductId(productId);
+    setExpandedReviewVariantId(variantId != null && !Number.isNaN(Number(variantId)) ? Number(variantId) : null);
     setReviewError(null);
     if (existingReview) {
       setReviewForm({ rating: existingReview.rating, comment: (existingReview.comment ?? '').trim() });
@@ -133,6 +135,7 @@ export default function OrderDetailPage() {
 
   const closeReviewForm = useCallback(() => {
     setExpandedReviewProductId(null);
+    setExpandedReviewVariantId(null);
     setReviewError(null);
   }, []);
 
@@ -140,9 +143,11 @@ export default function OrderDetailPage() {
     async (item) => {
       const rawId = item.productId ?? item.product_id;
       const slug = item.productSlug ?? item.product_slug;
+      const rawVariantId = item.variantId ?? item.productVariantId ?? item.variant_id ?? null;
+      const variantId = rawVariantId != null ? Number(rawVariantId) : null;
       let id = rawId != null ? Number(rawId) : null;
       if (id != null && !Number.isNaN(id)) {
-        openReviewForm(id, myReviewsByProductId[id] ?? null);
+        openReviewForm(id, myReviewsByProductId[id] ?? null, variantId);
         return;
       }
       if (slug != null && String(slug).trim()) {
@@ -153,7 +158,7 @@ export default function OrderDetailPage() {
           const resolvedId = product?.id != null ? Number(product.id) : null;
           if (resolvedId != null && !Number.isNaN(resolvedId)) {
             setResolvedProductIdBySlug((prev) => ({ ...prev, [slug]: resolvedId }));
-            openReviewForm(resolvedId, myReviewsByProductId[resolvedId] ?? null);
+            openReviewForm(resolvedId, myReviewsByProductId[resolvedId] ?? null, variantId);
           } else {
             setReviewError('Could not load product. Try opening the product page to review.');
           }
@@ -170,9 +175,9 @@ export default function OrderDetailPage() {
   );
 
   const handleReviewSubmit = useCallback(
-    async (e, productId) => {
+    async (e) => {
       e.preventDefault();
-      const id = Number(productId);
+      const id = Number(expandedReviewProductId);
       if (Number.isNaN(id)) return;
       setReviewError(null);
       setReviewSubmitting(true);
@@ -188,10 +193,12 @@ export default function OrderDetailPage() {
           const created = await createReview(id, {
             rating: reviewForm.rating,
             comment: reviewForm.comment,
+            variantId: expandedReviewVariantId,
           });
           setMyReviewsByProductId((prev) => ({ ...prev, [id]: created }));
         }
         setExpandedReviewProductId(null);
+        setExpandedReviewVariantId(null);
         setReviewForm({ rating: 5, comment: '' });
       } catch (err) {
         setReviewError(err?.message ?? 'Failed to save review.');
@@ -199,7 +206,7 @@ export default function OrderDetailPage() {
         setReviewSubmitting(false);
       }
     },
-    [reviewForm.rating, reviewForm.comment, myReviewsByProductId]
+    [reviewForm.rating, reviewForm.comment, myReviewsByProductId, expandedReviewProductId, expandedReviewVariantId]
   );
 
   const handleReviewDelete = useCallback(async (productId, reviewId) => {
@@ -359,7 +366,7 @@ export default function OrderDetailPage() {
                           </div>
                         ) : isFormExpanded && id != null ? (
                           <form
-                            onSubmit={(e) => handleReviewSubmit(e, id)}
+                            onSubmit={handleReviewSubmit}
                             className="space-y-3"
                           >
                             <div>

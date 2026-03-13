@@ -5,8 +5,8 @@
  */
 @theme {
   /* Palette – use only these four colors across the site */
-  --color-primary: #5d3543;
-  --color-secondary: #785964;
+  --color-primary: #181A18;
+  --color-secondary: #252324;
   --color-tertiary: #bcabb0;
   --color-quaternary: #FFFFFF;
 
@@ -19,8 +19,8 @@
 
 :root {
   /* Pure ONYX palette – use var(--color-primary) etc. in any component */
-  --color-primary: #5d3543;
-  --color-secondary: #785964;
+  --color-primary: #181A18;
+  --color-secondary: #252324;
   /* #80B5AE */
   --color-tertiary: #bcabb0;
   --color-quaternary: #FFFFFF;

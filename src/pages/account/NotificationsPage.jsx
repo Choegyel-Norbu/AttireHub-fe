@@ -1,26 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   getNotifications,
   markNotificationRead,
   markAllNotificationsRead,
 } from '@/services/notificationService';
-import { Bell, Loader2, ChevronLeft, ChevronRight, Check, CheckCheck } from 'lucide-react';
+import { Bell, Loader2, Check, CheckCheck } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
-const PAGE_SIZE = 20;
-
-const READ_OPTIONS = [
-  { value: '', label: 'All' },
-  { value: 'false', label: 'Unread' },
-  { value: 'true', label: 'Read' },
-];
-
-const TYPE_OPTIONS = [
-  { value: '', label: 'All types' },
-  { value: 'NEW_ORDER', label: 'New order' },
-  { value: 'ORDER_STATUS_UPDATE', label: 'Order status update' },
-  { value: 'PROMO', label: 'Promo' },
-];
+const PAGE_SIZE = 50;
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -52,42 +40,35 @@ function getNotificationLink(referenceType, referenceId) {
   return null;
 }
 
+function isAdmin(user) {
+  return user?.role === 'ADMIN' || user?.role === 'ROLE_ADMIN';
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
-  const [page, setPage] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [last, setLast] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [readFilter, setReadFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
   const [markingId, setMarkingId] = useState(null);
   const [markingAll, setMarkingAll] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = {
-        page,
         size: PAGE_SIZE,
-        ...(readFilter === 'true' && { read: true }),
-        ...(readFilter === 'false' && { read: false }),
-        ...(typeFilter.trim() && { type: typeFilter.trim() }),
       };
       const result = await getNotifications(params);
       setNotifications(result.content);
-      setTotalElements(result.totalElements);
-      setTotalPages(result.totalPages);
-      setLast(result.last);
     } catch (err) {
       setError(err?.message ?? 'Failed to load notifications.');
       setNotifications([]);
     } finally {
       setLoading(false);
     }
-  }, [page, readFilter, typeFilter]);
+  }, []);
 
   useEffect(() => {
     fetchNotifications();
@@ -116,7 +97,6 @@ export default function NotificationsPage() {
     try {
       await markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      setReadFilter('');
       window.dispatchEvent(new CustomEvent('notifications-updated'));
     } catch (err) {
       setError(err?.message ?? 'Failed to mark all as read.');
@@ -125,9 +105,8 @@ export default function NotificationsPage() {
     }
   };
 
-  const from = totalElements === 0 ? 0 : page * PAGE_SIZE + 1;
-  const to = Math.min((page + 1) * PAGE_SIZE, totalElements);
   const hasUnread = notifications.some((n) => !n.read);
+  const isAdminUser = isAdmin(user);
 
   return (
     <>
@@ -139,46 +118,8 @@ export default function NotificationsPage() {
         Order updates and promotions. Tap a notification to open the related order.
       </p>
 
-      <section className="mt-6 flex flex-wrap items-center gap-3">
-        <label htmlFor="notification-read-filter" className="text-sm font-medium text-primary">
-          Status
-        </label>
-        <select
-          id="notification-read-filter"
-          value={readFilter}
-          onChange={(e) => {
-            setReadFilter(e.target.value);
-            setPage(0);
-          }}
-          className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          aria-label="Filter by read status"
-        >
-          {READ_OPTIONS.map((opt) => (
-            <option key={opt.value || 'all'} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <label htmlFor="notification-type-filter" className="text-sm font-medium text-primary">
-          Type
-        </label>
-        <select
-          id="notification-type-filter"
-          value={typeFilter}
-          onChange={(e) => {
-            setTypeFilter(e.target.value);
-            setPage(0);
-          }}
-          className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          aria-label="Filter by type"
-        >
-          {TYPE_OPTIONS.map((opt) => (
-            <option key={opt.value || 'all'} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        {hasUnread && (
+      {hasUnread && (
+        <section className="mt-6 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleMarkAllRead}
@@ -193,8 +134,8 @@ export default function NotificationsPage() {
             )}
             Mark all as read
           </button>
-        )}
-      </section>
+        </section>
+      )}
 
       {error && (
         <div className="mt-6 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">
@@ -212,19 +153,19 @@ export default function NotificationsPage() {
           <Bell className="mx-auto h-12 w-12 text-tertiary" aria-hidden />
           <p className="mt-4 font-medium text-primary">No notifications</p>
           <p className="mt-1 text-sm text-secondary">
-            {readFilter === 'false' || typeFilter
-              ? 'Try changing filters.'
-              : 'When you get order updates or promos, they will appear here.'}
+            When you get order updates or promos, they will appear here.
           </p>
         </div>
       ) : (
         <>
           <ul className="mt-6 space-y-3" aria-label="Notification list">
             {notifications.map((notification) => {
-              const link = getNotificationLink(
-                notification.referenceType,
-                notification.referenceId
-              );
+              const link = isAdminUser
+                ? '/admin/orders'
+                : getNotificationLink(
+                    notification.referenceType,
+                    notification.referenceId
+                  );
               const content = (
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -288,39 +229,6 @@ export default function NotificationsPage() {
               );
             })}
           </ul>
-
-          {totalPages > 1 && (
-            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
-              <p className="text-sm text-secondary">
-                Showing {from}–{to} of {totalElements}
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="h-4 w-4" aria-hidden />
-                  Previous
-                </button>
-                <span className="px-3 text-sm text-secondary">
-                  Page {page + 1} of {totalPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={last}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent"
-                  aria-label="Next page"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </button>
-              </div>
-            </div>
-          )}
         </>
       )}
     </>

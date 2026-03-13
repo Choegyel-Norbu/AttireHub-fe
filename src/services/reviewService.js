@@ -63,7 +63,7 @@ function unwrapData(response) {
 /**
  * List reviews for a product (public, paginated).
  * @param {number} productId
- * @param {{ page?: number; size?: number }} [params]
+ * @param {{ page?: number; size?: number; variantId?: number }} [params]
  * @returns {Promise<ReviewsPage>}
  */
 export async function getProductReviews(productId, params = {}) {
@@ -73,6 +73,9 @@ export async function getProductReviews(productId, params = {}) {
   const searchParams = new URLSearchParams();
   if (params.page != null) searchParams.set('page', String(params.page));
   if (params.size != null) searchParams.set('size', String(params.size));
+   if (params.variantId != null && !Number.isNaN(Number(params.variantId))) {
+     searchParams.set('variantId', String(params.variantId));
+   }
   const query = searchParams.toString();
   const url = `${PRODUCTS_PATH}/${Number(productId)}/reviews${query ? `?${query}` : ''}`;
   const response = await api.get(url);
@@ -101,12 +104,16 @@ export async function getProductReviews(productId, params = {}) {
 /**
  * Create or replace own review (verified purchase required). Auth: Bearer token.
  * @param {number} productId
- * @param {{ rating: number; comment?: string }} body - rating 1-5, comment optional max 2000
+ * @param {{ rating: number; comment?: string; variantId: number }} body - rating 1-5, comment optional max 2000, variantId required
  * @returns {Promise<Review>}
  */
 export async function createReview(productId, body) {
   if (productId == null || Number.isNaN(Number(productId))) {
     throw new Error('Product ID is required.');
+  }
+  const variantId = body?.variantId != null ? Number(body.variantId) : null;
+  if (variantId == null || Number.isNaN(variantId)) {
+    throw new Error('Variant ID is required to create a review.');
   }
   const rating = Number(body?.rating);
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -117,7 +124,11 @@ export async function createReview(productId, body) {
     payload.comment = body.comment.trim().slice(0, 2000);
   }
   try {
-    const response = await api.post(`${PRODUCTS_PATH}/${Number(productId)}/reviews`, payload);
+    const searchParams = new URLSearchParams();
+    searchParams.set('variantId', String(variantId));
+    const query = searchParams.toString();
+    const url = `${PRODUCTS_PATH}/${Number(productId)}/reviews${query ? `?${query}` : ''}`;
+    const response = await api.post(url, payload);
     const data = unwrapData(response);
     if (data && typeof data === 'object' && data.id != null) return data;
     throw new Error('Invalid review response');

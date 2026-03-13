@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import AccountLayout from '@/components/layout/AccountLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/hooks/useCart';
+import { getNotifications } from '@/services/notificationService';
 
 // Public pages
 import HomePage from '@/pages/public/HomePage';
@@ -29,6 +30,7 @@ import CheckoutPage from '@/pages/checkout/CheckoutPage';
 
 // Admin pages
 import AdminLayout from '@/components/layout/AdminLayout';
+import DashboardPage from '@/pages/admin/DashboardPage';
 import AddProductPage from '@/pages/admin/AddProductPage';
 import ProductManagementPage from '@/pages/admin/ProductManagementPage';
 import EditProductPage from '@/pages/admin/EditProductPage';
@@ -48,10 +50,31 @@ function CartAuthSync() {
   return null;
 }
 
+function isAdmin(user) {
+  return user?.role === 'ADMIN' || user?.role === 'ROLE_ADMIN';
+}
+
+function AdminNotificationsBootstrap() {
+  const { isAuthenticated, user } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated || !isAdmin(user)) return;
+
+    // Fetch latest NEW_ORDER notifications for admins on app mount / role change.
+    // We intentionally ignore errors and response here; UI pulls notifications as needed.
+    getNotifications({ read: false, type: 'NEW_ORDER', page: 0, size: 20 }).catch(() => {
+      // Silently ignore; header/page will refetch and surface any issues if needed.
+    });
+  }, [isAuthenticated, user]);
+
+  return null;
+}
+
 function App() {
   return (
     <>
       <CartAuthSync />
+      <AdminNotificationsBootstrap />
       <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
@@ -84,7 +107,7 @@ function App() {
             {/* Admin routes */}
             <Route element={<ProtectedRoute requiredRole="ADMIN" />}>
               <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Navigate to="/admin/products" replace />} />
+                <Route index element={<DashboardPage />} />
                 <Route path="products" element={<ProductManagementPage />} />
                 <Route path="products/new" element={<AddProductPage />} />
                 <Route path="products/edit/:slug" element={<EditProductPage />} />
