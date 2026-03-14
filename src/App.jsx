@@ -4,7 +4,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import AccountLayout from '@/components/layout/AccountLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/hooks/useCart';
-import { getNotifications } from '@/services/notificationService';
+import { getNotifications, getAdminNotifications } from '@/services/notificationService';
 
 // Public pages
 import HomePage from '@/pages/public/HomePage';
@@ -59,12 +59,18 @@ function AdminNotificationsBootstrap() {
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin(user)) return;
+    getAdminNotifications({ read: false, page: 0, size: 50 }).catch(() => {});
+  }, [isAuthenticated, user]);
 
-    // Fetch latest NEW_ORDER notifications for admins on app mount / role change.
-    // We intentionally ignore errors and response here; UI pulls notifications as needed.
-    getNotifications({ read: false, type: 'NEW_ORDER', page: 0, size: 20 }).catch(() => {
-      // Silently ignore; header/page will refetch and surface any issues if needed.
-    });
+  return null;
+}
+
+function CustomerNotificationsBootstrap() {
+  const { isAuthenticated, user } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated || isAdmin(user)) return;
+    getNotifications({ read: false, size: 50 }).catch(() => {});
   }, [isAuthenticated, user]);
 
   return null;
@@ -75,6 +81,7 @@ function App() {
     <>
       <CartAuthSync />
       <AdminNotificationsBootstrap />
+      <CustomerNotificationsBootstrap />
       <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />

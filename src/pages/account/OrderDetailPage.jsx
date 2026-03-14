@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getOrderByNumber } from '@/services/orderService';
 import {
   createReview,
@@ -9,7 +10,19 @@ import {
 } from '@/services/reviewService';
 import { getProductBySlug } from '@/services/productService';
 import { useAuth } from '@/context/AuthContext';
-import { Package, Loader2, ArrowLeft, MessageSquare, Star, Pencil, Trash2 } from 'lucide-react';
+import { 
+  Package, 
+  Loader2, 
+  ArrowLeft, 
+  MessageSquare, 
+  Star, 
+  Pencil, 
+  Trash2, 
+  MapPin, 
+  CreditCard,
+  Calendar,
+  Truck
+} from 'lucide-react';
 
 function formatPrice(value) {
   if (typeof value !== 'number') return '—';
@@ -24,10 +37,8 @@ function formatDate(iso) {
     const d = new Date(iso);
     return d.toLocaleDateString(undefined, {
       year: 'numeric',
-      month: 'short',
+      month: 'long',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   } catch {
     return iso;
@@ -38,16 +49,17 @@ function StatusBadge({ status }) {
   const statusLower = (status || '').toLowerCase();
   const colors =
     statusLower === 'cancelled' || statusLower === 'returned'
-      ? 'bg-red-100 text-red-800'
+      ? 'bg-red-50 text-red-700 border-red-100'
       : statusLower === 'delivered'
-        ? 'bg-green-100 text-green-800'
-        : statusLower === 'shipped' || statusLower === 'processing'
-          ? 'bg-blue-100 text-blue-800'
-          : statusLower === 'confirmed'
-            ? 'bg-amber-100 text-amber-800'
-            : 'bg-tertiary/30 text-primary';
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+        : statusLower === 'shipped'
+          ? 'bg-blue-50 text-blue-700 border-blue-100'
+          : statusLower === 'processing'
+            ? 'bg-amber-50 text-amber-700 border-amber-100'
+            : 'bg-gray-50 text-gray-700 border-gray-100';
+            
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${colors}`}>
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider ${colors}`}>
       {status || '—'}
     </span>
   );
@@ -60,7 +72,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Inline review state: which product/variant form is expanded, form values, and saved reviews per product
+  // Review state
   const [expandedReviewProductId, setExpandedReviewProductId] = useState(null);
   const [expandedReviewVariantId, setExpandedReviewVariantId] = useState(null);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
@@ -98,7 +110,7 @@ export default function OrderDetailPage() {
   const canReview = orderStatus === 'SHIPPED' || orderStatus === 'DELIVERED';
   const userId = user?.id != null ? String(user.id) : null;
 
-  // Load existing reviews for products in this order (when shipped/delivered)
+  // Load existing reviews
   useEffect(() => {
     if (!order || !canReview || !userId) return;
     const orderItems = order.items ?? [];
@@ -169,7 +181,7 @@ export default function OrderDetailPage() {
         }
         return;
       }
-      setReviewError('Product link is missing. Open the product page from the store to leave a review.');
+      setReviewError('Product link is missing.');
     },
     [openReviewForm, myReviewsByProductId]
   );
@@ -231,249 +243,318 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
-        <span className="sr-only">Loading order…</span>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
       </div>
     );
   }
 
   if (error || !order) {
     return (
-      <>
-        <p className="text-primary">{error ?? 'Order not found.'}</p>
+      <div className="mx-auto max-w-2xl py-16 text-center">
+        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+          <Package className="h-6 w-6" />
+        </div>
+        <h2 className="text-lg font-medium text-primary">{error ?? 'Order not found'}</h2>
         <Link
           to="/account/orders"
-          className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary"
+          className="mt-6 inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-gray-50"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to orders
+          <ArrowLeft className="h-4 w-4" />
+          Back to Orders
         </Link>
-      </>
+      </div>
     );
   }
 
-  const total = order.total ?? 0;
-
   return (
-    <>
-      <Link
-        to="/account/orders"
-        className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to orders
-      </Link>
-      <div className="mt-6 rounded-xl border border-border bg-quaternary p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto max-w-5xl space-y-8 pb-16">
+      {/* Header */}
+      <div className="space-y-4">
+        <Link
+          to="/account/orders"
+          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-secondary transition-colors hover:text-primary"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Orders
+        </Link>
+        
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="flex items-center gap-2 text-lg font-bold text-primary">
-              <Package className="h-5 w-5" aria-hidden />
-              Order {order.orderNumber ?? order.id}
+            <h1 className="font-serif text-3xl text-primary">
+              Order #{order.orderNumber ?? order.id}
             </h1>
-            <p className="mt-1 text-sm text-secondary">{formatDate(order.createdAt ?? order.created_at)}</p>
+            <p className="mt-1 flex items-center gap-2 text-sm text-secondary">
+              <Calendar className="h-4 w-4 text-tertiary" />
+              Placed on {formatDate(order.createdAt ?? order.created_at)}
+            </p>
           </div>
           <StatusBadge status={order.status} />
         </div>
+      </div>
 
-        {items.length > 0 && (
-          <div className="mt-6 border-t border-border pt-4">
-            <h2 className="text-sm font-semibold text-primary">Items</h2>
-            {canReview && (
-              <p className="mt-1 text-sm text-secondary">
-                You can leave a review for each item below. Your feedback helps other customers.
-              </p>
-            )}
-            {reviewError && (
-              <p className="mt-2 text-sm text-red-500" role="alert">
-                {reviewError}
-              </p>
-            )}
-            <ul className="mt-3 space-y-3">
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Main Content - Items */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="overflow-hidden rounded-xl border border-border bg-white">
+            <div className="border-b border-border bg-gray-50/50 px-6 py-4">
+              <h2 className="font-medium text-primary">Items ({items.length})</h2>
+            </div>
+            <ul className="divide-y divide-border">
               {items.map((item, idx) => {
                 const rawId = item.productId ?? item.product_id;
                 const productSlug = item.productSlug ?? item.product_slug ?? rawId;
-                const productPath = productSlug != null ? `/products/${encodeURIComponent(String(productSlug))}#reviews` : null;
+                const productPath = productSlug != null ? `/products/${encodeURIComponent(String(productSlug))}` : null;
                 const idFromItem = rawId != null ? Number(rawId) : null;
                 const id = (idFromItem != null && !Number.isNaN(idFromItem))
                   ? idFromItem
                   : (productSlug != null ? resolvedProductIdBySlug[productSlug] : null);
                 const myReview = id != null ? myReviewsByProductId[id] : null;
                 const isFormExpanded = expandedReviewProductId === id;
-                const canReviewThis = canReview;
                 const isResolving = resolvingSlugForReview === (item.productSlug ?? item.product_slug);
+
                 return (
-                  <li
-                    key={item.id ?? idx}
-                    className="rounded-lg border border-border p-3 space-y-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="font-medium text-primary">
-                          {item.productName ?? item.product_name ?? 'Product'}
-                        </p>
-                        <p className="text-sm text-secondary">
-                          {[item.size, item.color].filter(Boolean).join(' · ')}
-                          {item.sku && ` · ${item.sku}`}
-                        </p>
-                      </div>
-                      <p className="text-sm font-medium text-primary">
-                        Qty {item.quantity ?? 0} × Nu {formatPrice(item.unitPrice ?? item.unit_price)} = Nu {formatPrice(item.totalPrice ?? item.total_price)} /-
-                      </p>
-                    </div>
-                    {canReviewThis && (
-                      <div className="border-t border-border/50 pt-3">
-                        {myReview && !isFormExpanded ? (
-                          <div>
-                            <p className="text-sm font-medium text-primary flex items-center gap-2">
-                              <span className="flex gap-0.5" aria-label={`Your rating: ${myReview.rating} out of 5`}>
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={`h-3 w-3 ${star <= myReview.rating ? 'fill-amber-400 text-amber-400' : 'text-tertiary'}`}
-                                    aria-hidden
-                                  />
-                                ))}
-                              </span>
-                              Your review
-                            </p>
-                            {myReview.comment && (
-                              <p className="mt-1 text-sm text-secondary whitespace-pre-wrap">{myReview.comment}</p>
-                            )}
-                            <div className="mt-2 flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openReviewForm(id, myReview)}
-                                className="inline-flex items-center gap-1 rounded border border-border bg-quaternary px-3 py-1.5 text-sm font-medium text-primary hover:bg-tertiary/20"
-                              >
-                                <Pencil className="h-3.5 w-3.5" aria-hidden />
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleReviewDelete(id, myReview.id)}
-                                disabled={reviewDeletingId === myReview.id}
-                                className="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50"
-                              >
-                                {reviewDeletingId === myReview.id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                                ) : (
-                                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                                )}
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        ) : isFormExpanded && id != null ? (
-                          <form
-                            onSubmit={handleReviewSubmit}
-                            className="space-y-3"
-                          >
-                            <div>
-                              <label className="block text-xs font-medium text-primary">Rating</label>
-                              <div className="mt-1 flex gap-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => setReviewForm((f) => ({ ...f, rating: star }))}
-                                    className="rounded p-1 transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#80B5AE]"
-                                    aria-label={`${star} star${star !== 1 ? 's' : ''}`}
-                                    aria-pressed={reviewForm.rating === star}
-                                  >
-                                    <Star
-                                      className={`h-5 w-5 ${reviewForm.rating >= star ? 'fill-amber-400 text-amber-400' : 'text-tertiary'}`}
-                                      aria-hidden
-                                    />
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-primary">Comment (optional)</label>
-                              <textarea
-                                value={reviewForm.comment}
-                                onChange={(e) => setReviewForm((f) => ({ ...f, comment: e.target.value }))}
-                                maxLength={2000}
-                                rows={3}
-                                className="mt-1 w-full rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:border-[#80B5AE] focus:outline-none focus:ring-2 focus:ring-[#80B5AE]/40"
-                                placeholder="Share your experience..."
-                              />
-                              <p className="mt-0.5 text-xs text-secondary">{reviewForm.comment.length}/2000</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                type="submit"
-                                disabled={reviewSubmitting}
-                                className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                                style={{ backgroundColor: '#80B5AE' }}
-                              >
-                                {reviewSubmitting ? (
-                                  <>
-                                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                                    Saving…
-                                  </>
-                                ) : myReview ? (
-                                  'Save changes'
-                                ) : (
-                                  'Submit review'
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={closeReviewForm}
-                                className="rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary hover:bg-tertiary/20"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </form>
+                  <li key={item.id ?? idx} className="p-6">
+                    <div className="flex gap-4 sm:gap-6">
+                      {/* Product Image Placeholder or Actual */}
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-gray-50 sm:h-24 sm:w-24">
+                        {item.imageUrl || item.image_url ? (
+                          <img 
+                            src={item.imageUrl || item.image_url} 
+                            alt={item.productName}
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openReviewFormForItem(item)}
-                              disabled={isResolving}
-                              className="inline-flex items-center gap-1.5 rounded-lg border-2 border-[#80B5AE] bg-[#80B5AE]/10 px-4 py-2 text-sm font-medium transition-colors hover:bg-[#80B5AE]/20 disabled:opacity-50"
-                              style={{ color: '#80B5AE' }}
-                            >
-                              {isResolving ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                                  Loading…
-                                </>
-                              ) : (
-                                <>
-                                  <MessageSquare className="h-4 w-4" aria-hidden />
-                                  Write a review
-                                </>
-                              )}
-                            </button>
-                            {productPath && (
-                              <Link
-                                to={productPath}
-                                className="text-sm font-medium text-secondary hover:text-primary"
-                              >
-                                View product reviews
-                              </Link>
-                            )}
+                          <div className="flex h-full w-full items-center justify-center text-tertiary">
+                            <Package className="h-8 w-8 opacity-20" />
                           </div>
                         )}
                       </div>
-                    )}
+
+                      <div className="flex flex-1 flex-col justify-between">
+                        <div className="flex justify-between gap-4">
+                          <div>
+                            <h3 className="font-medium text-primary">
+                              {productPath ? (
+                                <Link to={productPath} className="hover:underline">
+                                  {item.productName ?? item.product_name ?? 'Product'}
+                                </Link>
+                              ) : (
+                                item.productName ?? item.product_name ?? 'Product'
+                              )}
+                            </h3>
+                            <p className="mt-1 text-sm text-secondary">
+                              {[item.size, item.color].filter(Boolean).join(' · ')}
+                              {item.sku && <span className="text-tertiary"> · {item.sku}</span>}
+                            </p>
+                          </div>
+                          <p className="text-right font-medium text-primary">
+                            Nu {formatPrice(item.totalPrice ?? item.total_price)}
+                          </p>
+                        </div>
+                        
+                        <div className="mt-4 flex items-center justify-between">
+                          <p className="text-xs text-secondary">
+                            Qty: {item.quantity ?? 0} × Nu {formatPrice(item.unitPrice ?? item.unit_price)}
+                          </p>
+                          
+                          {canReview && !isFormExpanded && !myReview && (
+                            <button
+                              onClick={() => openReviewFormForItem(item)}
+                              disabled={isResolving}
+                              className="text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary disabled:opacity-50"
+                            >
+                              {isResolving ? 'Loading...' : 'Write Review'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Review Section */}
+                    <AnimatePresence>
+                      {(isFormExpanded || myReview) && canReview && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                          animate={{ height: 'auto', opacity: 1, marginTop: 24 }}
+                          exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="rounded-lg border border-border bg-gray-50/50 p-4">
+                            {myReview && !isFormExpanded ? (
+                              <div className="flex gap-4">
+                                <div className="shrink-0">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-amber-400 shadow-sm">
+                                    <Star className="h-5 w-5 fill-current" />
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-medium text-primary">Your Review</p>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => openReviewForm(id, myReview)}
+                                        className="p-1 text-secondary hover:text-primary"
+                                        title="Edit review"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleReviewDelete(id, myReview.id)}
+                                        disabled={reviewDeletingId === myReview.id}
+                                        className="p-1 text-secondary hover:text-red-600 disabled:opacity-50"
+                                        title="Delete review"
+                                      >
+                                        {reviewDeletingId === myReview.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="h-4 w-4" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="mt-1 flex text-amber-400">
+                                    {[1, 2, 3, 4, 5].map((s) => (
+                                      <Star key={s} className={`h-3.5 w-3.5 ${s <= myReview.rating ? 'fill-current' : 'text-gray-300'}`} />
+                                    ))}
+                                  </div>
+                                  {myReview.comment && (
+                                    <p className="mt-2 text-sm text-secondary">{myReview.comment}</p>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <form onSubmit={handleReviewSubmit}>
+                                <div className="mb-4">
+                                  <label className="block text-xs font-bold uppercase tracking-wider text-secondary">Rating</label>
+                                  <div className="mt-2 flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <button
+                                        key={star}
+                                        type="button"
+                                        onClick={() => setReviewForm((f) => ({ ...f, rating: star }))}
+                                        className="focus:outline-none"
+                                      >
+                                        <Star
+                                          className={`h-6 w-6 transition-colors ${
+                                            reviewForm.rating >= star ? 'fill-amber-400 text-amber-400' : 'text-gray-300 hover:text-amber-200'
+                                          }`}
+                                        />
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="mb-4">
+                                  <label className="block text-xs font-bold uppercase tracking-wider text-secondary">Review</label>
+                                  <textarea
+                                    value={reviewForm.comment}
+                                    onChange={(e) => setReviewForm((f) => ({ ...f, comment: e.target.value }))}
+                                    rows={3}
+                                    className="mt-2 w-full rounded-lg border border-border bg-white p-3 text-sm text-primary placeholder:text-tertiary focus:border-primary focus:outline-none focus:ring-0"
+                                    placeholder="How was the product?"
+                                  />
+                                </div>
+                                <div className="flex gap-3">
+                                  <button
+                                    type="submit"
+                                    disabled={reviewSubmitting}
+                                    className="rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary disabled:opacity-50"
+                                  >
+                                    {reviewSubmitting ? 'Saving...' : 'Submit Review'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={closeReviewForm}
+                                    className="rounded-full border border-border px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary hover:bg-gray-50"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                                {reviewError && (
+                                  <p className="mt-3 text-xs text-red-600">{reviewError}</p>
+                                )}
+                              </form>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </li>
                 );
               })}
             </ul>
           </div>
-        )}
+        </div>
 
-        <div className="mt-6 border-t border-border pt-4 text-right">
-          <p className="text-base font-semibold text-primary">
-            Total: Nu {formatPrice(total)} /-
-          </p>
+        {/* Sidebar - Summary */}
+        <div className="space-y-6">
+          <div className="rounded-xl border border-border bg-white p-6">
+            <h2 className="mb-4 font-serif text-lg text-primary">Order Summary</h2>
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between text-secondary">
+                <dt>Subtotal</dt>
+                <dd>Nu {formatPrice(order.subtotal)}</dd>
+              </div>
+              <div className="flex justify-between text-secondary">
+                <dt>Shipping</dt>
+                <dd>{order.shippingCost > 0 ? `Nu ${formatPrice(order.shippingCost)}` : 'Free'}</dd>
+              </div>
+              {order.discount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <dt>Discount</dt>
+                  <dd>- Nu {formatPrice(order.discount)}</dd>
+                </div>
+              )}
+              {order.tax > 0 && (
+                <div className="flex justify-between text-secondary">
+                  <dt>Tax</dt>
+                  <dd>Nu {formatPrice(order.tax)}</dd>
+                </div>
+              )}
+              <div className="border-t border-border pt-3 flex justify-between font-bold text-primary text-base">
+                <dt>Total</dt>
+                <dd>Nu {formatPrice(order.total)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="rounded-xl border border-border bg-white p-6">
+            <h2 className="mb-4 font-serif text-lg text-primary">Delivery Details</h2>
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-0.5 h-5 w-5 text-secondary" />
+              <div className="text-sm text-secondary">
+                <p className="font-medium text-primary">Shipping Address</p>
+                {/* Assuming shippingAddress is available or falling back to generic text if structure unknown */}
+                {order.shippingAddress ? (
+                  <div className="mt-1 space-y-0.5">
+                    <p>{order.shippingAddress.streetAddress}</p>
+                    <p>{[order.shippingAddress.city, order.shippingAddress.state, order.shippingAddress.postalCode].filter(Boolean).join(', ')}</p>
+                    <p>{order.shippingAddress.country}</p>
+                  </div>
+                ) : (
+                  <p className="mt-1 italic text-tertiary">Address details not available</p>
+                )}
+              </div>
+            </div>
+            <div className="mt-6 flex items-start gap-3">
+              <CreditCard className="mt-0.5 h-5 w-5 text-secondary" />
+              <div className="text-sm text-secondary">
+                <p className="font-medium text-primary">Payment Method</p>
+                <p className="mt-1 capitalize">{order.paymentMethod?.replace(/_/g, ' ') ?? '—'}</p>
+              </div>
+            </div>
+            {order.status === 'SHIPPED' && (
+              <div className="mt-6 flex items-start gap-3">
+                <Truck className="mt-0.5 h-5 w-5 text-secondary" />
+                <div className="text-sm text-secondary">
+                  <p className="font-medium text-primary">Shipping Status</p>
+                  <p className="mt-1">On the way</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -59,19 +59,26 @@ export default function ProfilePage() {
   const initials = getInitials(displayName);
   const email = authUser?.email ?? '';
   
+  const isAdminUser = isAdmin(authUser);
   const menuItems = [
-    { icon: Package, label: 'Orders', to: '/account/orders', description: 'Track, return, or buy things again' },
-    { icon: MapPin, label: 'Addresses', to: '/account/addresses', description: 'Manage delivery locations' },
+    {
+      icon: Package,
+      label: isAdminUser ? 'Customer Orders' : 'Orders',
+      to: isAdminUser ? '/admin/orders' : '/account/orders',
+      description: isAdminUser
+        ? 'View and manage orders placed by customers'
+        : 'Track, return, or buy things again',
+    },
     { icon: Settings, label: 'Settings', to: '/account/settings', description: 'Edit profile, password, and preferences' },
     // { icon: CreditCard, label: 'Payment Methods', to: '/account/payment', description: 'Manage saved cards' },
   ];
 
-  if (isAdmin(authUser)) {
-    menuItems.unshift({ 
-      icon: User, 
-      label: 'Admin Dashboard', 
-      to: '/admin/products', 
-      description: 'Manage products and store settings' 
+  if (isAdminUser) {
+    menuItems.unshift({
+      icon: User,
+      label: 'Admin Dashboard',
+      to: '/admin/products',
+      description: 'Manage products and store settings',
     });
   }
 
@@ -143,7 +150,10 @@ export default function ProfilePage() {
       >
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-2xl text-primary">Default Address</h2>
-          <Link to="/account/addresses" className="text-sm font-medium text-primary underline underline-offset-4 hover:text-secondary">
+          <Link
+            to="/account/settings#addresses"
+            className="text-sm font-medium text-primary underline underline-offset-4 hover:text-secondary"
+          >
             Manage
           </Link>
         </div>

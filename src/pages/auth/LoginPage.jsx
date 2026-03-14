@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AuthLayout from '@/components/layout/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 
@@ -25,9 +26,9 @@ const loginSchema = z.object({
 
 function getInputClassName(error) {
   const base =
-    'w-full rounded-lg border bg-quaternary px-4 py-3 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
-  const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
+    'w-full rounded-none border-b border-border bg-transparent px-3 py-3 text-primary placeholder-tertiary outline-none transition-colors focus:border-black focus:ring-0';
+  const normal = 'border-border focus:border-primary';
+  const invalid = 'border-red-500 focus:border-red-500 text-red-600';
   return `${base} ${error ? invalid : normal}`;
 }
 
@@ -95,141 +96,144 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout title="Sign in" backgroundImage="/storeclothing.jpg">
-      <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-border bg-quaternary p-8 shadow-sm sm:p-10">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold tracking-tight text-primary">
-              Welcome back
-            </h2>
-            <p className="mt-2 text-sm text-secondary">
-              Sign in to your account to continue
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
-            {authError && (
+    <AuthLayout 
+      title="Welcome back" 
+      subtitle="Sign in to your account to continue"
+      backgroundImage="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop"
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <AnimatePresence>
+          {authError && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
               <div
                 role="alert"
-                className="rounded-lg border border-primary bg-primary/10 px-4 py-3 text-sm text-primary"
+                className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600 border border-red-100"
               >
                 {authError}
               </div>
-            )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            <div>
-              <label htmlFor="login-email" className="block text-sm font-medium text-primary">
-                Email address
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                className={getInputClassName(errors.email)}
-                {...register('email')}
-              />
-              {errors.email && (
-                <p className="mt-1.5 text-sm text-primary">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="login-password" className="block text-sm font-medium text-primary">
-                  Password
-                </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-sm font-medium text-secondary hover:text-primary"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="relative">
-                <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  className={`${getInputClassName(errors.password)} pr-10`}
-                  {...register('password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-tertiary transition-colors hover:text-primary"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="mt-1.5 text-sm text-primary">{errors.password.message}</p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90 disabled:opacity-70"
-            >
-              {isSubmitting ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-secondary">
-            Don&apos;t have an account?{' '}
-            <Link to="/register" className="font-semibold text-primary hover:text-secondary">
-              Sign up
-            </Link>
-          </p>
+        <div className="space-y-1">
+          <label htmlFor="login-email" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+            Email address
+          </label>
+          <input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            className={getInputClassName(errors.email)}
+            {...register('email')}
+          />
+          {errors.email && (
+            <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
+          )}
         </div>
 
-        <p className="mt-8 text-center text-xs text-tertiary">
-          By signing in, you agree to our terms of service and privacy policy.
-        </p>
-      </div>
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label htmlFor="login-password" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+              Password
+            </label>
+            <Link
+              to="/forgot-password"
+              className="text-xs font-medium text-secondary hover:text-primary transition-colors underline decoration-transparent hover:decoration-current"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <div className="relative">
+            <input
+              id="login-password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              className={`${getInputClassName(errors.password)} pr-10`}
+              {...register('password')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-tertiary transition-colors hover:text-primary"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+          )}
+        </div>
 
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full rounded-none bg-primary py-4 text-sm font-medium uppercase tracking-widest text-white transition-all hover:bg-black disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? 'Signing in…' : 'Sign in'}
+        </button>
+
+        <p className="mt-8 text-center text-sm text-secondary">
+          Don&apos;t have an account?{' '}
+          <Link to="/register" className="font-medium text-primary hover:underline underline-offset-4 decoration-primary">
+            Sign up
+          </Link>
+        </p>
+      </form>
+
+      {/* Email Verification Modal */}
       {emailNotVerified &&
         createPortal(
           <div
             className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center p-4"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="email-not-verified-title"
-            aria-describedby="email-not-verified-desc"
           >
-            <div
-              className="absolute inset-0 bg-quaternary/90 backdrop-blur-sm"
-              aria-hidden
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
               onClick={closeEmailNotVerifiedDialog}
             />
-            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-quaternary p-6 shadow-lg">
-              <h2 id="email-not-verified-title" className="text-lg font-semibold text-primary">
-                Verify your email
-              </h2>
-              <p id="email-not-verified-desc" className="mt-2 text-sm text-secondary">
-                {emailNotVerified.message}
-              </p>
-              <div className="mt-6 flex gap-3">
-                <button
-                  type="button"
-                  onClick={closeEmailNotVerifiedDialog}
-                  className="flex-1 rounded-lg border border-border bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={openInbox}
-                  className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: '#7BA4D0' }}
-                >
-                  Open email inbox
-                </button>
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 w-full max-w-sm overflow-hidden bg-white shadow-2xl"
+            >
+              <div className="p-8 text-center">
+                <h2 className="text-xl font-serif text-primary mb-2">
+                  Verify your email
+                </h2>
+                <p className="text-sm text-secondary mb-8 leading-relaxed">
+                  {emailNotVerified.message}
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    type="button"
+                    onClick={openInbox}
+                    className="w-full bg-primary py-3 text-sm font-medium uppercase tracking-widest text-white hover:bg-black transition-colors"
+                  >
+                    Open email inbox
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeEmailNotVerifiedDialog}
+                    className="w-full border border-border bg-transparent py-3 text-sm font-medium uppercase tracking-widest text-primary hover:bg-secondary/5 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </div>,
           document.body
         )}

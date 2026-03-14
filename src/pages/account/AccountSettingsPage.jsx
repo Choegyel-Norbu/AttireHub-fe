@@ -13,8 +13,9 @@ import {
   setAddressesInStorage,
   addOrUpdateAddressInStorage,
 } from '@/utils/addressStorage';
-import { Settings, Loader2, MapPin, Pencil, Trash2, Star } from 'lucide-react';
+import { Settings, Loader2, MapPin, Pencil, Trash2, Star, Plus, Check } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ADDRESS_TYPES = [
   { value: 'SHIPPING', label: 'Shipping' },
@@ -22,8 +23,8 @@ const ADDRESS_TYPES = [
 ];
 
 const profileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(100, 'First name is too long'),
-  lastName: z.string().min(1, 'Last name is required').max(100, 'Last name is too long'),
+  firstName: z.string().min(1, 'First name is required').max(100, 'Too long'),
+  lastName: z.string().min(1, 'Last name is required').max(100, 'Too long'),
   phoneNumber: z.union([z.string().max(20, 'Phone number is too long'), z.literal('')]).optional(),
 });
 
@@ -39,9 +40,9 @@ const addressSchema = z.object({
 
 function getInputClassName(error) {
   const base =
-    'w-full rounded-xl border bg-quaternary px-4 py-3 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
-  const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
+    'w-full rounded-none border-b border-border bg-transparent px-3 py-3 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-black focus:ring-0';
+  const normal = 'border-border focus:border-primary';
+  const invalid = 'border-red-500 focus:border-red-500 text-red-600';
   return `${base} ${error ? invalid : normal}`;
 }
 
@@ -75,6 +76,7 @@ export default function AccountSettingsPage() {
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [addressToDelete, setAddressToDelete] = useState(null);
   const [deleteConfirming, setDeleteConfirming] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
 
   const profileForm = useForm({
     resolver: zodResolver(profileSchema),
@@ -181,7 +183,6 @@ export default function AccountSettingsPage() {
           updated = await addressService.setDefaultAddress(editingAddressId);
         }
         
-        // Update local storage with the response from server
         const list = getAddressesFromStorage();
         const idx = list.findIndex((a) => a?.id === editingAddressId || a?.id === String(editingAddressId));
         if (idx >= 0) {
@@ -197,10 +198,9 @@ export default function AccountSettingsPage() {
         showToast({ message: 'Address updated.', variant: 'success' });
         addressForm.reset(emptyAddress);
         setEditingAddressId(null);
+        setShowAddressForm(false);
       } catch (err) {
-         // Fallback to local update if API fails (or handle error)
          console.error("Failed to update address on server", err);
-         // For now, let's keep the local update as fallback or just show error
          setAddressError(err?.message ?? 'Failed to update address.');
       }
     } else {
@@ -222,6 +222,7 @@ export default function AccountSettingsPage() {
       }
       syncAddressesFromStorage();
       addressForm.reset(emptyAddress);
+      setShowAddressForm(false);
     }
     setAddressSubmitting(false);
   };
@@ -239,8 +240,6 @@ export default function AccountSettingsPage() {
       showToast({ message: 'Default address updated.', variant: 'success' });
     } catch (err) {
       console.error("Failed to set default address on server", err);
-      // Fallback to local update or show error
-      // For now, we can show an error toast
       showToast({ message: err?.message ?? 'Failed to set default address.', variant: 'error' });
     }
   };
@@ -273,6 +272,7 @@ export default function AccountSettingsPage() {
       if (editingAddressId === id) {
         addressForm.reset(emptyAddress);
         setEditingAddressId(null);
+        setShowAddressForm(false);
       }
       showToast({ message: 'Address removed.', variant: 'success' });
       setAddressToDelete(null);
@@ -294,286 +294,420 @@ export default function AccountSettingsPage() {
       country: addr.country ?? '',
       isDefault: Boolean(addr.isDefault ?? addr.default),
     });
+    setShowAddressForm(true);
+    // Scroll to form
+    setTimeout(() => {
+      document.getElementById('address-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
   };
 
   const email = authUser?.email ?? '';
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10">
+    <div className="mx-auto max-w-5xl space-y-12">
       <div>
-        <div className="flex items-center gap-2 text-secondary">
-          <Settings className="h-6 w-6" aria-hidden />
-          <h1 className="text-base font-semibold text-primary">Settings</h1>
-        </div>
-        <p className="mt-1 text-sm text-secondary">
-          Update your profile and addresses.
+        <h1 className="font-serif text-xl text-primary">Settings</h1>
+        <p className="mt-0.5 text-xs text-secondary/70">
+          Manage your personal information and delivery addresses.
         </p>
       </div>
 
-      {/* Profile */}
-      <section className="rounded-2xl border border-border bg-quaternary p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-primary">Profile</h2>
-        <p className="mt-1 text-sm text-secondary">Name and phone. Email is used to sign in.</p>
-        {profileLoading ? (
-          <div className="mt-6 flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
-          </div>
-        ) : (
-          <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="mt-6 space-y-5">
-            {profileError && (
-              <div role="alert" className="rounded-xl border border-primary bg-primary/10 px-4 py-3 text-sm text-primary">
-                {profileError}
+      <div className="grid gap-12 lg:grid-cols-3">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-12">
+          
+          {/* Profile Section */}
+          <section>
+            <div className="mb-6 border-b border-border pb-4">
+              <h2 className="text-lg font-medium text-primary">Personal Profile</h2>
+            </div>
+            
+            {profileLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary/30" />
               </div>
+            ) : (
+              <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
+                <AnimatePresence>
+                  {profileError && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="rounded-md bg-red-50 p-3 text-xs text-red-600 border border-red-100">
+                        {profileError}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label htmlFor="settings-firstName" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                      First Name
+                    </label>
+                    <input
+                      id="settings-firstName"
+                      type="text"
+                      autoComplete="given-name"
+                      className={getInputClassName(profileForm.formState.errors.firstName)}
+                      {...profileForm.register('firstName')}
+                    />
+                    {profileForm.formState.errors.firstName && (
+                      <p className="mt-1 text-xs text-red-500">{profileForm.formState.errors.firstName.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="settings-lastName" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                      Last Name
+                    </label>
+                    <input
+                      id="settings-lastName"
+                      type="text"
+                      autoComplete="family-name"
+                      className={getInputClassName(profileForm.formState.errors.lastName)}
+                      {...profileForm.register('lastName')}
+                    />
+                    {profileForm.formState.errors.lastName && (
+                      <p className="mt-1 text-xs text-red-500">{profileForm.formState.errors.lastName.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="settings-email" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                    Email Address
+                  </label>
+                  <input
+                    id="settings-email"
+                    type="email"
+                    value={email}
+                    disabled
+                    className="w-full border-b border-border bg-transparent px-3 py-3 text-sm text-primary/50 cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="settings-phone" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                    Phone Number <span className="normal-case tracking-normal text-tertiary">(Optional)</span>
+                  </label>
+                  <input
+                    id="settings-phone"
+                    type="tel"
+                    autoComplete="tel"
+                    className={getInputClassName(profileForm.formState.errors.phoneNumber)}
+                    {...profileForm.register('phoneNumber')}
+                  />
+                  {profileForm.formState.errors.phoneNumber && (
+                    <p className="mt-1 text-xs text-red-500">{profileForm.formState.errors.phoneNumber.message}</p>
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={profileSubmitting || !profileForm.formState.isDirty}
+                    className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {profileSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                    Save Changes
+                  </button>
+                </div>
+              </form>
             )}
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <label htmlFor="settings-firstName" className="block text-sm font-medium text-primary">First name</label>
-                <input
-                  id="settings-firstName"
-                  type="text"
-                  autoComplete="given-name"
-                  className={getInputClassName(profileForm.formState.errors.firstName)}
-                  {...profileForm.register('firstName')}
-                />
-                {profileForm.formState.errors.firstName && (
-                  <p className="mt-1.5 text-sm text-primary">{profileForm.formState.errors.firstName.message}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="settings-lastName" className="block text-sm font-medium text-primary">Last name</label>
-                <input
-                  id="settings-lastName"
-                  type="text"
-                  autoComplete="family-name"
-                  className={getInputClassName(profileForm.formState.errors.lastName)}
-                  {...profileForm.register('lastName')}
-                />
-                {profileForm.formState.errors.lastName && (
-                  <p className="mt-1.5 text-sm text-primary">{profileForm.formState.errors.lastName.message}</p>
-                )}
-              </div>
-            </div>
-            <div>
-              <label htmlFor="settings-email" className="block text-sm font-medium text-primary">Email</label>
-              <input
-                id="settings-email"
-                type="email"
-                value={email}
-                readOnly
-                disabled
-                className="w-full rounded-xl border border-border bg-tertiary/20 px-4 py-3 text-primary opacity-90"
-              />
-            </div>
-            <div>
-              <label htmlFor="settings-phone" className="block text-sm font-medium text-primary">Phone (optional)</label>
-              <input
-                id="settings-phone"
-                type="tel"
-                autoComplete="tel"
-                className={getInputClassName(profileForm.formState.errors.phoneNumber)}
-                {...profileForm.register('phoneNumber')}
-              />
-              {profileForm.formState.errors.phoneNumber && (
-                <p className="mt-1.5 text-sm text-primary">{profileForm.formState.errors.phoneNumber.message}</p>
+          </section>
+
+          {/* Addresses Section */}
+          <section id="addresses">
+            <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
+              <h2 className="text-lg font-medium text-primary">Saved Addresses</h2>
+              {!showAddressForm && (
+                <button
+                  onClick={() => {
+                    setEditingAddressId(null);
+                    addressForm.reset(emptyAddress);
+                    setShowAddressForm(true);
+                    setTimeout(() => {
+                      document.getElementById('address-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add New
+                </button>
               )}
             </div>
-            <button
-              type="submit"
-              disabled={profileSubmitting || !profileForm.formState.isDirty}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-quaternary hover:opacity-90 disabled:opacity-50"
-            >
-              {profileSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Save profile
-            </button>
-          </form>
-        )}
-      </section>
 
-      {/* Addresses */}
-      <section id="addresses" className="rounded-2xl border border-border bg-quaternary p-6 shadow-sm sm:p-8">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-primary">
-          <MapPin className="h-5 w-5" aria-hidden /> Addresses
-        </h2>
-        <p className="mt-1 text-sm text-secondary">Add or edit addresses. They are stored on this device and synced when possible.</p>
+            <div className="space-y-4">
+              {addresses.length === 0 && !showAddressForm && (
+                <div className="rounded-lg border border-dashed border-border bg-gray-50/50 p-8 text-center">
+                  <MapPin className="mx-auto h-8 w-8 text-tertiary/50" />
+                  <p className="mt-2 text-sm text-secondary">No addresses saved yet.</p>
+                </div>
+              )}
 
-        {addresses.length > 0 && (
-          <ul className="mt-4 space-y-3">
-            {addresses.map((addr) => {
-              const street = addr.streetAddress ?? addr.street_address;
-              const city = addr.city;
-              const state = addr.state;
-              const postal = addr.postalCode ?? addr.postal_code;
-              const country = addr.country;
-              const type = addr.addressType ?? addr.address_type;
-              const isDefault = addr.isDefault ?? addr.default;
-              return (
-                <li
-                  key={addr.id}
-                  className="flex flex-wrap items-start justify-between gap-2 rounded-xl border border-border bg-quaternary p-4"
-                >
-                  <div>
-                    {isDefault && (
-                      <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                        <Star className="h-3 w-3" /> Default
-                      </span>
-                    )}
-                    <p className="font-medium text-primary">{street}</p>
-                    <p className="text-sm text-secondary">{[city, state, postal, country].filter(Boolean).join(', ')}</p>
-                    {type && <p className="mt-1 text-xs text-secondary">{type}</p>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Tooltip text="Edit address" side="top">
-                      <button
-                        type="button"
-                        onClick={() => startEditAddress(addr)}
-                        className="rounded-lg p-2 text-primary hover:bg-tertiary/20"
-                        aria-label="Edit address"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                    </Tooltip>
-                    {!isDefault && (
-                      <Tooltip text="Set as default" side="top">
-                        <button
-                          type="button"
-                          onClick={() => setDefaultAddress(addr.id)}
-                          className="rounded-lg p-2 text-secondary hover:bg-tertiary/20"
-                          aria-label="Set as default"
+              <AnimatePresence mode="popLayout">
+                {addresses.map((addr) => {
+                  const isDefault = addr.isDefault ?? addr.default;
+                  const isEditing = editingAddressId === (addr.id ?? String(addr.id));
+                  
+                  if (isEditing) return null; // Hide card when editing
+
+                  return (
+                    <motion.div
+                      key={addr.id}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className={`relative rounded-xl border p-5 transition-all ${
+                        isDefault ? 'border-primary bg-primary/5' : 'border-border bg-white hover:border-primary/30'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-primary">
+                              {addr.addressType ?? addr.address_type}
+                            </span>
+                            {isDefault && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-secondary">
+                            {addr.streetAddress ?? addr.street_address}
+                          </p>
+                          <p className="text-sm text-secondary">
+                            {[
+                              addr.city,
+                              addr.state,
+                              addr.postalCode ?? addr.postal_code,
+                              addr.country
+                            ].filter(Boolean).join(', ')}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Tooltip text="Edit" side="top">
+                            <button
+                              onClick={() => startEditAddress(addr)}
+                              className="rounded-full p-2 text-secondary hover:bg-gray-100 hover:text-primary transition-colors"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          </Tooltip>
+                          {!isDefault && (
+                            <Tooltip text="Make Default" side="top">
+                              <button
+                                onClick={() => setDefaultAddress(addr.id)}
+                                className="rounded-full p-2 text-secondary hover:bg-gray-100 hover:text-primary transition-colors"
+                              >
+                                <Star className="h-4 w-4" />
+                              </button>
+                            </Tooltip>
+                          )}
+                          <Tooltip text="Remove" side="top">
+                            <button
+                              onClick={() => requestRemoveAddress(addr)}
+                              className="rounded-full p-2 text-secondary hover:bg-red-50 hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+
+              {/* Address Form */}
+              <AnimatePresence>
+                {showAddressForm && (
+                  <motion.div
+                    id="address-form"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden rounded-xl border border-border bg-gray-50/50"
+                  >
+                    <div className="p-6">
+                      <div className="mb-6 flex items-center justify-between">
+                        <h3 className="font-serif text-lg text-primary">
+                          {editingAddressId ? 'Edit Address' : 'New Address'}
+                        </h3>
+                        <button 
+                          onClick={() => {
+                            setShowAddressForm(false);
+                            setEditingAddressId(null);
+                            addressForm.reset(emptyAddress);
+                          }}
+                          className="text-xs font-bold uppercase tracking-wider text-secondary hover:text-primary"
                         >
-                          <Star className="h-4 w-4" />
+                          Cancel
                         </button>
-                      </Tooltip>
-                    )}
-                    <Tooltip text="Remove address" side="top">
-                      <button
-                        type="button"
-                        onClick={() => requestRemoveAddress(addr)}
-                        className="rounded-lg p-2 text-primary hover:bg-primary/10"
-                        aria-label="Remove address"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </Tooltip>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                      </div>
 
-        <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="mt-6 space-y-5">
-          {addressError && (
-            <div role="alert" className="rounded-xl border border-primary bg-primary/10 px-4 py-3 text-sm text-primary">
-              {addressError}
-            </div>
-          )}
-          <div>
-            <label htmlFor="addr-type" className="block text-sm font-medium text-primary">Type</label>
-            <select id="addr-type" className={getInputClassName(addressForm.formState.errors.addressType)} {...addressForm.register('addressType')}>
-              {ADDRESS_TYPES.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="addr-street" className="block text-sm font-medium text-primary">Street address</label>
-            <input
-              id="addr-street"
-              type="text"
-              autoComplete="street-address"
-              placeholder="123 Main St"
-              className={getInputClassName(addressForm.formState.errors.streetAddress)}
-              {...addressForm.register('streetAddress')}
-            />
-            {addressForm.formState.errors.streetAddress && (
-              <p className="mt-1.5 text-sm text-primary">{addressForm.formState.errors.streetAddress.message}</p>
-            )}
-          </div>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label htmlFor="addr-city" className="block text-sm font-medium text-primary">City</label>
-              <input id="addr-city" type="text" autoComplete="address-level2" className={getInputClassName(addressForm.formState.errors.city)} {...addressForm.register('city')} />
-              {addressForm.formState.errors.city && <p className="mt-1.5 text-sm text-primary">{addressForm.formState.errors.city.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="addr-state" className="block text-sm font-medium text-primary">State / Province</label>
-              <input id="addr-state" type="text" autoComplete="address-level1" className={getInputClassName(addressForm.formState.errors.state)} {...addressForm.register('state')} />
-              {addressForm.formState.errors.state && <p className="mt-1.5 text-sm text-primary">{addressForm.formState.errors.state.message}</p>}
-            </div>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label htmlFor="addr-postal" className="block text-sm font-medium text-primary">Postal code</label>
-              <input id="addr-postal" type="text" autoComplete="postal-code" className={getInputClassName(addressForm.formState.errors.postalCode)} {...addressForm.register('postalCode')} />
-              {addressForm.formState.errors.postalCode && <p className="mt-1.5 text-sm text-primary">{addressForm.formState.errors.postalCode.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="addr-country" className="block text-sm font-medium text-primary">Country</label>
-              <input id="addr-country" type="text" autoComplete="country-name" className={getInputClassName(addressForm.formState.errors.country)} {...addressForm.register('country')} />
-              {addressForm.formState.errors.country && <p className="mt-1.5 text-sm text-primary">{addressForm.formState.errors.country.message}</p>}
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <input
-              id="addr-default"
-              type="checkbox"
-              className="h-4 w-4 rounded border-border text-primary focus:ring-secondary"
-              {...addressForm.register('isDefault')}
-            />
-            <label htmlFor="addr-default" className="text-sm font-medium text-primary">Set as default</label>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={addressSubmitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-quaternary hover:opacity-90 disabled:opacity-50"
-            >
-              {addressSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {editingAddressId != null ? 'Update address' : 'Add address'}
-            </button>
-            {editingAddressId != null && (
-              <button
-                type="button"
-                onClick={() => { addressForm.reset(emptyAddress); setEditingAddressId(null); }}
-                className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-      </section>
+                      <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-5">
+                        {addressError && (
+                          <div className="rounded-md bg-red-50 p-3 text-xs text-red-600 border border-red-100">
+                            {addressError}
+                          </div>
+                        )}
 
-      {/* Delete address confirmation dialog — matches sign out dialog style */}
-      {addressToDelete &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-address-dialog-title"
-            aria-describedby="delete-address-dialog-desc"
-          >
-            <div
-              className="absolute inset-0 bg-quaternary/90 backdrop-blur-sm"
-              aria-hidden
+                        <div className="grid gap-5 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Type</label>
+                            <select 
+                              className={getInputClassName(addressForm.formState.errors.addressType)} 
+                              {...addressForm.register('addressType')}
+                            >
+                              {ADDRESS_TYPES.map(({ value, label }) => (
+                                <option key={value} value={value}>{label}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Country</label>
+                            <input 
+                              type="text" 
+                              autoComplete="country-name" 
+                              className={getInputClassName(addressForm.formState.errors.country)} 
+                              {...addressForm.register('country')} 
+                            />
+                            {addressForm.formState.errors.country && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.country.message}</p>}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Street Address</label>
+                          <input
+                            type="text"
+                            autoComplete="street-address"
+                            className={getInputClassName(addressForm.formState.errors.streetAddress)}
+                            {...addressForm.register('streetAddress')}
+                          />
+                          {addressForm.formState.errors.streetAddress && (
+                            <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.streetAddress.message}</p>
+                          )}
+                        </div>
+
+                        <div className="grid gap-5 sm:grid-cols-3">
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">City</label>
+                            <input 
+                              type="text" 
+                              autoComplete="address-level2" 
+                              className={getInputClassName(addressForm.formState.errors.city)} 
+                              {...addressForm.register('city')} 
+                            />
+                            {addressForm.formState.errors.city && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.city.message}</p>}
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">State / Province</label>
+                            <input 
+                              type="text" 
+                              autoComplete="address-level1" 
+                              className={getInputClassName(addressForm.formState.errors.state)} 
+                              {...addressForm.register('state')} 
+                            />
+                            {addressForm.formState.errors.state && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.state.message}</p>}
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Postal Code</label>
+                            <input 
+                              type="text" 
+                              autoComplete="postal-code" 
+                              className={getInputClassName(addressForm.formState.errors.postalCode)} 
+                              {...addressForm.register('postalCode')} 
+                            />
+                            {addressForm.formState.errors.postalCode && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.postalCode.message}</p>}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2">
+                          <input
+                            id="addr-default"
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                            {...addressForm.register('isDefault')}
+                          />
+                          <label htmlFor="addr-default" className="text-sm text-primary cursor-pointer select-none">Set as default address</label>
+                        </div>
+
+                        <div className="pt-4">
+                          <button
+                            type="submit"
+                            disabled={addressSubmitting}
+                            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary disabled:opacity-50"
+                          >
+                            {addressSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                            {editingAddressId != null ? 'Update Address' : 'Save Address'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </section>
+        </div>
+
+        {/* Sidebar / Info */}
+        <div className="hidden lg:block">
+          <div className="sticky top-24 rounded-xl border border-border bg-gray-50/50 p-6">
+            <h3 className="font-serif text-lg text-primary">Need Help?</h3>
+            <p className="mt-2 text-sm text-secondary/80 leading-relaxed">
+              If you have questions about your account or need assistance with an order, our support team is here to help.
+            </p>
+            <div className="mt-6 space-y-3 text-sm">
+              <div className="flex items-center gap-3 text-primary">
+                <span className="font-medium">Email:</span>
+                <a href="mailto:support@attirehub.com" className="hover:underline">support@attirehub.com</a>
+              </div>
+              <div className="flex items-center gap-3 text-primary">
+                <span className="font-medium">Phone:</span>
+                <span>+975 17 12 34 56</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Delete address confirmation dialog */}
+      <AnimatePresence>
+        {addressToDelete && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
               onClick={cancelRemoveAddress}
             />
-            <div className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-quaternary p-6 shadow-lg">
-              <h2 id="delete-address-dialog-title" className="text-lg font-semibold text-primary">
-                Remove address?
-              </h2>
-              <p id="delete-address-dialog-desc" className="mt-2 text-sm text-secondary">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white p-6 shadow-2xl"
+            >
+              <h2 className="text-base font-serif text-primary">Remove Address?</h2>
+              <p className="mt-2 text-xs text-secondary/80 leading-relaxed">
                 Are you sure you want to remove this address? This action cannot be undone.
               </p>
-              <div className="mt-4 rounded-lg border border-border bg-quaternary p-3">
-                <p className="font-medium text-primary">
+              <div className="mt-4 rounded-lg bg-gray-50 p-3 border border-border">
+                <p className="font-medium text-sm text-primary">
                   {addressToDelete.streetAddress ?? addressToDelete.street_address}
                 </p>
-                <p className="mt-1 text-sm text-secondary">
-                  {[addressToDelete.city, addressToDelete.state, addressToDelete.postalCode ?? addressToDelete.postal_code, addressToDelete.country]
-                    .filter(Boolean)
-                    .join(', ')}
+                <p className="mt-0.5 text-xs text-secondary">
+                  {[addressToDelete.city, addressToDelete.state].filter(Boolean).join(', ')}
                 </p>
               </div>
               <div className="mt-6 flex gap-3">
@@ -581,7 +715,7 @@ export default function AccountSettingsPage() {
                   type="button"
                   onClick={cancelRemoveAddress}
                   disabled={deleteConfirming}
-                  className="flex-1 rounded-lg border border-border bg-quaternary py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50"
+                  className="flex-1 rounded-full border border-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-primary hover:bg-gray-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -589,23 +723,16 @@ export default function AccountSettingsPage() {
                   type="button"
                   onClick={confirmRemoveAddress}
                   disabled={deleteConfirming}
-                  className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-70"
-                  style={{ backgroundColor: '#7BA4D0' }}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-full bg-red-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-red-700 disabled:opacity-70"
                 >
-                  {deleteConfirming ? (
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      Removing…
-                    </span>
-                  ) : (
-                    'Remove'
-                  )}
+                  {deleteConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  Remove
                 </button>
               </div>
-            </div>
-          </div>,
-          document.body
+            </motion.div>
+          </div>
         )}
+      </AnimatePresence>
     </div>
   );
 }

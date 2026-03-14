@@ -52,6 +52,20 @@ function getErrorMessage(error) {
  *   notes?: string | null;
  *   createdAt: string;
  *   items: AdminOrderItem[];
+ *   customer?: {
+ *     id: number;
+ *     email: string;
+ *     firstName?: string;
+ *     lastName?: string;
+ *     phoneNumber?: string;
+ *   };
+ *   shippingAddress?: {
+ *     streetAddress: string;
+ *     city: string;
+ *     state: string;
+ *     postalCode: string;
+ *     country: string;
+ *   };
  *   userId?: number;
  *   customerEmail?: string;
  * }} AdminOrder

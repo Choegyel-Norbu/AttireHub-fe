@@ -1,53 +1,73 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import Header from '@/components/layout/Header';
-import { Package, ShoppingCart, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { Package, ShoppingCart, LayoutDashboard, Settings, Users, BarChart3 } from 'lucide-react';
 
 const SIDEBAR_ITEMS = [
   { to: '/admin', end: true, label: 'Overview', icon: LayoutDashboard },
   { to: '/admin/products', end: false, label: 'Products', icon: Package },
   { to: '/admin/orders', end: true, label: 'Orders', icon: ShoppingCart },
+  // Placeholder items for future features to flesh out the sidebar
+  { to: '/admin/customers', end: true, label: 'Customers', icon: Users, disabled: true },
+  { to: '/admin/analytics', end: true, label: 'Analytics', icon: BarChart3, disabled: true },
+  { to: '/admin/settings', end: true, label: 'Settings', icon: Settings, disabled: true },
 ];
 
 export default function AdminLayout() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-gray-50">
       <Header />
       <div className="flex flex-1 flex-col lg:flex-row">
-        {/* Left sidebar */}
-        <aside
-          className="w-full shrink-0 border-b border-border bg-quaternary lg:w-56 lg:border-b-0 lg:border-r"
-          aria-label="Admin navigation"
-        >
-          <nav className="sticky top-0 p-4 lg:p-4">
-            <h2 className="mb-4 px-3 text-lg font-bold text-primary">
-              Admin Dashboard
-            </h2>
-            <ul className="flex flex-wrap gap-2 lg:flex-col lg:flex-nowrap lg:space-y-1 lg:gap-0">
-              {SIDEBAR_ITEMS.map(({ to, end, label, icon: Icon }) => (
-                <li key={to}>
-                  <NavLink
-                    to={to}
-                    end={end}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'bg-primary text-quaternary'
-                          : 'text-primary hover:bg-tertiary/20'
-                      }`
-                    }
-                  >
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                    <span className="flex-1">{label}</span>
-                    <ChevronRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
+        {/* Sidebar */}
+        <aside className="sticky top-20 z-30 w-full shrink-0 border-b border-gray-200 bg-white lg:static lg:block lg:w-64 lg:border-b-0 lg:border-r">
+          <div className="h-full lg:sticky lg:top-20 lg:p-6">
+            {/* Desktop Header - Hidden on mobile */}
+            <div className="hidden px-2 mb-8 lg:block">
+              <h2 className="font-serif text-xl text-primary">Dashboard</h2>
+              <p className="mt-1 text-xs text-secondary/60">Manage your store</p>
+            </div>
+            
+            <nav className="overflow-x-auto scrollbar-hide">
+              <ul className="flex min-w-full gap-2 p-4 lg:flex-col lg:gap-1 lg:p-0">
+                {SIDEBAR_ITEMS.map(({ to, end, label, icon: Icon, disabled }) => (
+                  <li key={to} className="shrink-0 lg:w-full">
+                    {disabled ? (
+                      <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-tertiary/50 cursor-not-allowed lg:gap-3 lg:px-4 lg:py-2.5">
+                        <Icon className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={1.5} />
+                        <span>{label}</span>
+                      </div>
+                    ) : (
+                      <NavLink
+                        to={to}
+                        end={end}
+                        className={({ isActive }) =>
+                          `group flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 lg:gap-3 lg:px-4 lg:py-2.5 ${
+                            isActive
+                              ? 'bg-primary text-white shadow-md shadow-primary/20'
+                              : 'text-secondary hover:bg-gray-50 hover:text-primary'
+                          }`
+                        }
+                      >
+                        <Icon className="h-4 w-4 shrink-0 lg:h-5 lg:w-5" strokeWidth={1.5} />
+                        <span className="whitespace-nowrap">{label}</span>
+                      </NavLink>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Desktop Tips - Hidden on mobile */}
+            <div className="mt-10 hidden rounded-xl bg-gray-50 p-4 lg:block">
+              <h3 className="font-serif text-sm text-primary">Quick Tips</h3>
+              <p className="mt-2 text-xs text-secondary/70 leading-relaxed">
+                Check the orders page daily for new shipments. Keep product inventory up to date.
+              </p>
+            </div>
+          </div>
         </aside>
 
-        {/* Right content */}
-        <main className="min-w-0 flex-1 bg-quaternary px-4 py-8 sm:px-6 lg:px-8">
+        {/* Main Content */}
+        <main className="min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-10">
           <div className="mx-auto max-w-6xl">
             <Outlet />
           </div>

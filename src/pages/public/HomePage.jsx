@@ -123,30 +123,33 @@ export default function HomePage() {
             <p className="mt-3 text-secondary/70">Explore our comprehensive range of apparel.</p>
           </div>
           
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {categories.map((category, index) => (
               <Link
                 key={category.id}
                 to={`/products?category=${encodeURIComponent(category.slug)}`}
-                className="group relative block aspect-[3/4] overflow-hidden bg-gray-200"
+                className="group relative block aspect-[3/4] overflow-hidden rounded-xl bg-gray-200"
               >
-                {/* Placeholder images for categories since API doesn't provide them yet */}
-                <img 
+                <img
                   src={`https://images.unsplash.com/photo-${
-                    index === 0 ? '1548036328-c9fa89d128fa' : 
-                    index === 1 ? '1551488852-0801464c5204' :
-                    index === 2 ? '1532453288672-3a27e9be9efd' :
-                    '1483985988355-763728e1935b'
-                  }?q=80&w=800&auto=format&fit=crop`}
+                    index === 0
+                      ? '1490481651871-ab68de25d43d' // Men
+                      : index === 1
+                      ? '1515886657613-9f3515b0c78f' // Women
+                      : index === 2
+                      ? '1532453288672-3a27e9be9efd' // Accessories
+                      : '1483985988355-763728e1935b' // Other
+                  }?q=80&w=600&auto=format&fit=crop`}
                   alt={category.name}
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/20 transition-opacity group-hover:bg-black/30" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                  <h3 className="font-serif text-2xl text-white">{category.name}</h3>
-                  <span className="mt-4 inline-block rounded-full bg-white px-6 py-2 text-xs font-bold uppercase tracking-wider text-primary opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
-                    Shop Now
-                  </span>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-80" />
+                <div className="absolute bottom-0 left-0 p-4 sm:p-6">
+                  <h3 className="font-serif text-xl text-white sm:text-2xl">{category.name}</h3>
+                  <div className="mt-2 flex items-center gap-2 text-xs font-medium text-white opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+                    <span>Shop Now</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </div>
                 </div>
               </Link>
             ))}

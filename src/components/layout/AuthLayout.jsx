@@ -1,54 +1,61 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 
 /**
- * Minimal layout for auth pages: logo header and centered content.
- * Keeps the experience focused while staying on-brand.
- * @param {string} [backgroundImage] - Optional path to a background image. Rendered sharp with a quaternary overlay for opacity.
+ * Minimalist auth layout without images.
+ * Focuses purely on typography and the form.
  */
-export default function AuthLayout({ children, title, backgroundImage }) {
+export default function AuthLayout({ children, title, subtitle }) {
   return (
-    <div className="relative flex min-h-screen flex-col">
-      <div className="absolute inset-0 bg-quaternary" aria-hidden />
-      {backgroundImage && (
-        <>
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${backgroundImage})` }}
-            aria-hidden
-          />
-          <div
-            className="absolute inset-0 bg-quaternary"
-            style={{ opacity: 0.82 }}
-            aria-hidden
-          />
-        </>
-      )}
-      <header className="relative z-10 border-b border-border bg-quaternary">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-primary transition-opacity hover:opacity-80"
-            aria-label="AttireHub Home"
-          >
-            <ShoppingBag className="h-8 w-8" aria-hidden />
-            <span className="text-xl font-semibold tracking-tight">AttireHub</span>
-          </Link>
-          <Link
-            to="/"
-            className="text-sm font-medium text-primary transition-colors hover:text-secondary"
-          >
-            Back to store
-          </Link>
-        </div>
+    <div className="flex min-h-screen w-full flex-col bg-white">
+      {/* Header / Navigation */}
+      <header className="flex items-center justify-between px-6 py-6 sm:px-8 lg:px-12">
+        <Link 
+          to="/" 
+          className="group flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+          Back to store
+        </Link>
+        
+        <Link to="/" className="text-2xl font-serif tracking-tight text-primary">
+          AttireHub
+        </Link>
+        
+        {/* Spacer to balance the header if needed, or could be a help link */}
+        <div className="w-[100px] hidden sm:block"></div> 
       </header>
 
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6">
-        {title && (
-          <h1 className="sr-only">{title}</h1>
-        )}
-        {children}
+      {/* Main Content Area */}
+      <main className="flex flex-1 flex-col items-center justify-center px-4 pb-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="mb-10 text-center"
+          >
+            <h1 className="text-3xl font-serif text-primary mb-3">{title}</h1>
+            {subtitle && (
+              <p className="text-secondary text-base">{subtitle}</p>
+            )}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            {children}
+          </motion.div>
+        </div>
       </main>
+      
+      {/* Simple Footer */}
+      <footer className="py-6 text-center text-xs text-tertiary">
+        &copy; {new Date().getFullYear()} AttireHub. All rights reserved.
+      </footer>
     </div>
   );
 }

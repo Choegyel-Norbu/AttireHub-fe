@@ -353,10 +353,10 @@ export default function ProductDetailPage() {
                 </a>
               </div>
 
-              <div className="my-8 h-px w-full bg-border" />
+              <div className="my-6 h-px w-full bg-border" />
 
               {/* Description */}
-              <div className="prose prose-sm text-secondary/80">
+              <div className="text-sm leading-relaxed text-secondary/80">
                 <p>{product.description}</p>
               </div>
 

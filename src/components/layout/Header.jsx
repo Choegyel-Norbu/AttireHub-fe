@@ -1,11 +1,16 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, User, LogOut, X, ShoppingBag, Bell } from 'lucide-react';
+import { Menu, Search, User, LogOut, X, ShoppingBag, Bell, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { CartContext } from '@/context/CartContext';
-import { getNotifications } from '@/services/notificationService';
+import {
+  getNotifications,
+  getAdminNotifications,
+  filterNotificationsForAdmin,
+  filterNotificationsForCustomer,
+} from '@/services/notificationService';
 
 const NAV_LINKS = [
   { to: '/products', label: 'Collection' },
@@ -48,15 +53,22 @@ export default function Header() {
   }, [location]);
 
   const fetchUnreadCount = useCallback(async () => {
-    if (!isAuthenticated || !isAdmin(user)) return;
+    if (!isAuthenticated) return;
+    const admin = isAdmin(user);
     try {
-      const result = await getNotifications({
-        read: false,
-        type: 'NEW_ORDER',
-        page: 0,
-        size: 1,
-      });
-      setUnreadCount(result.totalElements ?? 0);
+      let content = [];
+      if (admin) {
+        const result = await getAdminNotifications({
+          read: false,
+          page: 0,
+          size: 50,
+        });
+        content = filterNotificationsForAdmin(result.content ?? []);
+      } else {
+        const result = await getNotifications({ read: false, size: 50 });
+        content = filterNotificationsForCustomer(result.content ?? []);
+      }
+      setUnreadCount(content.length);
     } catch {
       setUnreadCount(0);
     }
@@ -163,7 +175,7 @@ export default function Header() {
               <div className="hidden items-center gap-4 sm:flex">
                 {showDashboard && (
                   <Link
-                    to="/admin/products"
+                    to="/admin"
                     className="text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary"
                   >
                     Dashboard
@@ -194,18 +206,20 @@ export default function Header() {
               </Link>
             )}
 
-            <Link
-              to="/cart"
-              className="relative p-2 text-primary transition-colors hover:text-secondary"
-              aria-label="Cart"
-            >
-              <ShoppingBag className="h-5 w-5" strokeWidth={1.5} />
-              {totalItems > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+            {!showDashboard && (
+              <Link
+                to="/cart"
+                className="relative p-2 text-primary transition-colors hover:text-secondary"
+                aria-label="Cart"
+              >
+                <ShoppingBag className="h-5 w-5" strokeWidth={1.5} />
+                {totalItems > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+            )}
           </div>
         </div>
 
@@ -250,86 +264,119 @@ export default function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm lg:hidden"
             />
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 z-50 w-full max-w-xs bg-white p-6 shadow-xl lg:hidden"
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed inset-y-0 left-0 z-50 w-full max-w-sm flex flex-col bg-white shadow-2xl lg:hidden"
             >
-              <div className="flex items-center justify-between mb-8">
-                <span className="font-serif text-xl font-medium text-primary">Menu</span>
-                <button onClick={() => setMobileOpen(false)}>
-                  <X className="h-6 w-6 text-primary" strokeWidth={1.5} />
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <span className="font-serif text-2xl tracking-tight text-primary">Menu</span>
+                <button 
+                  onClick={() => setMobileOpen(false)}
+                  className="p-2 -mr-2 text-primary hover:bg-gray-50 rounded-full transition-colors"
+                >
+                  <X className="h-6 w-6" strokeWidth={1.5} />
                 </button>
               </div>
 
-              <nav className="flex flex-col gap-6">
-                {NAV_LINKS.map(({ to, label }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    className="text-lg font-medium text-primary"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {label}
-                  </Link>
-                ))}
-                
-                <div className="my-2 h-px bg-border" />
-
-                {isAuthenticated ? (
-                  <>
-                    <Link
-                      to="/profile"
-                      className="flex items-center gap-3 text-lg font-medium text-primary"
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      <User className="h-5 w-5" />
-                      Profile
-                    </Link>
-                    <Link
-                      to="/account/notifications"
-                      className="flex items-center gap-3 text-lg font-medium text-primary"
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      <Bell className="h-5 w-5" />
-                      Notifications
-                      {unreadCount > 0 && (
-                        <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </Link>
-                    {showDashboard && (
-                      <Link
-                        to="/admin/products"
-                        className="text-lg font-medium text-primary"
-                        onClick={() => setMobileOpen(false)}
+              <div className="flex-1 overflow-y-auto px-6 py-8">
+                <nav className="flex flex-col gap-8">
+                  {/* Main Links */}
+                  <div className="flex flex-col gap-6">
+                    {NAV_LINKS.map(({ to, label }, i) => (
+                      <motion.div
+                        key={to}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 + i * 0.1 }}
                       >
-                        Dashboard
-                      </Link>
+                        <Link
+                          to={to}
+                          className="text-3xl font-serif text-primary hover:text-secondary transition-colors block"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          {label}
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div className="h-px w-full bg-gray-100 my-2" />
+
+                  {/* Account Links */}
+                  <div className="flex flex-col gap-4">
+                    {isAuthenticated ? (
+                      <>
+                        <Link
+                          to="/profile"
+                          className="flex items-center gap-3 text-base font-medium text-secondary hover:text-primary"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <User className="h-5 w-5" />
+                          My Profile
+                        </Link>
+                        <Link
+                          to="/account/notifications"
+                          className="flex items-center gap-3 text-base font-medium text-secondary hover:text-primary"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <Bell className="h-5 w-5" />
+                          Notifications
+                          {unreadCount > 0 && (
+                            <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </Link>
+                        {showDashboard && (
+                          <Link
+                            to="/admin"
+                            className="flex items-center gap-3 text-base font-medium text-secondary hover:text-primary"
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            <LayoutDashboard className="h-5 w-5" />
+                            Admin Dashboard
+                          </Link>
+                        )}
+                        <button
+                          onClick={handleLogoutClick}
+                          className="flex items-center gap-3 text-base font-medium text-red-600 hover:text-red-700 mt-2"
+                        >
+                          <LogOut className="h-5 w-5" />
+                          Sign Out
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        <Link
+                          to="/login"
+                          className="text-lg font-medium text-primary hover:underline"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          Sign In
+                        </Link>
+                        <Link
+                          to="/register"
+                          className="text-lg font-medium text-secondary hover:text-primary"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          Create Account
+                        </Link>
+                      </div>
                     )}
-                    <button
-                      onClick={handleLogoutClick}
-                      className="flex items-center gap-3 text-lg font-medium text-red-600"
-                    >
-                      <LogOut className="h-5 w-5" />
-                      Sign Out
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    to="/login"
-                    className="text-lg font-medium text-primary"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Sign In
-                  </Link>
-                )}
-              </nav>
+                  </div>
+                </nav>
+              </div>
+
+              <div className="p-6 bg-gray-50 border-t border-gray-100">
+                 <p className="text-xs text-tertiary text-center">
+                   © {new Date().getFullYear()} AttireHub. All rights reserved.
+                 </p>
+              </div>
             </motion.div>
           </>
         )}

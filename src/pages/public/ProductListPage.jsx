@@ -108,16 +108,17 @@ export default function ProductListPage() {
     fetchProducts();
   }, [fetchProducts]);
 
-  const applyFilters = () => {
-    setAppliedFilters(filters);
+  const applyFilters = (nextFilters) => {
+    const finalFilters = nextFilters ?? filters;
+    setAppliedFilters(finalFilters);
     setPage(0);
     setShowMobileFilters(false);
     const params = new URLSearchParams();
-    if (filters.search.trim()) params.set('search', filters.search.trim());
-    if (filters.category) params.set('category', filters.category);
-    if (filters.sort) params.set('sort', filters.sort);
-    if (filters.minPrice !== '') params.set('minPrice', filters.minPrice);
-    if (filters.maxPrice !== '') params.set('maxPrice', filters.maxPrice);
+    if (finalFilters.search.trim()) params.set('search', finalFilters.search.trim());
+    if (finalFilters.category) params.set('category', finalFilters.category);
+    if (finalFilters.sort) params.set('sort', finalFilters.sort);
+    if (finalFilters.minPrice !== '') params.set('minPrice', finalFilters.minPrice);
+    if (finalFilters.maxPrice !== '') params.set('maxPrice', finalFilters.maxPrice);
     if (searchParams.get('newArrivalsOnly') === 'true') params.set('newArrivalsOnly', 'true');
     if (searchParams.get('trending') === 'true') params.set('trending', 'true');
     setSearchParams(params, { replace: true });
@@ -155,8 +156,13 @@ export default function ProductListPage() {
             type="search"
             placeholder="Search..."
             value={filters.search}
-            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+            onChange={(e) =>
+              setFilters((f) => {
+                const updated = { ...f, search: e.target.value };
+                applyFilters(updated);
+                return updated;
+              })
+            }
             className="w-full rounded-md border border-border bg-white py-2 pl-9 pr-3 text-sm text-primary placeholder:text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -167,7 +173,13 @@ export default function ProductListPage() {
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Categories</h3>
         <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200">
           <button
-            onClick={() => setFilters(f => ({ ...f, category: '' }))}
+            onClick={() =>
+              setFilters((f) => {
+                const updated = { ...f, category: '' };
+                applyFilters(updated);
+                return updated;
+              })
+            }
             className={`block w-full text-left text-sm transition-colors ${
               filters.category === '' ? 'font-semibold text-primary' : 'text-secondary/70 hover:text-primary'
             }`}
@@ -177,7 +189,13 @@ export default function ProductListPage() {
           {categories.filter(c => c.slug).map((c) => (
             <button
               key={c.id}
-              onClick={() => setFilters(f => ({ ...f, category: c.slug }))}
+              onClick={() =>
+                setFilters((f) => {
+                  const updated = { ...f, category: c.slug };
+                  applyFilters(updated);
+                  return updated;
+                })
+              }
               className={`block w-full text-left text-sm transition-colors ${
                 filters.category === c.slug ? 'font-semibold text-primary' : 'text-secondary/70 hover:text-primary'
               }`}
@@ -197,7 +215,13 @@ export default function ProductListPage() {
             type="number"
             placeholder="Min"
             value={filters.minPrice}
-            onChange={(e) => setFilters((f) => ({ ...f, minPrice: e.target.value }))}
+            onChange={(e) =>
+              setFilters((f) => {
+                const updated = { ...f, minPrice: e.target.value };
+                applyFilters(updated);
+                return updated;
+              })
+            }
             className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <span className="text-tertiary">-</span>
@@ -205,7 +229,13 @@ export default function ProductListPage() {
             type="number"
             placeholder="Max"
             value={filters.maxPrice}
-            onChange={(e) => setFilters((f) => ({ ...f, maxPrice: e.target.value }))}
+            onChange={(e) =>
+              setFilters((f) => {
+                const updated = { ...f, maxPrice: e.target.value };
+                applyFilters(updated);
+                return updated;
+              })
+            }
             className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -216,7 +246,13 @@ export default function ProductListPage() {
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Sort By</h3>
         <select
           value={filters.sort}
-          onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value }))}
+          onChange={(e) =>
+            setFilters((f) => {
+              const updated = { ...f, sort: e.target.value };
+              applyFilters(updated);
+              return updated;
+            })
+          }
           className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >
           {SORT_OPTIONS.map((opt) => (
@@ -230,15 +266,15 @@ export default function ProductListPage() {
       {/* Actions */}
       <div className="pt-4 border-t border-border space-y-3">
         <button
-          onClick={applyFilters}
-          className="w-full rounded-full bg-primary py-3 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-secondary"
+          onClick={() => applyFilters()}
+          className="w-full rounded-full bg-primary px-4 py-3 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-secondary"
         >
           Apply Filters
         </button>
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="w-full text-center text-xs font-medium text-secondary hover:text-primary hover:underline"
+            className="w-full px-4 py-2 text-center text-xs font-medium text-secondary hover:text-primary hover:underline"
           >
             Clear All
           </button>
@@ -259,10 +295,10 @@ export default function ProductListPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="font-serif text-4xl text-primary sm:text-5xl">
+            <h1 className="font-serif text-3xl text-primary sm:text-4xl">
               {pageTitle}
             </h1>
-            <p className="mt-4 max-w-2xl text-secondary/70">
+            <p className="mt-4 max-w-2xl text-sm text-secondary/70">
               Explore our latest collection of premium essentials, designed for the modern wardrobe.
             </p>
           </motion.div>
@@ -335,11 +371,13 @@ export default function ProductListPage() {
                 <div className="relative">
                   <select
                     value={filters.sort}
-                    onChange={(e) => {
-                      setFilters(f => ({ ...f, sort: e.target.value }));
-                      // Auto apply sort on change for better UX
-                      setTimeout(applyFilters, 0); 
-                    }}
+                    onChange={(e) =>
+                      setFilters((f) => {
+                        const updated = { ...f, sort: e.target.value };
+                        applyFilters(updated);
+                        return updated;
+                      })
+                    }
                     className="appearance-none rounded-md border-none bg-transparent py-1 pr-8 text-sm font-medium text-primary focus:ring-0 cursor-pointer hover:text-secondary"
                   >
                     {SORT_OPTIONS.map((opt) => (

@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { getOrders, cancelOrder } from '@/services/orderService';
 import { updateOrderStatus } from '@/services/adminOrderService';
 import { Link } from 'react-router-dom';
-import { Package, Loader2, ChevronLeft, ChevronRight, Eye, XCircle, PackageCheck } from 'lucide-react';
+import { Package, Loader2, ChevronLeft, ChevronRight, ArrowRight, XCircle, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const PAGE_SIZE = 10;
 
 const STATUS_OPTIONS = [
-  { value: '', label: 'All statuses' },
+  { value: '', label: 'All Orders' },
   { value: 'PENDING', label: 'Pending' },
   { value: 'CONFIRMED', label: 'Confirmed' },
   { value: 'PROCESSING', label: 'Processing' },
@@ -29,12 +30,10 @@ function formatDate(iso) {
   if (!iso) return '—';
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString(undefined, {
+    return d.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'short',
+      month: 'long',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   } catch {
     return iso;
@@ -43,22 +42,22 @@ function formatDate(iso) {
 
 function StatusBadge({ status }) {
   const statusLower = (status || '').toLowerCase();
-  const colors =
+  const styles =
     statusLower === 'cancelled' || statusLower === 'returned'
-      ? 'bg-red-100 text-red-800'
+      ? 'bg-red-50 text-red-700 border-red-100'
       : statusLower === 'delivered'
-        ? 'bg-green-100 text-green-800'
+        ? 'bg-green-50 text-green-700 border-green-100'
         : statusLower === 'shipped' || statusLower === 'processing'
-          ? 'bg-blue-100 text-blue-800'
+          ? 'bg-blue-50 text-blue-700 border-blue-100'
           : statusLower === 'confirmed'
-            ? 'bg-amber-100 text-amber-800'
-            : 'bg-tertiary/30 text-primary';
+            ? 'bg-amber-50 text-amber-700 border-amber-100'
+            : 'bg-gray-50 text-gray-700 border-gray-100';
+            
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${colors}`}
-      title={status}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${styles}`}
     >
-      {status || '—'}
+      {status || 'Unknown'}
     </span>
   );
 }
@@ -116,11 +115,11 @@ export default function OrdersPage() {
     try {
       await cancelOrder(cancelConfirmOrderNumber);
       setCancelConfirmOrderNumber(null);
-      showToast({ message: 'Your order has been cancelled successfully. No further charges will be made.', variant: 'success' });
+      showToast({ message: 'Order cancelled successfully.', variant: 'success' });
       await fetchOrders();
     } catch (err) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to cancel order.';
-      showToast({ message: msg || 'We couldn\'t cancel this order. It may have already been processed—please contact support if you need help.', variant: 'error' });
+      showToast({ message: msg, variant: 'error' });
     } finally {
       setCancellingOrderNumber(null);
     }
@@ -134,11 +133,11 @@ export default function OrdersPage() {
     try {
       await updateOrderStatus(toConfirm, 'DELIVERED');
       setDeliverConfirmOrderNumber(null);
-      showToast({ message: 'Delivery confirmed. Thank you for confirming you received your order!', variant: 'success' });
+      showToast({ message: 'Delivery confirmed.', variant: 'success' });
       await fetchOrders();
     } catch (err) {
-      const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to mark order as delivered.';
-      showToast({ message: msg || 'We couldn\'t update the delivery status. Please try again or contact support.', variant: 'error' });
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to mark delivered.';
+      showToast({ message: msg, variant: 'error' });
     } finally {
       setDeliveringOrderNumber(null);
     }
@@ -152,249 +151,272 @@ export default function OrdersPage() {
   const to = Math.min((page + 1) * PAGE_SIZE, totalElements);
 
   return (
-    <>
-      <h1 className="flex items-center gap-2 text-lg font-bold text-primary">
-        <Package className="h-5 w-5" aria-hidden />
-        My Orders
-      </h1>
-      <p className="mt-1 text-sm text-secondary">
-        View your order history and tracking status.
-      </p>
-
-      <section className="mt-6 flex flex-wrap items-center gap-3">
-        <label htmlFor="order-status-filter" className="text-sm font-medium text-primary">
-          Status
-        </label>
-        <select
-          id="order-status-filter"
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(0);
-          }}
-          className="rounded-lg border border-border bg-quaternary px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-          aria-label="Filter by status"
-        >
-          {STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value || 'all'} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </section>
+    <div className="mx-auto max-w-5xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="font-serif text-xl text-primary">Order History</h1>
+          <p className="mt-0.5 text-xs text-secondary/70">
+            Track and manage your recent purchases.
+          </p>
+        </div>
+        
+        <div className="relative min-w-[180px]">
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            className="w-full appearance-none rounded-full border border-border bg-white py-2 pl-3 pr-8 text-xs font-medium text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value || 'all'} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-secondary">
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
 
       {error && (
-        <div className="mt-6 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">
+        <div className="mb-6 rounded-lg border border-red-100 bg-red-50 p-3 text-xs text-red-600">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="mt-8 flex items-center justify-center py-16">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
-          <span className="sr-only">Loading orders…</span>
+        <div className="flex h-64 w-full items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
         </div>
       ) : orders.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-border bg-quaternary py-16 text-center">
-          <Package className="mx-auto h-12 w-12 text-tertiary" aria-hidden />
-          <p className="mt-4 font-medium text-primary">No orders yet</p>
-          <p className="mt-1 text-sm text-secondary">
-            When you place an order, it will appear here.
+        <div className="flex h-80 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-gray-50/50 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+            <Package className="h-6 w-6 text-tertiary" />
+          </div>
+          <h3 className="mt-3 text-base font-medium text-primary">No orders found</h3>
+          <p className="mt-1.5 max-w-sm text-xs text-secondary/70">
+            {statusFilter 
+              ? "We couldn't find any orders matching your selected filter."
+              : "You haven't placed any orders yet. Start shopping to fill your wardrobe."}
           </p>
+          <Link
+            to="/products"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary transition-colors"
+          >
+            Start Shopping
+          </Link>
         </div>
       ) : (
-        <>
-          <div className="mt-6 space-y-3">
-            {orders.map((order) => (
-              <div
-                key={order.id ?? order.orderNumber}
-                className="rounded-xl border border-border bg-quaternary p-4 transition-colors hover:border-border/80"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <motion.div
+              key={order.id ?? order.orderNumber}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="group overflow-hidden rounded-xl border border-border bg-white transition-shadow hover:shadow-md"
+            >
+              {/* Order Header */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-gray-50/50 p-3 sm:p-4">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
                   <div>
-                    <p className="font-mono font-semibold text-primary">
-                      {order.orderNumber ?? `#${order.id}`}
-                    </p>
-                    <p className="mt-0.5 text-sm text-secondary">
-                      {formatDate(order.createdAt)}
-                    </p>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-secondary/70">Order Placed</span>
+                    <span className="text-xs font-medium text-primary">{formatDate(order.createdAt)}</span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={order.status} />
-                    <p className="text-sm font-semibold text-primary">
-                      Nu {formatPrice(order.total)} /-
-                    </p>
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-secondary/70">Total</span>
+                    <span className="text-xs font-medium text-primary">Nu {formatPrice(order.total)}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-secondary/70">Order #</span>
+                    <span className="text-xs font-mono font-medium text-primary">{order.orderNumber ?? order.id}</span>
                   </div>
                 </div>
-                {order.items && order.items.length > 0 && (
-                  <p className="mt-3 text-sm text-secondary">
-                    {order.items.length} item{order.items.length !== 1 ? 's' : ''} ·{' '}
-                    {order.items.map((i) => i.productName ?? i.product_name).filter(Boolean).join(', ') || 'Items'}
-                  </p>
-                )}
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <StatusBadge status={order.status} />
                   <Link
                     to={`/account/orders/${encodeURIComponent(order.orderNumber ?? order.id)}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 cursor-pointer"
+                    className="hidden text-xs font-medium text-primary underline underline-offset-4 hover:text-secondary sm:block"
                   >
-                    <Eye className="h-4 w-4" aria-hidden />
-                    View details
+                    View Details
                   </Link>
-                  {canCancelOrder(order) && (
-                    <button
-                      type="button"
-                      onClick={() => setCancelConfirmOrderNumber(order.orderNumber ?? String(order.id))}
-                      disabled={cancellingOrderNumber != null}
-                      className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 cursor-pointer"
-                      aria-label={`Cancel order ${order.orderNumber ?? order.id}`}
-                    >
-                      {cancellingOrderNumber === (order.orderNumber ?? String(order.id)) ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      ) : (
-                        <XCircle className="h-4 w-4" aria-hidden />
-                      )}
-                      Cancel order
-                    </button>
-                  )}
-                  {canMarkDelivered(order) && (
-                    <button
-                      type="button"
-                      onClick={() => setDeliverConfirmOrderNumber(order.orderNumber ?? String(order.id))}
-                      disabled={deliveringOrderNumber != null}
-                      className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50 cursor-pointer"
-                      aria-label={`Mark order ${order.orderNumber ?? order.id} as delivered`}
-                    >
-                      {deliveringOrderNumber === (order.orderNumber ?? String(order.id)) ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      ) : (
-                        <PackageCheck className="h-4 w-4" aria-hidden />
-                      )}
-                      I received it — mark delivered
-                    </button>
-                  )}
                 </div>
               </div>
-            ))}
-          </div>
 
-          {totalPages > 1 && (
-            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
-              <p className="text-sm text-secondary">
-                Showing {from}–{to} of {totalElements}
+              {/* Order Content */}
+              <div className="p-3 sm:p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  {/* Items Preview */}
+                  <div className="flex items-center gap-3 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+                    {order.items?.slice(0, 3).map((item, idx) => (
+                      <div key={idx} className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-gray-100 border border-border">
+                        {item.imageUrl || item.image_url ? (
+                          <img 
+                            src={item.imageUrl || item.image_url} 
+                            alt="" 
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-tertiary">
+                            <Package className="h-4 w-4 opacity-30" />
+                          </div>
+                        )}
+                        <span className="absolute bottom-0 right-0 bg-white/90 px-1 py-0.5 text-[9px] font-bold text-primary backdrop-blur-sm rounded-tl">
+                          x{item.quantity}
+                        </span>
+                      </div>
+                    ))}
+                    {(order.items?.length ?? 0) > 3 && (
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-gray-50 border border-border text-xs font-medium text-secondary">
+                        +{order.items.length - 3}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    {canMarkDelivered(order) && (
+                      <button
+                        onClick={() => setDeliverConfirmOrderNumber(order.orderNumber ?? String(order.id))}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-green-700 transition-colors"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Confirm Delivery
+                      </button>
+                    )}
+                    
+                    {canCancelOrder(order) && (
+                      <button
+                        onClick={() => setCancelConfirmOrderNumber(order.orderNumber ?? String(order.id))}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-50 hover:border-red-100 transition-colors"
+                      >
+                        Cancel Order
+                      </button>
+                    )}
+
+                    <Link
+                      to={`/account/orders/${encodeURIComponent(order.orderNumber ?? order.id)}`}
+                      className="sm:hidden inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary hover:bg-gray-50 transition-colors"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-center gap-3">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-primary transition-colors hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-xs font-medium text-secondary">
+            Page {page + 1} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={last}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-primary transition-colors hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Dialogs */}
+      <AnimatePresence>
+        {/* Cancel Dialog */}
+        {cancelConfirmOrderNumber && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCancelConfirmOrderNumber(null)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white p-5 shadow-2xl"
+            >
+              <h2 className="text-base font-serif text-primary">Cancel Order?</h2>
+              <p className="mt-1.5 text-xs text-secondary/80 leading-relaxed">
+                Are you sure you want to cancel order <span className="font-mono font-medium text-primary">#{cancelConfirmOrderNumber}</span>? This action cannot be undone.
               </p>
-              <div className="flex items-center gap-2">
+              <div className="mt-4 flex gap-2">
                 <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent cursor-pointer"
-                  aria-label="Previous page"
+                  onClick={() => setCancelConfirmOrderNumber(null)}
+                  className="flex-1 rounded-full border border-border px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary hover:bg-gray-50"
                 >
-                  <ChevronLeft className="h-4 w-4" aria-hidden />
-                  Previous
+                  Keep Order
                 </button>
-                <span className="px-3 text-sm text-secondary">
-                  Page {page + 1} of {totalPages}
-                </span>
                 <button
-                  type="button"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={last}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 disabled:hover:bg-transparent cursor-pointer"
-                  aria-label="Next page"
+                  onClick={handleCancelOrder}
+                  disabled={cancellingOrderNumber != null}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-red-600 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-red-700"
                 >
-                  Next
-                  <ChevronRight className="h-4 w-4" aria-hidden />
+                  {cancellingOrderNumber ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  Yes, Cancel
                 </button>
               </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Confirm delivery dialog */}
-      {deliverConfirmOrderNumber && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="deliver-confirm-dialog-title"
-          aria-describedby="deliver-confirm-dialog-desc"
-        >
-          <div className="w-full max-w-md rounded-xl border border-border bg-quaternary p-6 shadow-lg">
-            <h2 id="deliver-confirm-dialog-title" className="text-lg font-semibold text-primary">
-              Confirm delivery
-            </h2>
-            <p id="deliver-confirm-dialog-desc" className="mt-2 text-sm text-secondary">
-              Have you received order <strong className="text-primary">{deliverConfirmOrderNumber}</strong>? 
-              Confirm to mark it as delivered.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => handleMarkDelivered()}
-                disabled={deliveringOrderNumber != null}
-                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:bg-green-700 disabled:opacity-50 cursor-pointer"
-              >
-                {deliveringOrderNumber ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : null}
-                Yes, I received it
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeliverConfirmOrderNumber(null)}
-                disabled={deliveringOrderNumber != null}
-                className="rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Cancel order confirmation */}
-      {cancelConfirmOrderNumber && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cancel-order-dialog-title"
-          aria-describedby="cancel-order-dialog-desc"
-        >
-          <div className="w-full max-w-md rounded-xl border border-border bg-quaternary p-6 shadow-lg">
-            <h2 id="cancel-order-dialog-title" className="text-lg font-semibold text-primary">
-              Cancel order?
-            </h2>
-            <p id="cancel-order-dialog-desc" className="mt-2 text-sm text-secondary">
-              Are you sure you want to cancel order <strong className="text-primary">{cancelConfirmOrderNumber}</strong>?
-              This action cannot be undone.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={handleCancelOrder}
-                disabled={cancellingOrderNumber != null}
-                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:bg-red-700 disabled:opacity-50 cursor-pointer"
-              >
-                {cancellingOrderNumber ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : null}
-                Yes, cancel order
-              </button>
-              <button
-                type="button"
-                onClick={() => setCancelConfirmOrderNumber(null)}
-                disabled={cancellingOrderNumber != null}
-                className="rounded-lg border border-border bg-quaternary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-50 cursor-pointer"
-              >
-                Keep order
-              </button>
-            </div>
+        {/* Delivery Dialog */}
+        {deliverConfirmOrderNumber && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeliverConfirmOrderNumber(null)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white p-5 shadow-2xl"
+            >
+              <h2 className="text-base font-serif text-primary">Confirm Delivery</h2>
+              <p className="mt-1.5 text-xs text-secondary/80 leading-relaxed">
+                Please confirm that you have received order <span className="font-mono font-medium text-primary">#{deliverConfirmOrderNumber}</span>.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => setDeliverConfirmOrderNumber(null)}
+                  className="flex-1 rounded-full border border-border px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary hover:bg-gray-50"
+                >
+                  Not Yet
+                </button>
+                <button
+                  onClick={() => handleMarkDelivered()}
+                  disabled={deliveringOrderNumber != null}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-green-600 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-green-700"
+                >
+                  {deliveringOrderNumber ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  Received
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
-    </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

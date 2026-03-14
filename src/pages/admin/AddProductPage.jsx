@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Trash2, CheckCircle, Package, List } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Package, List, Loader2, Lightbulb } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import * as adminProductService from '@/services/adminProductService';
 import { getCategories, flattenCategories } from '@/services/categoryService';
 
@@ -30,11 +31,11 @@ const addProductSchema = z.object({
   variants: z.array(variantSchema).min(1, 'Add at least one variant'),
 });
 
-function inputClass(error) {
+function getInputClassName(error) {
   const base =
-    'w-full rounded-lg border bg-quaternary px-4 py-2.5 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
-  const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
+    'w-full rounded-none border-b border-border bg-transparent px-3 py-3 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-black focus:ring-0';
+  const normal = 'border-border focus:border-primary';
+  const invalid = 'border-red-500 focus:border-red-500 text-red-600';
   return `${base} ${error ? invalid : normal}`;
 }
 
@@ -112,120 +113,135 @@ export default function AddProductPage() {
   };
 
   return (
-    <>
-          <h1 className="text-2xl font-semibold text-primary">Add product</h1>
-          <p className="mt-1 text-sm text-secondary">
-            Create a new product with variants (size, color, price, stock).
-          </p>
+    <div className="mx-auto max-w-5xl space-y-12">
+      <div>
+        <h1 className="font-serif text-xl text-primary">Add Product</h1>
+        <p className="mt-0.5 text-xs text-secondary/70">
+          Create a new product with variants (size, color, price, stock).
+        </p>
+      </div>
 
+      <div className="grid gap-12 lg:grid-cols-3">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-12">
           {createdProduct ? (
-            <div className="mt-8 space-y-6">
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-quaternary p-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <CheckCircle className="h-6 w-6 text-primary" aria-hidden />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-primary">Product created successfully</h2>
-                  <p className="text-sm text-secondary">
-                    <span className="font-medium text-primary">{createdProduct.name}</span>
-                    {createdProduct.slug && (
-                      <span className="text-tertiary"> · {createdProduct.slug}</span>
-                    )}
-                  </p>
-                </div>
-              </div>
+            <div className="space-y-8">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex items-center gap-4 rounded-xl border border-border bg-white p-5"
+                >
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <CheckCircle className="h-6 w-6 text-primary" aria-hidden />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-medium text-primary">Product created successfully</h2>
+                    <p className="text-sm text-secondary">
+                      <span className="font-medium text-primary">{createdProduct.name}</span>
+                      {createdProduct.slug && (
+                        <span className="text-tertiary"> · {createdProduct.slug}</span>
+                      )}
+                    </p>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
 
-              <section className="rounded-xl border border-border bg-quaternary p-6">
-                <h3 className="flex items-center gap-2 text-base font-medium text-primary">
-                  <Package className="h-4 w-4" aria-hidden />
-                  Product details
-                </h3>
-                <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-xs font-medium uppercase tracking-wider text-tertiary">Name</dt>
-                    <dd className="mt-0.5 font-medium text-primary">{createdProduct.name}</dd>
-                  </div>
-                  {createdProduct.slug && (
-                    <div>
-                      <dt className="text-xs font-medium uppercase tracking-wider text-tertiary">Slug</dt>
-                      <dd className="mt-0.5 font-mono text-sm text-primary">{createdProduct.slug}</dd>
+              <section>
+                <div className="mb-6 border-b border-border pb-4">
+                  <h2 className="text-lg font-medium text-primary">Product Details</h2>
+                </div>
+                <div className="rounded-xl border border-border bg-white p-5">
+                  <dl className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-0.5">
+                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Name</dt>
+                      <dd className="font-medium text-primary">{createdProduct.name}</dd>
                     </div>
-                  )}
-                  <div>
-                    <dt className="text-xs font-medium uppercase tracking-wider text-tertiary">Base price</dt>
-                    <dd className="mt-0.5 font-medium text-primary">
-                      {typeof createdProduct.basePrice === 'number'
-                        ? createdProduct.basePrice.toLocaleString()
-                        : createdProduct.basePrice}
-                    </dd>
-                  </div>
-                  {(createdProduct.categoryName || createdProduct.categorySlug) && (
-                    <div>
-                      <dt className="text-xs font-medium uppercase tracking-wider text-tertiary">Category</dt>
-                      <dd className="mt-0.5 text-primary">
-                        {createdProduct.categoryName ?? createdProduct.categorySlug}
-                        {createdProduct.categorySlug && createdProduct.categoryName && (
-                          <span className="text-tertiary"> ({createdProduct.categorySlug})</span>
-                        )}
+                    {createdProduct.slug && (
+                      <div className="space-y-0.5">
+                        <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Slug</dt>
+                        <dd className="font-mono text-sm text-primary">{createdProduct.slug}</dd>
+                      </div>
+                    )}
+                    <div className="space-y-0.5">
+                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Base Price</dt>
+                      <dd className="font-medium text-primary">
+                        {typeof createdProduct.basePrice === 'number'
+                          ? createdProduct.basePrice.toLocaleString()
+                          : createdProduct.basePrice}
                       </dd>
                     </div>
-                  )}
-                  {createdProduct.brand && (
-                    <div>
-                      <dt className="text-xs font-medium uppercase tracking-wider text-tertiary">Brand</dt>
-                      <dd className="mt-0.5 text-primary">{createdProduct.brand}</dd>
+                    {(createdProduct.categoryName || createdProduct.categorySlug) && (
+                      <div className="space-y-0.5">
+                        <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Category</dt>
+                        <dd className="text-primary">
+                          {createdProduct.categoryName ?? createdProduct.categorySlug}
+                          {createdProduct.categorySlug && createdProduct.categoryName && (
+                            <span className="text-tertiary"> ({createdProduct.categorySlug})</span>
+                          )}
+                        </dd>
+                      </div>
+                    )}
+                    {createdProduct.brand && (
+                      <div className="space-y-0.5">
+                        <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Brand</dt>
+                        <dd className="text-primary">{createdProduct.brand}</dd>
+                      </div>
+                    )}
+                    {createdProduct.material && (
+                      <div className="space-y-0.5">
+                        <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Material</dt>
+                        <dd className="text-primary">{createdProduct.material}</dd>
+                      </div>
+                    )}
+                    <div className="space-y-0.5">
+                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Featured</dt>
+                      <dd className="text-primary">
+                        {createdProduct.featured === true ? 'Yes' : 'No'}
+                      </dd>
+                    </div>
+                  </dl>
+                  {createdProduct.description && (
+                    <div className="mt-4 border-t border-border pt-4">
+                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Description</dt>
+                      <dd className="mt-1 text-sm text-primary">{createdProduct.description}</dd>
                     </div>
                   )}
-                  {createdProduct.material && (
-                    <div>
-                      <dt className="text-xs font-medium uppercase tracking-wider text-tertiary">Material</dt>
-                      <dd className="mt-0.5 text-primary">{createdProduct.material}</dd>
-                    </div>
-                  )}
-                  <div>
-                    <dt className="text-xs font-medium uppercase tracking-wider text-tertiary">Featured</dt>
-                    <dd className="mt-0.5 text-primary">
-                      {createdProduct.featured === true ? 'Yes' : 'No'}
-                    </dd>
-                  </div>
-                </dl>
-                {createdProduct.description && (
-                  <div className="mt-4 border-t border-border pt-4">
-                    <dt className="text-xs font-medium uppercase tracking-wider text-tertiary">Description</dt>
-                    <dd className="mt-1 text-sm text-primary">{createdProduct.description}</dd>
-                  </div>
-                )}
+                </div>
               </section>
 
               {Array.isArray(createdProduct.variants) && createdProduct.variants.length > 0 && (
-                <section className="rounded-xl border border-border bg-quaternary p-6">
-                  <h3 className="flex items-center gap-2 text-base font-medium text-primary">
-                    <List className="h-4 w-4" aria-hidden />
-                    Variants ({createdProduct.variants.length})
-                  </h3>
-                  <div className="mt-4 overflow-x-auto">
+                <section>
+                  <div className="mb-6 border-b border-border pb-4">
+                    <h2 className="text-lg font-medium text-primary">
+                      Variants ({createdProduct.variants.length})
+                    </h2>
+                  </div>
+                  <div className="overflow-x-auto rounded-xl border border-border bg-white">
                     <table className="w-full min-w-[400px] text-left text-sm">
                       <thead>
                         <tr className="border-b border-border">
-                          <th className="pb-2 pr-4 font-medium text-secondary">SKU</th>
-                          <th className="pb-2 pr-4 font-medium text-secondary">Size</th>
-                          <th className="pb-2 pr-4 font-medium text-secondary">Color</th>
-                          <th className="pb-2 pr-4 font-medium text-secondary">Price</th>
-                          <th className="pb-2 pr-4 font-medium text-secondary">Stock</th>
-                          <th className="pb-2 font-medium text-secondary">Active</th>
+                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">SKU</th>
+                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Size</th>
+                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Color</th>
+                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Price</th>
+                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Stock</th>
+                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Active</th>
                         </tr>
                       </thead>
                       <tbody>
                         {createdProduct.variants.map((v) => (
-                          <tr key={v.id ?? v.sku ?? `${v.size}-${v.color}`} className="border-b border-border/50">
-                            <td className="py-2.5 pr-4 font-mono text-primary">{v.sku ?? '—'}</td>
-                            <td className="py-2.5 pr-4 text-primary">{v.size}</td>
-                            <td className="py-2.5 pr-4 text-primary">{v.color}</td>
-                            <td className="py-2.5 pr-4 text-primary">
+                          <tr key={v.id ?? v.sku ?? `${v.size}-${v.color}`} className="border-b border-border/50 last:border-0">
+                            <td className="px-5 py-3 font-mono text-primary">{v.sku ?? '—'}</td>
+                            <td className="px-5 py-3 text-primary">{v.size}</td>
+                            <td className="px-5 py-3 text-primary">{v.color}</td>
+                            <td className="px-5 py-3 text-primary">
                               {typeof v.price === 'number' ? v.price.toLocaleString() : v.price}
                             </td>
-                            <td className="py-2.5 pr-4 text-primary">{v.stockQuantity ?? 0}</td>
-                            <td className="py-2.5 text-primary">
+                            <td className="px-5 py-3 text-primary">{v.stockQuantity ?? 0}</td>
+                            <td className="px-5 py-3 text-primary">
                               {v.active === true || v.isActive === true ? 'Yes' : 'No'}
                             </td>
                           </tr>
@@ -236,311 +252,357 @@ export default function AddProductPage() {
                 </section>
               )}
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => navigate('/admin/products')}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90"
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary"
                 >
-                  <List className="h-4 w-4" aria-hidden />
-                  Go to product management
+                  <List className="h-3.5 w-3.5" aria-hidden />
+                  Product Management
                 </button>
                 <button
                   type="button"
                   onClick={() => setCreatedProduct(null)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20"
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:bg-gray-50"
                 >
-                  <Plus className="h-4 w-4" aria-hidden />
-                  Add another product
+                  <Plus className="h-3.5 w-3.5" aria-hidden />
+                  Add Another Product
                 </button>
               </div>
             </div>
           ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-8">
-            {submitError && (
-              <div
-                role="alert"
-                className="rounded-lg border border-primary bg-primary/10 px-4 py-3 text-sm text-primary"
-              >
-                {submitError}
-              </div>
-            )}
-
-            {/* Product details */}
-            <section className="rounded-xl border border-border bg-quaternary p-6">
-              <h2 className="text-lg font-medium text-primary">Product details</h2>
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-primary">
-                    Name <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    id="name"
-                    type="text"
-                    className={inputClass(errors.name)}
-                    placeholder="e.g. Classic Oxford Shirt"
-                    {...register('name')}
-                  />
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-primary">{errors.name.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label htmlFor="slug" className="block text-sm font-medium text-primary">
-                    Slug <span className="text-tertiary">(optional; generated from name if blank)</span>
-                  </label>
-                  <input
-                    id="slug"
-                    type="text"
-                    className={inputClass(errors.slug)}
-                    placeholder="classic-oxford-shirt"
-                    {...register('slug')}
-                  />
-                  {errors.slug && (
-                    <p className="mt-1 text-sm text-primary">{errors.slug.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-primary">
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    rows={3}
-                    className={inputClass(errors.description)}
-                    placeholder="Product description..."
-                    {...register('description')}
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="basePrice" className="block text-sm font-medium text-primary">
-                      Base price <span className="text-primary">*</span>
-                    </label>
-                    <input
-                      id="basePrice"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className={inputClass(errors.basePrice)}
-                      {...register('basePrice')}
-                    />
-                    {errors.basePrice && (
-                      <p className="mt-1 text-sm text-primary">{errors.basePrice.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label htmlFor="categoryId" className="block text-sm font-medium text-primary">
-                      Category <span className="text-primary">*</span>
-                    </label>
-                    <select
-                      id="categoryId"
-                      className={inputClass(errors.categoryId)}
-                      {...register('categoryId')}
-                      disabled={categoriesLoading}
-                    >
-                      {categoriesLoading ? (
-                        <option value="">Loading categories…</option>
-                      ) : categoryOptions.length === 0 ? (
-                        <option value="">No categories found</option>
-                      ) : (
-                        categoryOptions.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.depth > 0 ? '\u00A0'.repeat(cat.depth * 2) + '↳ ' : ''}{cat.name}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                    {errors.categoryId && (
-                      <p className="mt-1 text-sm text-primary">{errors.categoryId.message}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="brand" className="block text-sm font-medium text-primary">
-                      Brand
-                    </label>
-                    <input
-                      id="brand"
-                      type="text"
-                      className={inputClass(errors.brand)}
-                      placeholder="e.g. AttireHub"
-                      {...register('brand')}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="material" className="block text-sm font-medium text-primary">
-                      Material
-                    </label>
-                    <input
-                      id="material"
-                      type="text"
-                      className={inputClass(errors.material)}
-                      placeholder="e.g. Cotton"
-                      {...register('material')}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="imageUrl" className="block text-sm font-medium text-primary">
-                    Product image URL
-                  </label>
-                  <input
-                    id="imageUrl"
-                    type="url"
-                    className={inputClass(errors.imageUrl)}
-                    placeholder="https://..."
-                    {...register('imageUrl')}
-                  />
-                </div>
-                <div className="flex gap-6">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-border text-primary" {...register('isActive')} />
-                    <span className="text-sm font-medium text-primary">Active</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-border text-primary" {...register('isFeatured')} />
-                    <span className="text-sm font-medium text-primary">Featured</span>
-                  </label>
-                </div>
-              </div>
-            </section>
-
-            {/* Variants */}
-            <section className="rounded-xl border border-border bg-quaternary p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium text-primary">Variants</h2>
-                <button
-                  type="button"
-                  onClick={() =>
-                    append({
-                      size: '',
-                      color: '',
-                      price: 0,
-                      stockQuantity: 0,
-                      imageUrl: '',
-                      isActive: true,
-                    })
-                  }
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-quaternary px-3 py-2 text-sm font-medium text-primary hover:bg-tertiary/20"
-                >
-                  <Plus className="h-4 w-4" aria-hidden />
-                  Add variant
-                </button>
-              </div>
-              {errors.variants?.message && (
-                <p className="mt-2 text-sm text-primary">{errors.variants.message}</p>
-              )}
-              <div className="mt-4 space-y-6">
-                {fields.map((field, index) => (
-                  <div
-                    key={field.id}
-                    className="rounded-lg border border-border p-4"
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
+              <AnimatePresence>
+                {submitError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
                   >
-                    <div className="mb-3 flex items-center justify-between">
-                      <span className="text-sm font-medium text-secondary">Variant {index + 1}</span>
-                      {fields.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => remove(index)}
-                          className="rounded p-1.5 text-primary hover:bg-tertiary/20"
-                          aria-label={`Remove variant ${index + 1}`}
-                        >
-                          <Trash2 className="h-4 w-4" aria-hidden />
-                        </button>
+                    <div
+                      role="alert"
+                      className="rounded-md border border-red-100 bg-red-50 p-3 text-xs text-red-600"
+                    >
+                      {submitError}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Product Details Section */}
+              <section>
+                <div className="mb-6 border-b border-border pb-4">
+                  <h2 className="text-lg font-medium text-primary">Product Details</h2>
+                </div>
+                <div className="space-y-6">
+                  <div className="space-y-1">
+                    <label htmlFor="add-product-name" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                      Name <span className="text-primary">*</span>
+                    </label>
+                    <input
+                      id="add-product-name"
+                      type="text"
+                      className={getInputClassName(errors.name)}
+                      placeholder="e.g. Classic Oxford Shirt"
+                      {...register('name')}
+                    />
+                    {errors.name && (
+                      <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="add-product-slug" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                      Slug <span className="normal-case tracking-normal text-tertiary">(optional; generated from name if blank)</span>
+                    </label>
+                    <input
+                      id="add-product-slug"
+                      type="text"
+                      className={getInputClassName(errors.slug)}
+                      placeholder="classic-oxford-shirt"
+                      {...register('slug')}
+                    />
+                    {errors.slug && (
+                      <p className="mt-1 text-xs text-red-500">{errors.slug.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="add-product-description" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                      Description
+                    </label>
+                    <textarea
+                      id="add-product-description"
+                      rows={3}
+                      className={getInputClassName(errors.description)}
+                      placeholder="Product description..."
+                      {...register('description')}
+                    />
+                  </div>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label htmlFor="add-product-basePrice" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                        Base Price <span className="text-primary">*</span>
+                      </label>
+                      <input
+                        id="add-product-basePrice"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className={getInputClassName(errors.basePrice)}
+                        {...register('basePrice')}
+                      />
+                      {errors.basePrice && (
+                        <p className="mt-1 text-xs text-red-500">{errors.basePrice.message}</p>
                       )}
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      <div>
-                        <label className="block text-xs font-medium text-primary">Size *</label>
-                        <input
-                          className={inputClass(errors.variants?.[index]?.size)}
-                          placeholder="e.g. M"
-                          {...register(`variants.${index}.size`)}
-                        />
-                        {errors.variants?.[index]?.size && (
-                          <p className="mt-1 text-xs text-primary">{errors.variants[index].size.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-primary">Color *</label>
-                        <input
-                          className={inputClass(errors.variants?.[index]?.color)}
-                          placeholder="e.g. Navy"
-                          {...register(`variants.${index}.color`)}
-                        />
-                        {errors.variants?.[index]?.color && (
-                          <p className="mt-1 text-xs text-primary">{errors.variants[index].color.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-primary">Price *</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className={inputClass(errors.variants?.[index]?.price)}
-                          {...register(`variants.${index}.price`)}
-                        />
-                        {errors.variants?.[index]?.price && (
-                          <p className="mt-1 text-xs text-primary">{errors.variants[index].price.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-primary">Stock *</label>
-                        <input
-                          type="number"
-                          min="0"
-                          className={inputClass(errors.variants?.[index]?.stockQuantity)}
-                          {...register(`variants.${index}.stockQuantity`)}
-                        />
-                        {errors.variants?.[index]?.stockQuantity && (
-                          <p className="mt-1 text-xs text-primary">{errors.variants[index].stockQuantity.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-primary">Image URL</label>
-                        <input
-                          type="url"
-                          className={inputClass(errors.variants?.[index]?.imageUrl)}
-                          placeholder="https://..."
-                          {...register(`variants.${index}.imageUrl`)}
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          className="rounded border-border text-primary"
-                          {...register(`variants.${index}.isActive`)}
-                        />
-                        <span className="text-xs font-medium text-primary">Variant active</span>
+                    <div className="space-y-1">
+                      <label htmlFor="add-product-categoryId" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                        Category <span className="text-primary">*</span>
                       </label>
+                      <select
+                        id="add-product-categoryId"
+                        className={getInputClassName(errors.categoryId)}
+                        {...register('categoryId')}
+                        disabled={categoriesLoading}
+                      >
+                        {categoriesLoading ? (
+                          <option value="">Loading categories…</option>
+                        ) : categoryOptions.length === 0 ? (
+                          <option value="">No categories found</option>
+                        ) : (
+                          categoryOptions.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.depth > 0 ? '\u00A0'.repeat(cat.depth * 2) + '↳ ' : ''}{cat.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      {errors.categoryId && (
+                        <p className="mt-1 text-xs text-red-500">{errors.categoryId.message}</p>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label htmlFor="add-product-brand" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                        Brand
+                      </label>
+                      <input
+                        id="add-product-brand"
+                        type="text"
+                        className={getInputClassName(errors.brand)}
+                        placeholder="e.g. AttireHub"
+                        {...register('brand')}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label htmlFor="add-product-material" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                        Material
+                      </label>
+                      <input
+                        id="add-product-material"
+                        type="text"
+                        className={getInputClassName(errors.material)}
+                        placeholder="e.g. Cotton"
+                        {...register('material')}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="add-product-imageUrl" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                      Product Image URL
+                    </label>
+                    <input
+                      id="add-product-imageUrl"
+                      type="url"
+                      className={getInputClassName(errors.imageUrl)}
+                      placeholder="https://..."
+                      {...register('imageUrl')}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-6 pt-2">
+                    <label className="flex cursor-pointer select-none items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                        {...register('isActive')}
+                      />
+                      <span className="text-sm text-primary">Active</span>
+                    </label>
+                    <label className="flex cursor-pointer select-none items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                        {...register('isFeatured')}
+                      />
+                      <span className="text-sm text-primary">Featured</span>
+                    </label>
+                  </div>
+                </div>
+              </section>
 
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90 disabled:opacity-70"
-              >
-                {isSubmitting ? 'Creating…' : 'Create product'}
-              </button>
-              <Link
-                to="/admin"
-                className="rounded-lg border border-border bg-quaternary px-6 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
-              >
-                Cancel
-              </Link>
-            </div>
-          </form>
+              {/* Variants Section */}
+              <section>
+                <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
+                  <h2 className="text-lg font-medium text-primary">Variants</h2>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      append({
+                        size: '',
+                        color: '',
+                        price: 0,
+                        stockQuantity: 0,
+                        imageUrl: '',
+                        isActive: true,
+                      })
+                    }
+                    className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add Variant
+                  </button>
+                </div>
+                {errors.variants?.message && (
+                  <p className="mb-4 text-xs text-red-500">{errors.variants.message}</p>
+                )}
+                <div className="space-y-4">
+                  <AnimatePresence mode="popLayout">
+                    {fields.map((field, index) => (
+                      <motion.div
+                        key={field.id}
+                        layout
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        className="rounded-xl border border-border bg-gray-50/50 p-5"
+                      >
+                        <div className="mb-4 flex items-center justify-between">
+                          <span className="text-sm font-medium text-secondary">Variant {index + 1}</span>
+                          {fields.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => remove(index)}
+                              className="rounded-full p-2 text-secondary transition-colors hover:bg-red-50 hover:text-red-600"
+                              aria-label={`Remove variant ${index + 1}`}
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden />
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Size *</label>
+                            <input
+                              className={getInputClassName(errors.variants?.[index]?.size)}
+                              placeholder="e.g. M"
+                              {...register(`variants.${index}.size`)}
+                            />
+                            {errors.variants?.[index]?.size && (
+                              <p className="mt-1 text-xs text-red-500">{errors.variants[index].size.message}</p>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Color *</label>
+                            <input
+                              className={getInputClassName(errors.variants?.[index]?.color)}
+                              placeholder="e.g. Navy"
+                              {...register(`variants.${index}.color`)}
+                            />
+                            {errors.variants?.[index]?.color && (
+                              <p className="mt-1 text-xs text-red-500">{errors.variants[index].color.message}</p>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Price *</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className={getInputClassName(errors.variants?.[index]?.price)}
+                              {...register(`variants.${index}.price`)}
+                            />
+                            {errors.variants?.[index]?.price && (
+                              <p className="mt-1 text-xs text-red-500">{errors.variants[index].price.message}</p>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Stock *</label>
+                            <input
+                              type="number"
+                              min="0"
+                              className={getInputClassName(errors.variants?.[index]?.stockQuantity)}
+                              {...register(`variants.${index}.stockQuantity`)}
+                            />
+                            {errors.variants?.[index]?.stockQuantity && (
+                              <p className="mt-1 text-xs text-red-500">{errors.variants[index].stockQuantity.message}</p>
+                            )}
+                          </div>
+                          <div className="space-y-1 sm:col-span-2 lg:col-span-1">
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Image URL</label>
+                            <input
+                              type="url"
+                              className={getInputClassName(errors.variants?.[index]?.imageUrl)}
+                              placeholder="https://..."
+                              {...register(`variants.${index}.imageUrl`)}
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2 pt-2">
+                          <input
+                            type="checkbox"
+                            id={`variant-active-${index}`}
+                            className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                            {...register(`variants.${index}.isActive`)}
+                          />
+                          <label htmlFor={`variant-active-${index}`} className="cursor-pointer select-none text-sm text-primary">
+                            Variant active
+                          </label>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </section>
+
+              <div className="flex flex-wrap gap-3 border-t border-border pt-6">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  {isSubmitting ? 'Creating…' : 'Create Product'}
+                </button>
+                <Link
+                  to="/admin"
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:bg-gray-50"
+                >
+                  Cancel
+                </Link>
+              </div>
+            </form>
           )}
-    </>
+        </div>
+
+        {/* Sidebar */}
+        <div className="hidden lg:block">
+          <div className="sticky top-24 rounded-xl border border-border bg-gray-50/50 p-6">
+            <h3 className="font-serif text-lg text-primary">Tips</h3>
+            <p className="mt-2 text-sm leading-relaxed text-secondary/80">
+              Add at least one variant with size, color, price, and stock. You can add more variants after saving. Leave slug blank to auto-generate from the product name.
+            </p>
+            <div className="mt-6 flex items-start gap-3 text-sm text-primary">
+              <Lightbulb className="h-5 w-5 shrink-0 text-primary/60" />
+              <span className="text-secondary/80">
+                Featured products may appear on the homepage and collection highlights.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
