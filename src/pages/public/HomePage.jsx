@@ -54,42 +54,55 @@ export default function HomePage() {
       .catch(() => setCategories([]));
   }, []);
 
-  // Reusable Section Component
+  // Reusable Section Component — horizontal scroll with consistent spacing and side margins
   const ProductSection = ({ title, subtitle, products, loading, linkTo }) => (
-    <section className="py-4 sm:py-10">
-      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col gap-3 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+    <section className="py-6 sm:py-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-5 flex flex-col gap-1 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
-            <h2 className="font-serif text-xl font-medium text-primary sm:text-2xl lg:text-3xl">{title}</h2>
-            {subtitle && <p className="mt-1 text-sm text-secondary/70 sm:mt-2 sm:text-base">{subtitle}</p>}
+            <h2 className="font-serif text-xl font-medium tracking-tight text-primary sm:text-2xl lg:text-3xl">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="mt-1 text-sm text-secondary/80 sm:mt-1.5 sm:text-base">{subtitle}</p>
+            )}
           </div>
           {linkTo && (
             <Link
               to={linkTo}
-              className="group inline-flex min-h-10 items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary sm:text-sm"
+              className="group mt-1 inline-flex min-h-9 items-center gap-1.5 self-end text-xs font-semibold uppercase tracking-wider text-primary transition-colors hover:text-secondary sm:mt-0 sm:text-sm"
             >
               View All
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 sm:h-4 sm:w-4" />
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 sm:h-4 sm:w-4" />
             </Link>
           )}
         </div>
 
         {loading ? (
-          <div className="flex h-48 items-center justify-center sm:h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
+          <div className="flex h-40 items-center justify-center rounded-2xl bg-gray-50/80 sm:h-52">
+            <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
           </div>
         ) : products.length === 0 ? (
-          <p className="py-8 text-center text-sm text-secondary sm:py-12">No products found.</p>
+          <p className="rounded-2xl bg-gray-50/80 py-10 text-center text-sm text-secondary sm:py-14">
+            No products found.
+          </p>
         ) : (
-          <div className="-mx-3 flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory px-3 sm:mx-0 sm:gap-6 sm:pb-8 sm:px-0">
+          <div
+            className="flex overflow-x-auto overflow-y-hidden scrollbar-hide snap-x snap-mandatory gap-4 pb-2 pt-1 -mx-4 sm:mx-0 sm:gap-6 sm:pb-3 sm:pt-0"
+            style={{ scrollPaddingLeft: '1.25rem', scrollPaddingRight: '1.25rem' }}
+          >
+            <div className="shrink-0 w-5 sm:w-0" aria-hidden />
             {products.map((product) => (
               <div
                 key={product.id}
-                className="h-[420px] min-w-[160px] w-[160px] shrink-0 snap-start sm:h-[468px] sm:min-w-[220px] sm:w-[220px] lg:min-w-[240px] lg:w-[240px]"
+                className="flex shrink-0 snap-start"
               >
-                <ProductCard product={product} />
+                <div className="h-[320px] w-[152px] overflow-hidden rounded-xl bg-white sm:h-[420px] sm:w-[200px] lg:h-[468px] lg:w-[220px]">
+                  <ProductCard product={product} />
+                </div>
               </div>
             ))}
+            <div className="shrink-0 w-5 sm:w-0" aria-hidden />
           </div>
         )}
       </div>
