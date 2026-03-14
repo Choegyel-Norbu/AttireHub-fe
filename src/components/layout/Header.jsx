@@ -344,7 +344,7 @@ export default function Header() {
                       >
                         <Link
                           to={to}
-                          className="block py-2 text-xl font-serif text-primary hover:text-secondary transition-colors sm:text-2xl"
+                          className="block py-2 text-3xl font-serif font-light text-secondary hover:text-primary transition-colors sm:text-3xl"
                           onClick={() => setMobileOpen(false)}
                         >
                           {label}
