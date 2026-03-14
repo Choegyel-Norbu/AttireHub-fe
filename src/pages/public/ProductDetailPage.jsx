@@ -349,7 +349,7 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
                 <a href="#reviews" className="text-sm text-secondary underline underline-offset-4 hover:text-primary">
-                  {product.reviewCount ?? 0} Reviews
+                  {reviewsLoading ? '…' : (reviewsPage.totalElements ?? 0)} Reviews
                 </a>
               </div>
 
@@ -480,7 +480,7 @@ export default function ProductDetailPage() {
                 <div className="flex text-primary">
                   <Star className="h-5 w-5 fill-primary" />
                 </div>
-                <span className="text-sm text-secondary">({product.reviewCount ?? 0})</span>
+                <span className="text-sm text-secondary">({reviewsLoading ? '…' : (reviewsPage.totalElements ?? 0)})</span>
               </div>
             </div>
 

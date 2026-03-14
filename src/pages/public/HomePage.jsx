@@ -57,7 +57,7 @@ export default function HomePage() {
 
   // Reusable Section Component
   const ProductSection = ({ title, subtitle, products, loading, linkTo }) => (
-    <section className="py-16 sm:py-24">
+    <section className="py-6 sm:py-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-10">
           <div>
@@ -90,7 +90,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.5 }}
-                className="min-w-[240px] w-[240px] snap-start"
+                className="h-[468px] min-w-[240px] w-[240px] snap-start"
               >
                 <ProductCard product={product} />
               </motion.div>
@@ -106,16 +106,7 @@ export default function HomePage() {
       <Header />
       <Hero />
 
-      {/* Featured Collection */}
-      <ProductSection 
-        title="Featured Collection" 
-        subtitle="Curated picks for the season."
-        products={featuredProducts} 
-        loading={featuredLoading}
-        linkTo="/products"
-      />
-
-      {/* Category Spotlight (Editorial Style) */}
+      {/* Shop by Category */}
       <section className="bg-[#F9F9F9] py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -157,6 +148,15 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Featured Collection */}
+      <ProductSection 
+        title="Featured Collection" 
+        subtitle="Curated picks for the season."
+        products={featuredProducts} 
+        loading={featuredLoading}
+        linkTo="/products"
+      />
+
       {/* New Arrivals */}
       <ProductSection 
         title="New Arrivals" 
@@ -176,7 +176,7 @@ export default function HomePage() {
       />
 
       {/* Editorial / CTA Strip */}
-      <section className="relative overflow-hidden bg-primary py-24 sm:py-32">
+      <section className="relative overflow-hidden bg-primary py-16 sm:py-24">
         <div className="absolute inset-0 opacity-20">
            <img 
              src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop" 
@@ -185,33 +185,33 @@ export default function HomePage() {
            />
         </div>
         <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="font-serif text-3xl text-white sm:text-5xl">
+          <h2 className="font-serif text-xl text-white sm:text-3xl">
             Elevate Your Everyday
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-white/80">
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-white/80">
             Join our community for exclusive access to new drops, sales, and style inspiration.
           </p>
           
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             {isAuthenticated ? (
               <Link
                 to="/products"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold uppercase tracking-wider text-primary transition-colors hover:bg-gray-100"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:bg-gray-100"
               >
                 Shop Full Collection
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             ) : (
               <>
                 <Link
                   to="/register"
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold uppercase tracking-wider text-primary transition-colors hover:bg-gray-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:bg-gray-100"
                 >
                   Create Account
                 </Link>
                 <Link
                   to="/login"
-                  className="inline-flex items-center gap-2 rounded-full border border-white px-8 py-4 text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-full border border-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-white/10"
                 >
                   Sign In
                 </Link>

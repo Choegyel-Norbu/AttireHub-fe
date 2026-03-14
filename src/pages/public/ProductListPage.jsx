@@ -113,14 +113,18 @@ export default function ProductListPage() {
     setAppliedFilters(finalFilters);
     setPage(0);
     setShowMobileFilters(false);
-    const params = new URLSearchParams();
+    // Start from current URL so newArrivalsOnly/trending are never dropped
+    const params = new URLSearchParams(searchParams);
     if (finalFilters.search.trim()) params.set('search', finalFilters.search.trim());
+    else params.delete('search');
     if (finalFilters.category) params.set('category', finalFilters.category);
+    else params.delete('category');
     if (finalFilters.sort) params.set('sort', finalFilters.sort);
+    else params.delete('sort');
     if (finalFilters.minPrice !== '') params.set('minPrice', finalFilters.minPrice);
+    else params.delete('minPrice');
     if (finalFilters.maxPrice !== '') params.set('maxPrice', finalFilters.maxPrice);
-    if (searchParams.get('newArrivalsOnly') === 'true') params.set('newArrivalsOnly', 'true');
-    if (searchParams.get('trending') === 'true') params.set('trending', 'true');
+    else params.delete('maxPrice');
     setSearchParams(params, { replace: true });
   };
 
@@ -287,25 +291,21 @@ export default function ProductListPage() {
     <div className="flex min-h-screen flex-col bg-white">
       <Header />
       
-      {/* Header Section */}
-      <div className="bg-[#F9F9F9] px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <motion.div
+      {/* Page title — slight right nudge on large screens to align with content */}
+      <div className="bg-[#F9F9F9] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="mx-auto max-w-7xl lg:pl-8">
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
+            className="font-serif text-2xl text-primary sm:text-3xl"
           >
-            <h1 className="font-serif text-3xl text-primary sm:text-4xl">
-              {pageTitle}
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm text-secondary/70">
-              Explore our latest collection of premium essentials, designed for the modern wardrobe.
-            </p>
-          </motion.div>
+            {pageTitle}
+          </motion.h1>
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 w-full">
+      <main className="mx-auto max-w-7xl w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <div className="flex flex-col lg:flex-row lg:gap-12">
           
           {/* Desktop Sidebar */}

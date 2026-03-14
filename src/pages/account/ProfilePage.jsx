@@ -35,6 +35,10 @@ export default function ProfilePage() {
   const [addressLoading, setAddressLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     setAddressLoading(true);
     addressService

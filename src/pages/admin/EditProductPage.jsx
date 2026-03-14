@@ -3,7 +3,15 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Package, CheckCircle, Loader2, Plus, Layers } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowLeft,
+  Package,
+  CheckCircle,
+  Loader2,
+  Plus,
+  List,
+} from 'lucide-react';
 import * as adminProductService from '@/services/adminProductService';
 import { getProductBySlug } from '@/services/productService';
 import { getCategories, flattenCategoriesWithSlug } from '@/services/categoryService';
@@ -22,11 +30,11 @@ const editProductSchema = z.object({
   imageUrl: z.string().optional().nullable(),
 });
 
-function inputClass(error) {
+function getInputClassName(error) {
   const base =
-    'w-full rounded-lg border bg-quaternary px-4 py-2.5 text-primary placeholder-tertiary outline-none transition-colors focus:ring-2';
-  const normal = 'border-border focus:border-secondary focus:ring-secondary/20';
-  const invalid = 'border-primary focus:border-primary focus:ring-primary/20';
+    'w-full rounded-none border-b border-border bg-transparent px-3 py-3 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-black focus:ring-0';
+  const normal = 'border-border focus:border-primary';
+  const invalid = 'border-red-500 focus:border-red-500 text-red-600';
   return `${base} ${error ? invalid : normal}`;
 }
 
@@ -139,8 +147,8 @@ export default function EditProductPage() {
       setUpdatedProduct(resolved);
     } catch (err) {
       setSubmitError(err?.message ?? 'Failed to update product.');
-} finally {
-    setIsSubmitting(false);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -184,147 +192,186 @@ export default function EditProductPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
-        <span className="sr-only">Loading product…</span>
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary/30" aria-hidden />
+        <p className="text-sm text-secondary">Loading product…</p>
       </div>
     );
   }
 
   if (loadError || !product) {
     return (
-      <>
+      <div className="mx-auto max-w-5xl space-y-6">
         <p className="text-primary">{loadError ?? 'Product not found.'}</p>
         <Link
           to="/admin/products"
-          className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-secondary"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to product management
+          Back to products
         </Link>
-      </>
+      </div>
     );
   }
 
   if (updatedProduct) {
     const p = updatedProduct;
     return (
-      <>
-            <div className="flex items-center gap-3 rounded-xl border border-border bg-quaternary p-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <CheckCircle className="h-6 w-6 text-primary" aria-hidden />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-primary">Product updated successfully</h2>
-                <p className="text-sm text-secondary">{p.name}</p>
-              </div>
+      <div className="mx-auto max-w-5xl space-y-8">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex items-center gap-4 rounded-xl border border-border bg-white p-5"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <CheckCircle className="h-6 w-6 text-primary" aria-hidden />
             </div>
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={() => navigate('/admin/products')}
-                className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90"
-              >
-                Back to product management
-              </button>
-              <button
-                type="button"
-                onClick={() => setUpdatedProduct(null)}
-                className="rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
-              >
-                Continue editing
-              </button>
+            <div>
+              <h2 className="text-lg font-medium text-primary">Product updated successfully</h2>
+              <p className="text-sm text-secondary">
+                <span className="font-medium text-primary">{p.name}</span>
+                {p.slug && <span className="text-tertiary"> · {p.slug}</span>}
+              </p>
             </div>
-      </>
+          </motion.div>
+        </AnimatePresence>
+        <div className="flex flex-wrap gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => navigate('/admin/products')}
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary"
+          >
+            <List className="h-3.5 w-3.5" aria-hidden />
+            Product management
+          </button>
+          <button
+            type="button"
+            onClick={() => setUpdatedProduct(null)}
+            className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:bg-gray-50"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            Continue editing
+          </button>
+        </div>
+      </div>
     );
   }
 
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+
   return (
-    <>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold text-primary">
-            <Package className="h-6 w-6" aria-hidden />
-            Edit product
-          </h1>
-          <p className="mt-1 text-sm text-secondary">
-            Update product details. Add or view variants below.
-          </p>
+    <div className="mx-auto max-w-5xl space-y-12">
+      <div>
+        <Link
+          to="/admin/products"
+          className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-secondary hover:text-primary mb-3"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Products
+        </Link>
+        <h1 className="font-serif text-xl text-primary">Edit product</h1>
+        <p className="mt-0.5 text-xs text-secondary/70">
+          Update product details and manage variants.
+        </p>
+      </div>
 
-          {submitError && (
-            <div className="mt-6 rounded-lg border border-border bg-quaternary p-4 text-sm text-primary">
-              {submitError}
-            </div>
-          )}
+      <div className="grid gap-12 lg:grid-cols-3">
+        {/* Main content */}
+        <div className="lg:col-span-2 space-y-12">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
+            <AnimatePresence>
+              {submitError && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div
+                    role="alert"
+                    className="rounded-md border border-red-100 bg-red-50 p-3 text-xs text-red-600"
+                  >
+                    {submitError}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-8">
-            <section className="rounded-xl border border-border bg-quaternary p-6">
-              <h2 className="text-lg font-medium text-primary">Details</h2>
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-primary">
-                    Product name <span className="text-primary">*</span>
+            {/* Product details */}
+            <section>
+              <div className="mb-6 border-b border-border pb-4">
+                <h2 className="text-lg font-medium text-primary">Product details</h2>
+              </div>
+              <div className="space-y-6">
+                <div className="space-y-1">
+                  <label htmlFor="edit-product-name" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                    Name <span className="text-primary">*</span>
                   </label>
                   <input
-                    id="name"
+                    id="edit-product-name"
                     type="text"
-                    className={inputClass(errors.name)}
-                    placeholder="e.g. Classic T-Shirt"
+                    className={getInputClassName(errors.name)}
+                    placeholder="e.g. Classic Oxford Shirt"
                     {...register('name')}
                   />
                   {errors.name && (
-                    <p className="mt-1 text-sm text-primary">{errors.name.message}</p>
+                    <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
                   )}
                 </div>
-                <div>
-                  <label htmlFor="slug" className="block text-sm font-medium text-primary">
-                    Slug
+                <div className="space-y-1">
+                  <label htmlFor="edit-product-slug" className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                    Slug <span className="normal-case tracking-normal text-tertiary">(optional)</span>
                   </label>
                   <input
-                    id="slug"
+                    id="edit-product-slug"
                     type="text"
-                    className={inputClass(errors.slug)}
-                    placeholder="e.g. classic-tshirt"
+                    className={getInputClassName(errors.slug)}
+                    placeholder="classic-oxford-shirt"
                     {...register('slug')}
                   />
                   {errors.slug && (
-                    <p className="mt-1 text-sm text-primary">{errors.slug.message}</p>
+                    <p className="mt-1 text-xs text-red-500">{errors.slug.message}</p>
                   )}
                 </div>
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-primary">
+                <div className="space-y-1">
+                  <label htmlFor="edit-product-description" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                     Description
                   </label>
                   <textarea
-                    id="description"
+                    id="edit-product-description"
                     rows={3}
-                    className={inputClass(errors.description)}
+                    className={getInputClassName(errors.description)}
                     placeholder="Product description..."
                     {...register('description')}
                   />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="basePrice" className="block text-sm font-medium text-primary">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label htmlFor="edit-product-basePrice" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                       Base price <span className="text-primary">*</span>
                     </label>
                     <input
-                      id="basePrice"
+                      id="edit-product-basePrice"
                       type="number"
                       step="0.01"
                       min="0"
-                      className={inputClass(errors.basePrice)}
+                      className={getInputClassName(errors.basePrice)}
                       {...register('basePrice')}
                     />
                     {errors.basePrice && (
-                      <p className="mt-1 text-sm text-primary">{errors.basePrice.message}</p>
+                      <p className="mt-1 text-xs text-red-500">{errors.basePrice.message}</p>
                     )}
                   </div>
-                  <div>
-                    <label htmlFor="categoryId" className="block text-sm font-medium text-primary">
+                  <div className="space-y-1">
+                    <label htmlFor="edit-product-categoryId" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                       Category <span className="text-primary">*</span>
                     </label>
                     <select
-                      id="categoryId"
-                      className={inputClass(errors.categoryId)}
+                      id="edit-product-categoryId"
+                      className={getInputClassName(errors.categoryId)}
                       {...register('categoryId')}
                       disabled={categoriesLoading}
                     >
@@ -341,103 +388,124 @@ export default function EditProductPage() {
                       )}
                     </select>
                     {errors.categoryId && (
-                      <p className="mt-1 text-sm text-primary">{errors.categoryId.message}</p>
+                      <p className="mt-1 text-xs text-red-500">{errors.categoryId.message}</p>
                     )}
                   </div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="brand" className="block text-sm font-medium text-primary">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label htmlFor="edit-product-brand" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                       Brand
                     </label>
                     <input
-                      id="brand"
+                      id="edit-product-brand"
                       type="text"
-                      className={inputClass(errors.brand)}
+                      className={getInputClassName(errors.brand)}
                       placeholder="e.g. AttireHub"
                       {...register('brand')}
                     />
                   </div>
-                  <div>
-                    <label htmlFor="material" className="block text-sm font-medium text-primary">
+                  <div className="space-y-1">
+                    <label htmlFor="edit-product-material" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                       Material
                     </label>
                     <input
-                      id="material"
+                      id="edit-product-material"
                       type="text"
-                      className={inputClass(errors.material)}
+                      className={getInputClassName(errors.material)}
                       placeholder="e.g. Cotton"
                       {...register('material')}
                     />
                   </div>
                 </div>
-                <div>
-                  <label htmlFor="imageUrl" className="block text-sm font-medium text-primary">
+                <div className="space-y-1">
+                  <label htmlFor="edit-product-imageUrl" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                     Product image URL
                   </label>
                   <input
-                    id="imageUrl"
+                    id="edit-product-imageUrl"
                     type="url"
-                    className={inputClass(errors.imageUrl)}
+                    className={getInputClassName(errors.imageUrl)}
                     placeholder="https://..."
                     {...register('imageUrl')}
                   />
                 </div>
-                <div className="flex flex-col gap-3">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-border text-primary" {...register('isActive')} />
-                    <span className="text-sm font-medium text-primary">Active</span>
+                <div className="flex flex-wrap gap-6 pt-2">
+                  <label className="flex cursor-pointer select-none items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                      {...register('isActive')}
+                    />
+                    <span className="text-sm text-primary">Active</span>
                   </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-border text-primary" {...register('isFeatured')} />
-                    <span className="text-sm font-medium text-primary">Featured</span>
+                  <label className="flex cursor-pointer select-none items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                      {...register('isFeatured')}
+                    />
+                    <span className="text-sm text-primary">Featured</span>
                   </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-border text-primary" {...register('isTrending')} />
-                    <span className="text-sm font-medium text-primary">Trending</span>
+                  <label className="flex cursor-pointer select-none items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                      {...register('isTrending')}
+                    />
+                    <span className="text-sm text-primary">Trending</span>
                   </label>
                 </div>
               </div>
             </section>
 
             {/* Variants */}
-            <section className="rounded-xl border border-border bg-quaternary p-6">
-              <h2 className="flex items-center gap-2 text-lg font-medium text-primary">
-                <Layers className="h-5 w-5" aria-hidden />
-                Variants
-              </h2>
-              {Array.isArray(product.variants) && product.variants.length > 0 && (
-                <ul className="mt-4 space-y-2">
-                  {product.variants.map((v) => (
-                    <li
-                      key={v.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-quaternary px-3 py-2 text-sm"
-                    >
-                      <span className="font-medium text-primary">
-                        {[v.size, v.color].filter(Boolean).join(' · ')}
-                        {v.sku && ` (${v.sku})`}
-                      </span>
-                      <span className="text-secondary">
-                        Nu {typeof v.price === 'number' ? v.price.toLocaleString() : v.price} /- · Stock: {v.stockQuantity ?? 0}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {(!product.variants || product.variants.length === 0) && (
-                <p className="mt-4 text-sm text-secondary">No variants yet. Add one below.</p>
+            <section>
+              <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
+                <h2 className="text-lg font-medium text-primary">Variants</h2>
+              </div>
+
+              {variants.length > 0 ? (
+                <div className="overflow-x-auto rounded-xl border border-border bg-white">
+                  <table className="w-full min-w-[400px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">SKU</th>
+                        <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Size</th>
+                        <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Color</th>
+                        <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Price</th>
+                        <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Stock</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {variants.map((v) => (
+                        <tr key={v.id} className="border-b border-border/50 last:border-0">
+                          <td className="px-5 py-3 font-mono text-primary">{v.sku ?? '—'}</td>
+                          <td className="px-5 py-3 text-primary">{v.size ?? '—'}</td>
+                          <td className="px-5 py-3 text-primary">{v.color ?? '—'}</td>
+                          <td className="px-5 py-3 text-primary">
+                            {typeof v.price === 'number' ? v.price.toLocaleString() : v.price ?? '—'}
+                          </td>
+                          <td className="px-5 py-3 text-primary">{v.stockQuantity ?? 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-sm text-secondary">No variants yet. Add one below.</p>
               )}
 
-              <div className="mt-6 border-t border-border pt-6">
-                <h3 className="text-sm font-medium text-primary">Add variant</h3>
+              <div className="mt-6 rounded-xl border border-border bg-gray-50/50 p-5">
+                <h3 className="text-sm font-medium text-primary mb-4">Add variant</h3>
                 {variantAddError && (
-                  <p className="mt-2 text-sm text-primary" role="alert">
+                  <div className="mb-4 rounded-md border border-red-100 bg-red-50 p-3 text-xs text-red-600" role="alert">
                     {variantAddError}
-                  </p>
+                  </div>
                 )}
-                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <label htmlFor="var-size" className="block text-sm font-medium text-primary">
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-1">
+                    <label htmlFor="var-size" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                       Size <span className="text-primary">*</span>
                     </label>
                     <input
@@ -445,12 +513,12 @@ export default function EditProductPage() {
                       type="text"
                       value={newVariant.size}
                       onChange={(e) => setNewVariant((prev) => ({ ...prev, size: e.target.value }))}
-                      className={inputClass(false)}
+                      className={getInputClassName(false)}
                       placeholder="e.g. M"
                     />
                   </div>
-                  <div>
-                    <label htmlFor="var-color" className="block text-sm font-medium text-primary">
+                  <div className="space-y-1">
+                    <label htmlFor="var-color" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                       Color <span className="text-primary">*</span>
                     </label>
                     <input
@@ -458,12 +526,12 @@ export default function EditProductPage() {
                       type="text"
                       value={newVariant.color}
                       onChange={(e) => setNewVariant((prev) => ({ ...prev, color: e.target.value }))}
-                      className={inputClass(false)}
+                      className={getInputClassName(false)}
                       placeholder="e.g. Red"
                     />
                   </div>
-                  <div>
-                    <label htmlFor="var-price" className="block text-sm font-medium text-primary">
+                  <div className="space-y-1">
+                    <label htmlFor="var-price" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                       Price <span className="text-primary">*</span>
                     </label>
                     <input
@@ -473,12 +541,12 @@ export default function EditProductPage() {
                       min="0"
                       value={newVariant.price}
                       onChange={(e) => setNewVariant((prev) => ({ ...prev, price: e.target.value }))}
-                      className={inputClass(false)}
+                      className={getInputClassName(false)}
                       placeholder="0"
                     />
                   </div>
-                  <div>
-                    <label htmlFor="var-stock" className="block text-sm font-medium text-primary">
+                  <div className="space-y-1">
+                    <label htmlFor="var-stock" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                       Stock
                     </label>
                     <input
@@ -487,13 +555,13 @@ export default function EditProductPage() {
                       min="0"
                       value={newVariant.stockQuantity}
                       onChange={(e) => setNewVariant((prev) => ({ ...prev, stockQuantity: Number(e.target.value) || 0 }))}
-                      className={inputClass(false)}
+                      className={getInputClassName(false)}
                       placeholder="0"
                     />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <label htmlFor="var-imageUrl" className="block text-sm font-medium text-primary">
+                <div className="mt-4 space-y-1">
+                  <label htmlFor="var-imageUrl" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                     Variant image URL
                   </label>
                   <input
@@ -501,7 +569,7 @@ export default function EditProductPage() {
                     type="url"
                     value={newVariant.imageUrl}
                     onChange={(e) => setNewVariant((prev) => ({ ...prev, imageUrl: e.target.value }))}
-                    className={inputClass(false)}
+                    className={getInputClassName(false)}
                     placeholder="https://..."
                   />
                 </div>
@@ -509,30 +577,46 @@ export default function EditProductPage() {
                   type="button"
                   onClick={handleAddVariant}
                   disabled={variantAdding}
-                  className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border bg-quaternary px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-tertiary/20 disabled:opacity-70"
+                  className="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary disabled:opacity-70"
                 >
-                  <Plus className="h-4 w-4" aria-hidden />
+                  {variantAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                   {variantAdding ? 'Adding…' : 'Add variant'}
                 </button>
               </div>
             </section>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3 border-t border-border pt-6">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-quaternary transition-opacity hover:opacity-90 disabled:opacity-70"
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                 {isSubmitting ? 'Saving…' : 'Save changes'}
               </button>
               <Link
                 to="/admin/products"
-                className="rounded-lg border border-border bg-quaternary px-6 py-2.5 text-sm font-medium text-primary hover:bg-tertiary/20"
+                className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:bg-gray-50"
               >
                 Cancel
               </Link>
             </div>
           </form>
-    </>
+        </div>
+
+        {/* Sidebar */}
+        <div className="hidden lg:block">
+          <div className="sticky top-24 rounded-xl border border-border bg-gray-50/50 p-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-4">
+              <Package className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="font-serif text-lg text-primary">Edit product</h3>
+            <p className="mt-2 text-sm leading-relaxed text-secondary/80">
+              Change name, slug, price, category, and flags. Add variants (size, color, price, stock) below; they appear in the table after saving.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

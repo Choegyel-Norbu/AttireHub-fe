@@ -50,11 +50,11 @@ const ProductCard = ({ product }) => {
   return (
     <Link
       to={`/products/${encodeURIComponent(product.slug ?? product.id)}`}
-      className="group relative block h-full"
+      className="group relative flex h-full flex-col"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#F0F0F0]">
+      <div className="relative aspect-[3/4] w-full flex-shrink-0 overflow-hidden bg-[#F0F0F0]">
         {/* Badges */}
         {(product.newArrival === true || product.new_arrival === true) && (
           <span className="absolute left-3 top-3 z-10 bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-primary backdrop-blur-sm">
@@ -108,32 +108,23 @@ const ProductCard = ({ product }) => {
         </AnimatePresence>
       </div>
 
-      {/* Product Info */}
-      <div className="mt-4 flex flex-col gap-1">
-        <div className="flex justify-between items-start">
-          <h3 className="text-sm font-medium text-primary line-clamp-1 group-hover:underline decoration-1 underline-offset-4 decoration-primary/30">
+      {/* Product Info — fixed height for uniform card size */}
+      <div className="mt-4 flex min-h-[132px] flex-col gap-1">
+        <div className="flex justify-between items-start gap-2">
+          <h3 className="text-sm font-medium text-primary line-clamp-2 group-hover:underline decoration-1 underline-offset-4 decoration-primary/30 flex-1 min-w-0">
             {product.name}
           </h3>
-          <div className="flex flex-col items-end gap-0.5">
-            {priceAfterDiscount != null && (
-              <span className="text-xs text-tertiary line-through">
-                Nu {formatPrice(displayPrice)}
-              </span>
-            )}
-            <p className="text-sm font-semibold text-primary">
-              Nu {formatPrice(priceAfterDiscount ?? displayPrice)}
-            </p>
-          </div>
+          <p className="text-sm font-semibold text-primary whitespace-nowrap flex-shrink-0">
+            Nu {formatPrice(priceAfterDiscount ?? displayPrice)}
+          </p>
         </div>
 
-        {product.categoryName && (
-          <p className="text-xs text-secondary/60">
-            {product.categoryName}
-          </p>
-        )}
+        <p className="text-xs text-secondary/60 line-clamp-1 min-h-[1.25rem]">
+          {product.categoryName || '\u00A0'}
+        </p>
 
-        {/* Mobile Add to Cart */}
-        {firstVariant && (
+        {/* Mobile Add to Cart — always reserve space when variants exist for consistent height */}
+        {firstVariant ? (
           <button
             type="button"
             disabled={adding}
@@ -149,6 +140,8 @@ const ProductCard = ({ product }) => {
             )}
             {adding ? 'Adding…' : added ? 'Added' : 'Add to Cart'}
           </button>
+        ) : (
+          <div className="mt-2 h-9" aria-hidden />
         )}
       </div>
     </Link>
