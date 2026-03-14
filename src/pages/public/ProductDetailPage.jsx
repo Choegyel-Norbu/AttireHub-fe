@@ -18,10 +18,97 @@ import {
   Check,
   Minus,
   Plus,
-  Share2,
   ShieldCheck,
   Truck
 } from 'lucide-react';
+
+/** Skeleton loader matching product detail layout (image left, info right). */
+function ProductDetailSkeleton() {
+  return (
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mb-6 h-4 w-24 animate-pulse rounded bg-gray-200" aria-hidden />
+      <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
+        {/* Image area */}
+        <div className="max-w-md mx-auto lg:mx-0 lg:max-w-none space-y-4">
+          <div className="aspect-[3/4] w-full max-w-md mx-auto rounded-sm bg-gray-200 animate-pulse" />
+          <div className="flex gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 w-20 shrink-0 rounded-sm bg-gray-200 animate-pulse" />
+            ))}
+          </div>
+        </div>
+        {/* Info area */}
+        <div className="flex flex-col">
+          <div className="mb-3 h-4 w-32 animate-pulse rounded bg-gray-200" />
+          <div className="mb-2 h-9 w-4/5 max-w-md animate-pulse rounded bg-gray-200" />
+          <div className="h-10 w-3/4 max-w-sm animate-pulse rounded bg-gray-200" />
+          <div className="mt-4 flex gap-4">
+            <div className="h-8 w-24 animate-pulse rounded bg-gray-200" />
+            <div className="h-8 w-16 animate-pulse rounded bg-gray-200" />
+          </div>
+          <div className="mt-4 flex items-center gap-2">
+            <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+            <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+          </div>
+          <div className="my-6 h-px w-full bg-gray-200" />
+          <div className="space-y-2">
+            <div className="h-4 w-full animate-pulse rounded bg-gray-200" />
+            <div className="h-4 w-full animate-pulse rounded bg-gray-200" />
+            <div className="h-4 w-2/3 animate-pulse rounded bg-gray-200" />
+          </div>
+          <div className="mt-8 space-y-6">
+            <div>
+              <div className="h-4 w-20 animate-pulse rounded bg-gray-200 mb-3" />
+              <div className="flex gap-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-10 w-14 animate-pulse rounded-md bg-gray-200" />
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="h-4 w-16 animate-pulse rounded bg-gray-200 mb-3" />
+              <div className="flex gap-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-10 w-12 animate-pulse rounded-md bg-gray-200" />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+            <div className="h-12 w-32 animate-pulse rounded-full bg-gray-200" />
+            <div className="h-12 flex-1 max-w-xs animate-pulse rounded-full bg-gray-200" />
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-4 border-t border-gray-200 pt-8">
+            <div className="h-5 w-40 animate-pulse rounded bg-gray-200" />
+            <div className="h-5 w-36 animate-pulse rounded bg-gray-200" />
+          </div>
+        </div>
+      </div>
+      {/* Reviews section skeleton */}
+      <div className="mt-24 border-t border-gray-200 pt-16">
+        <div className="mb-10 flex items-center justify-between">
+          <div className="h-8 w-48 animate-pulse rounded bg-gray-200" />
+          <div className="h-6 w-20 animate-pulse rounded bg-gray-200" />
+        </div>
+        <div className="grid gap-8 lg:grid-cols-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="border-b border-gray-200 pb-8">
+              <div className="flex justify-between">
+                <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
+                <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+              </div>
+              <div className="mt-3 h-4 w-24 animate-pulse rounded bg-gray-200" />
+              <div className="mt-3 space-y-2">
+                <div className="h-3 w-full animate-pulse rounded bg-gray-200" />
+                <div className="h-3 w-4/5 animate-pulse rounded bg-gray-200" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function formatPrice(value) {
   if (typeof value !== 'number') return String(value ?? '');
@@ -202,8 +289,8 @@ export default function ProductDetailPage() {
     return (
       <div className="flex min-h-screen flex-col bg-white">
         <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
+        <main className="flex-1">
+          <ProductDetailSkeleton />
         </main>
         <Footer />
       </div>
