@@ -141,13 +141,7 @@ export default function SalesPage() {
             type="search"
             placeholder="Search..."
             value={filters.search}
-            onChange={(e) =>
-              setFilters((f) => {
-                const updated = { ...f, search: e.target.value };
-                applyFilters(updated);
-                return updated;
-              })
-            }
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
             className="w-full rounded-md border border-border bg-white py-2 pl-9 pr-3 text-sm text-primary placeholder:text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -157,13 +151,7 @@ export default function SalesPage() {
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Categories</h3>
         <div className="max-h-60 space-y-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200">
           <button
-            onClick={() =>
-              setFilters((f) => {
-                const updated = { ...f, category: '' };
-                applyFilters(updated);
-                return updated;
-              })
-            }
+            onClick={() => setFilters((f) => ({ ...f, category: '' }))}
             className={`block w-full text-left text-sm transition-colors ${
               filters.category === '' ? 'font-semibold text-primary' : 'text-secondary/70 hover:text-primary'
             }`}
@@ -173,13 +161,7 @@ export default function SalesPage() {
           {categories.filter((c) => c.slug).map((c) => (
             <button
               key={c.id}
-              onClick={() =>
-                setFilters((f) => {
-                  const updated = { ...f, category: c.slug };
-                  applyFilters(updated);
-                  return updated;
-                })
-              }
+              onClick={() => setFilters((f) => ({ ...f, category: c.slug }))}
               className={`block w-full text-left text-sm transition-colors ${
                 filters.category === c.slug ? 'font-semibold text-primary' : 'text-secondary/70 hover:text-primary'
               }`}
@@ -195,13 +177,11 @@ export default function SalesPage() {
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Sort By</h3>
         <select
           value={filters.sort}
-          onChange={(e) =>
-            setFilters((f) => {
-              const updated = { ...f, sort: e.target.value };
-              applyFilters(updated);
-              return updated;
-            })
-          }
+          onChange={(e) => {
+            const updated = { ...filters, sort: e.target.value };
+            setFilters(updated);
+            applyFilters(updated);
+          }}
           className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >
           {SORT_OPTIONS.map((opt) => (
@@ -219,13 +199,7 @@ export default function SalesPage() {
             type="number"
             placeholder="Min"
             value={filters.minPrice}
-            onChange={(e) =>
-              setFilters((f) => {
-                const updated = { ...f, minPrice: e.target.value };
-                applyFilters(updated);
-                return updated;
-              })
-            }
+            onChange={(e) => setFilters((f) => ({ ...f, minPrice: e.target.value }))}
             className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <span className="text-tertiary">-</span>
@@ -233,13 +207,7 @@ export default function SalesPage() {
             type="number"
             placeholder="Max"
             value={filters.maxPrice}
-            onChange={(e) =>
-              setFilters((f) => {
-                const updated = { ...f, maxPrice: e.target.value };
-                applyFilters(updated);
-                return updated;
-              })
-            }
+            onChange={(e) => setFilters((f) => ({ ...f, maxPrice: e.target.value }))}
             className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -347,13 +315,11 @@ export default function SalesPage() {
                 <div className="relative">
                   <select
                     value={filters.sort}
-                    onChange={(e) =>
-                      setFilters((f) => {
-                        const updated = { ...f, sort: e.target.value };
-                        applyFilters(updated);
-                        return updated;
-                      })
-                    }
+                    onChange={(e) => {
+                      const updated = { ...filters, sort: e.target.value };
+                      setFilters(updated);
+                      applyFilters(updated);
+                    }}
                     className="appearance-none rounded-md border-none bg-transparent py-1 pr-8 text-sm font-medium text-primary focus:ring-0 cursor-pointer hover:text-secondary"
                   >
                     {SORT_OPTIONS.map((opt) => (

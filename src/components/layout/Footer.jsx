@@ -22,8 +22,8 @@ const FOOTER_LINKS = {
 export default function Footer() {
   return (
     <footer className="border-t border-border bg-primary text-quaternary">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 sm:py-12 lg:px-8">
+        <div className="grid gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-5">
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link
@@ -31,10 +31,10 @@ export default function Footer() {
               className="inline-flex items-center gap-2 text-quaternary transition-opacity hover:opacity-90"
               aria-label="AttireHub Home"
             >
-              <ShoppingBag className="h-8 w-8" aria-hidden />
-              <span className="text-xl font-semibold tracking-tight">AttireHub</span>
+              <ShoppingBag className="h-6 w-6 sm:h-8 sm:w-8" aria-hidden />
+              <span className="text-lg font-semibold tracking-tight sm:text-xl">AttireHub</span>
             </Link>
-            <p className="mt-4 max-w-sm text-sm text-tertiary">
+            <p className="mt-3 max-w-sm text-xs text-tertiary sm:mt-4 sm:text-sm">
               Curated clothing and accessories for every style. Quality you can feel.
             </p>
           </div>
@@ -42,15 +42,15 @@ export default function Footer() {
           {/* Link columns */}
           {Object.entries(FOOTER_LINKS).map(([heading, links]) => (
             <div key={heading}>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-quaternary">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-quaternary sm:text-sm">
                 {heading}
               </h3>
-              <ul className="mt-4 space-y-3" role="list">
+              <ul className="mt-2 space-y-2 sm:mt-4 sm:space-y-3" role="list">
                 {links.map(({ to, label }) => (
                   <li key={to}>
                     <Link
                       to={to}
-                      className="text-sm text-tertiary transition-colors hover:text-quaternary"
+                      className="text-xs text-tertiary transition-colors hover:text-quaternary sm:text-sm"
                     >
                       {label}
                     </Link>
@@ -61,8 +61,8 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-secondary pt-8 sm:flex-row">
-          <p className="text-sm text-tertiary">
+        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-secondary pt-6 sm:mt-12 sm:flex-row sm:gap-4 sm:pt-8">
+          <p className="text-xs text-tertiary sm:text-sm">
             &copy; {new Date().getFullYear()} AttireHub. All rights reserved.
           </p>
         </div>

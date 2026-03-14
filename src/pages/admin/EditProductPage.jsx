@@ -26,6 +26,7 @@ const editProductSchema = z.object({
   material: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  isNewArrival: z.boolean().optional(),
   isTrending: z.boolean().optional(),
   imageUrl: z.string().optional().nullable(),
 });
@@ -76,6 +77,7 @@ export default function EditProductPage() {
       material: '',
       isActive: true,
       isFeatured: false,
+      isNewArrival: false,
       isTrending: false,
       imageUrl: '',
     },
@@ -107,6 +109,7 @@ export default function EditProductPage() {
         setValue('material', p?.material ?? '');
         setValue('isActive', p?.isActive !== false);
         setValue('isFeatured', Boolean(p?.featured ?? p?.isFeatured));
+        setValue('isNewArrival', Boolean(p?.newArrival ?? p?.isNewArrival));
         setValue('isTrending', Boolean(p?.trending ?? p?.isTrending));
         setValue('imageUrl', p?.imageUrl ?? '');
       })
@@ -140,6 +143,7 @@ export default function EditProductPage() {
         material: data.material?.trim() || null,
         isActive: data.isActive !== false,
         isFeatured: Boolean(data.isFeatured),
+        isNewArrival: Boolean(data.isNewArrival),
         isTrending: Boolean(data.isTrending),
         imageUrl: data.imageUrl?.trim() || null,
       });
@@ -430,31 +434,42 @@ export default function EditProductPage() {
                     {...register('imageUrl')}
                   />
                 </div>
-                <div className="flex flex-wrap gap-6 pt-2">
-                  <label className="flex cursor-pointer select-none items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-black"
-                      {...register('isActive')}
-                    />
-                    <span className="text-sm text-primary">Active</span>
-                  </label>
-                  <label className="flex cursor-pointer select-none items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-black"
-                      {...register('isFeatured')}
-                    />
-                    <span className="text-sm text-primary">Featured</span>
-                  </label>
-                  <label className="flex cursor-pointer select-none items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-black"
-                      {...register('isTrending')}
-                    />
-                    <span className="text-sm text-primary">Trending</span>
-                  </label>
+                <div className="border-t border-border pt-6">
+                  <p className="mb-3 text-xs font-medium uppercase tracking-wider text-secondary">Status &amp; homepage</p>
+                  <div className="flex flex-wrap gap-6">
+                    <label className="flex cursor-pointer select-none items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                        {...register('isActive')}
+                      />
+                      <span className="text-sm text-primary">Active</span>
+                    </label>
+                    <label className="flex cursor-pointer select-none items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                        {...register('isFeatured')}
+                      />
+                      <span className="text-sm text-primary">Featured</span>
+                    </label>
+                    <label className="flex cursor-pointer select-none items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                        {...register('isNewArrival')}
+                      />
+                      <span className="text-sm text-primary">New Arrival</span>
+                    </label>
+                    <label className="flex cursor-pointer select-none items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                        {...register('isTrending')}
+                      />
+                      <span className="text-sm text-primary">Trending</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </section>

@@ -45,11 +45,16 @@
   html {
     background-color: #FFFFFF;
     min-height: 100%;
+    overflow-x: hidden;
   }
   body {
     background-color: #FFFFFF;
     color: var(--color-primary);
     min-height: 100%;
+    overflow-x: hidden;
+    /* Safe area for notched devices */
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
   }
   .dark body {
     background-color: var(--color-primary);

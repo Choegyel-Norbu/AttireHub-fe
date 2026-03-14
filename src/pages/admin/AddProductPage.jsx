@@ -27,6 +27,8 @@ const addProductSchema = z.object({
   material: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  isNewArrival: z.boolean().optional(),
+  isTrending: z.boolean().optional(),
   imageUrl: z.string().optional().nullable(),
   variants: z.array(variantSchema).min(1, 'Add at least one variant'),
 });
@@ -65,6 +67,8 @@ export default function AddProductPage() {
       material: '',
       isActive: true,
       isFeatured: false,
+      isNewArrival: false,
+      isTrending: false,
       imageUrl: '',
       variants: [
         { size: '', color: '', price: 0, stockQuantity: 0, imageUrl: '', isActive: true },
@@ -200,6 +204,18 @@ export default function AddProductPage() {
                       <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Featured</dt>
                       <dd className="text-primary">
                         {createdProduct.featured === true ? 'Yes' : 'No'}
+                      </dd>
+                    </div>
+                    <div className="space-y-0.5">
+                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">New Arrival</dt>
+                      <dd className="text-primary">
+                        {createdProduct.newArrival === true ? 'Yes' : 'No'}
+                      </dd>
+                    </div>
+                    <div className="space-y-0.5">
+                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Trending</dt>
+                      <dd className="text-primary">
+                        {createdProduct.trending === true ? 'Yes' : 'No'}
                       </dd>
                     </div>
                   </dl>
@@ -421,23 +437,42 @@ export default function AddProductPage() {
                       {...register('imageUrl')}
                     />
                   </div>
-                  <div className="flex flex-wrap gap-6 pt-2">
-                    <label className="flex cursor-pointer select-none items-center gap-2">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-black"
-                        {...register('isActive')}
-                      />
-                      <span className="text-sm text-primary">Active</span>
-                    </label>
-                    <label className="flex cursor-pointer select-none items-center gap-2">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-black"
-                        {...register('isFeatured')}
-                      />
-                      <span className="text-sm text-primary">Featured</span>
-                    </label>
+                  <div className="border-t border-border pt-6">
+                    <p className="mb-3 text-xs font-medium uppercase tracking-wider text-secondary">Status &amp; homepage</p>
+                    <div className="flex flex-wrap gap-6">
+                      <label className="flex cursor-pointer select-none items-center gap-2">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                          {...register('isActive')}
+                        />
+                        <span className="text-sm text-primary">Active</span>
+                      </label>
+                      <label className="flex cursor-pointer select-none items-center gap-2">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                          {...register('isFeatured')}
+                        />
+                        <span className="text-sm text-primary">Featured</span>
+                      </label>
+                      <label className="flex cursor-pointer select-none items-center gap-2">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                          {...register('isNewArrival')}
+                        />
+                        <span className="text-sm text-primary">New Arrival</span>
+                      </label>
+                      <label className="flex cursor-pointer select-none items-center gap-2">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                          {...register('isTrending')}
+                        />
+                        <span className="text-sm text-primary">Trending</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -597,7 +632,7 @@ export default function AddProductPage() {
             <div className="mt-6 flex items-start gap-3 text-sm text-primary">
               <Lightbulb className="h-5 w-5 shrink-0 text-primary/60" />
               <span className="text-secondary/80">
-                Featured products may appear on the homepage and collection highlights.
+                Featured, New Arrival, and Trending products may appear on the homepage and collection highlights.
               </span>
             </div>
           </div>

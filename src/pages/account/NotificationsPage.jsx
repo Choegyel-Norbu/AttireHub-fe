@@ -96,6 +96,11 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // Scroll to top every time the page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const markRead = isAdminUser ? markAdminNotificationRead : markNotificationRead;
 
   const handleMarkRead = async (e, notification) => {

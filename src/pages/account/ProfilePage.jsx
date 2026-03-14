@@ -133,13 +133,13 @@ export default function ProfilePage() {
           >
             <Link 
               to={item.to}
-              className="group flex h-full flex-col rounded-xl border border-border bg-white p-6 transition-all hover:border-primary/20 hover:shadow-lg"
+              className="group flex h-full flex-col rounded-xl border border-border bg-white p-5 transition-all hover:border-primary/20 hover:shadow-lg"
             >
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                <item.icon className="h-6 w-6" strokeWidth={1.5} />
+              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                <item.icon className="h-5 w-5" strokeWidth={1.5} />
               </div>
-              <h3 className="font-serif text-xl text-primary">{item.label}</h3>
-              <p className="mt-2 text-sm text-secondary/70">{item.description}</p>
+              <h3 className="font-serif text-lg text-primary">{item.label}</h3>
+              <p className="mt-1.5 text-xs text-secondary/70">{item.description}</p>
             </Link>
           </motion.div>
         ))}
@@ -150,29 +150,29 @@ export default function ProfilePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="mt-12 rounded-xl border border-border bg-white p-8"
+        className="mt-12 rounded-xl border border-border bg-white p-6"
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-serif text-2xl text-primary">Default Address</h2>
+          <h2 className="font-serif text-lg text-primary">Default Address</h2>
           <Link
             to="/account/settings#addresses"
-            className="text-sm font-medium text-primary underline underline-offset-4 hover:text-secondary"
+            className="text-xs font-medium text-primary underline underline-offset-4 hover:text-secondary"
           >
             Manage
           </Link>
         </div>
         
-        <div className="mt-6">
+        <div className="mt-4">
           {addressLoading ? (
-            <div className="h-20 w-full animate-pulse rounded-lg bg-gray-100" />
+            <div className="h-16 w-full animate-pulse rounded-lg bg-gray-100" />
           ) : defaultAddress ? (
-            <div className="flex items-start gap-4">
-              <MapPin className="mt-1 h-5 w-5 text-secondary" />
-              <div>
-                <p className="font-medium text-primary">
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-primary">
                   {defaultAddress.streetAddress ?? defaultAddress.street_address}
                 </p>
-                <p className="text-secondary/80">
+                <p className="mt-0.5 text-xs text-secondary/80">
                   {[
                     defaultAddress.city,
                     defaultAddress.state,
@@ -185,7 +185,7 @@ export default function ProfilePage() {
               </div>
             </div>
           ) : (
-            <p className="text-secondary/60">No default address set.</p>
+            <p className="text-sm text-secondary/60">No default address set.</p>
           )}
         </div>
       </motion.div>

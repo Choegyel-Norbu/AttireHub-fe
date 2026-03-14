@@ -160,13 +160,7 @@ export default function ProductListPage() {
             type="search"
             placeholder="Search..."
             value={filters.search}
-            onChange={(e) =>
-              setFilters((f) => {
-                const updated = { ...f, search: e.target.value };
-                applyFilters(updated);
-                return updated;
-              })
-            }
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
             className="w-full rounded-md border border-border bg-white py-2 pl-9 pr-3 text-sm text-primary placeholder:text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -177,13 +171,7 @@ export default function ProductListPage() {
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Categories</h3>
         <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200">
           <button
-            onClick={() =>
-              setFilters((f) => {
-                const updated = { ...f, category: '' };
-                applyFilters(updated);
-                return updated;
-              })
-            }
+            onClick={() => setFilters((f) => ({ ...f, category: '' }))}
             className={`block w-full text-left text-sm transition-colors ${
               filters.category === '' ? 'font-semibold text-primary' : 'text-secondary/70 hover:text-primary'
             }`}
@@ -193,13 +181,7 @@ export default function ProductListPage() {
           {categories.filter(c => c.slug).map((c) => (
             <button
               key={c.id}
-              onClick={() =>
-                setFilters((f) => {
-                  const updated = { ...f, category: c.slug };
-                  applyFilters(updated);
-                  return updated;
-                })
-              }
+              onClick={() => setFilters((f) => ({ ...f, category: c.slug }))}
               className={`block w-full text-left text-sm transition-colors ${
                 filters.category === c.slug ? 'font-semibold text-primary' : 'text-secondary/70 hover:text-primary'
               }`}
@@ -219,13 +201,7 @@ export default function ProductListPage() {
             type="number"
             placeholder="Min"
             value={filters.minPrice}
-            onChange={(e) =>
-              setFilters((f) => {
-                const updated = { ...f, minPrice: e.target.value };
-                applyFilters(updated);
-                return updated;
-              })
-            }
+            onChange={(e) => setFilters((f) => ({ ...f, minPrice: e.target.value }))}
             className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <span className="text-tertiary">-</span>
@@ -233,13 +209,7 @@ export default function ProductListPage() {
             type="number"
             placeholder="Max"
             value={filters.maxPrice}
-            onChange={(e) =>
-              setFilters((f) => {
-                const updated = { ...f, maxPrice: e.target.value };
-                applyFilters(updated);
-                return updated;
-              })
-            }
+            onChange={(e) => setFilters((f) => ({ ...f, maxPrice: e.target.value }))}
             className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -250,13 +220,11 @@ export default function ProductListPage() {
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Sort By</h3>
         <select
           value={filters.sort}
-          onChange={(e) =>
-            setFilters((f) => {
-              const updated = { ...f, sort: e.target.value };
-              applyFilters(updated);
-              return updated;
-            })
-          }
+          onChange={(e) => {
+            const updated = { ...filters, sort: e.target.value };
+            setFilters(updated);
+            applyFilters(updated);
+          }}
           className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >
           {SORT_OPTIONS.map((opt) => (
@@ -292,20 +260,20 @@ export default function ProductListPage() {
       <Header />
       
       {/* Page title — slight right nudge on large screens to align with content */}
-      <div className="bg-[#F9F9F9] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="bg-[#F9F9F9] px-3 py-4 sm:px-6 sm:py-6 lg:py-8 lg:px-8">
         <div className="mx-auto max-w-7xl lg:pl-8">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="font-serif text-2xl text-primary sm:text-3xl"
+            className="font-serif text-xl text-primary sm:text-2xl lg:text-3xl"
           >
             {pageTitle}
           </motion.h1>
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         <div className="flex flex-col lg:flex-row lg:gap-12">
           
           {/* Desktop Sidebar */}
@@ -316,15 +284,16 @@ export default function ProductListPage() {
           </aside>
 
           {/* Mobile Filter Controls */}
-          <div className="mb-8 flex items-center justify-between lg:hidden">
+          <div className="mb-6 flex items-center justify-between lg:mb-8 lg:hidden">
             <button
+              type="button"
               onClick={() => setShowMobileFilters(true)}
-              className="flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-primary hover:bg-gray-50"
+              className="flex min-h-10 items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-medium text-primary hover:bg-gray-50 sm:px-4 sm:text-sm"
             >
               <SlidersHorizontal className="h-4 w-4" />
               Filters
             </button>
-            <div className="text-sm text-secondary">
+            <div className="text-xs text-secondary sm:text-sm">
               {totalElements} Items
             </div>
           </div>
@@ -345,12 +314,17 @@ export default function ProductListPage() {
                   animate={{ x: 0 }}
                   exit={{ x: '100%' }}
                   transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                  className="fixed inset-y-0 right-0 z-50 w-full max-w-xs bg-white p-6 shadow-xl lg:hidden overflow-y-auto"
+                  className="fixed inset-y-0 right-0 z-50 w-full max-w-[min(100vw-2rem,20rem)] overflow-y-auto bg-white p-4 shadow-xl lg:hidden sm:p-6 pr-[max(1rem,env(safe-area-inset-right))]"
                 >
-                  <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-lg font-serif font-medium text-primary">Filters</h2>
-                    <button onClick={() => setShowMobileFilters(false)}>
-                      <X className="h-6 w-6 text-secondary" />
+                  <div className="mb-6 flex items-center justify-between sm:mb-8">
+                    <h2 className="text-base font-serif font-medium text-primary sm:text-lg">Filters</h2>
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileFilters(false)}
+                      className="flex min-h-10 min-w-10 items-center justify-center text-secondary hover:text-primary"
+                      aria-label="Close filters"
+                    >
+                      <X className="h-6 w-6" />
                     </button>
                   </div>
                   {filterSidebarContent}
@@ -371,13 +345,11 @@ export default function ProductListPage() {
                 <div className="relative">
                   <select
                     value={filters.sort}
-                    onChange={(e) =>
-                      setFilters((f) => {
-                        const updated = { ...f, sort: e.target.value };
-                        applyFilters(updated);
-                        return updated;
-                      })
-                    }
+                    onChange={(e) => {
+                      const updated = { ...filters, sort: e.target.value };
+                      setFilters(updated);
+                      applyFilters(updated);
+                    }}
                     className="appearance-none rounded-md border-none bg-transparent py-1 pr-8 text-sm font-medium text-primary focus:ring-0 cursor-pointer hover:text-secondary"
                   >
                     {SORT_OPTIONS.map((opt) => (
@@ -413,7 +385,7 @@ export default function ProductListPage() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
                   {products.map((product) => (
                     <motion.div
                       key={product.id}
@@ -428,22 +400,24 @@ export default function ProductListPage() {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="mt-16 flex items-center justify-center gap-4 border-t border-border pt-8">
+                  <div className="mt-10 flex flex-wrap items-center justify-center gap-3 border-t border-border pt-6 sm:mt-16 sm:gap-4 sm:pt-8">
                     <button
+                      type="button"
                       onClick={() => setPage((p) => Math.max(0, p - 1))}
                       disabled={page === 0}
-                      className="flex items-center gap-2 rounded-full px-6 py-2 text-sm font-medium text-primary transition-colors hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-transparent"
+                      className="flex min-h-10 items-center gap-1 rounded-full px-4 py-2 text-xs font-medium text-primary transition-colors hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-transparent sm:px-6 sm:text-sm"
                     >
                       <ChevronLeft className="h-4 w-4" />
                       Previous
                     </button>
-                    <span className="text-sm font-medium text-secondary">
+                    <span className="text-xs font-medium text-secondary sm:text-sm">
                       Page {page + 1} of {totalPages}
                     </span>
                     <button
+                      type="button"
                       onClick={() => setPage((p) => p + 1)}
                       disabled={last}
-                      className="flex items-center gap-2 rounded-full px-6 py-2 text-sm font-medium text-primary transition-colors hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-transparent"
+                      className="flex min-h-10 items-center gap-1 rounded-full px-4 py-2 text-xs font-medium text-primary transition-colors hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-transparent sm:px-6 sm:text-sm"
                     >
                       Next
                       <ChevronRight className="h-4 w-4" />

@@ -108,18 +108,18 @@ const ProductCard = ({ product }) => {
         </AnimatePresence>
       </div>
 
-      {/* Product Info — fixed height for uniform card size */}
-      <div className="mt-4 flex min-h-[132px] flex-col gap-1">
-        <div className="flex justify-between items-start gap-2">
-          <h3 className="text-sm font-medium text-primary line-clamp-2 group-hover:underline decoration-1 underline-offset-4 decoration-primary/30 flex-1 min-w-0">
+      {/* Product Info — fixed height for uniform card size; smaller on narrow cards */}
+      <div className="mt-2 flex min-h-[100px] flex-col gap-0.5 sm:mt-4 sm:min-h-[132px] sm:gap-1">
+        <div className="flex justify-between items-start gap-1 sm:gap-2">
+          <h3 className="text-xs font-medium text-primary line-clamp-2 group-hover:underline decoration-1 underline-offset-2 flex-1 min-w-0 sm:text-sm sm:underline-offset-4 sm:decoration-primary/30">
             {product.name}
           </h3>
-          <p className="text-sm font-semibold text-primary whitespace-nowrap flex-shrink-0">
+          <p className="text-xs font-semibold text-primary whitespace-nowrap flex-shrink-0 sm:text-sm">
             Nu {formatPrice(priceAfterDiscount ?? displayPrice)}
           </p>
         </div>
 
-        <p className="text-xs text-secondary/60 line-clamp-1 min-h-[1.25rem]">
+        <p className="text-[10px] text-secondary/60 line-clamp-1 min-h-[1rem] sm:text-xs sm:min-h-[1.25rem]">
           {product.categoryName || '\u00A0'}
         </p>
 
@@ -129,7 +129,7 @@ const ProductCard = ({ product }) => {
             type="button"
             disabled={adding}
             onClick={handleAddToCart}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-border bg-transparent py-2 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary hover:text-white disabled:opacity-60 lg:hidden"
+            className="mt-1.5 flex w-full min-h-8 items-center justify-center gap-1.5 rounded-full border border-border bg-transparent py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary hover:text-white disabled:opacity-60 sm:mt-2 sm:py-2 sm:text-xs lg:hidden"
           >
             {adding ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

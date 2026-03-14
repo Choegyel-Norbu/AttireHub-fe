@@ -83,6 +83,11 @@ export default function OrderDetailPage() {
   const [resolvedProductIdBySlug, setResolvedProductIdBySlug] = useState({});
   const [resolvingSlugForReview, setResolvingSlugForReview] = useState(null);
 
+  // Always start from the top when the order detail page is loaded or order changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [orderNumber]);
+
   useEffect(() => {
     if (!orderNumber) {
       setError('Order number is missing.');
@@ -384,8 +389,8 @@ export default function OrderDetailPage() {
                             {myReview && !isFormExpanded ? (
                               <div className="flex gap-4">
                                 <div className="shrink-0">
-                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-amber-400 shadow-sm">
-                                    <Star className="h-5 w-5 fill-current" />
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                                    <Star className="h-4 w-4 fill-current" />
                                   </div>
                                 </div>
                                 <div className="flex-1">
@@ -413,9 +418,9 @@ export default function OrderDetailPage() {
                                       </button>
                                     </div>
                                   </div>
-                                  <div className="mt-1 flex text-amber-400">
+                                  <div className="mt-1 flex text-blue-500">
                                     {[1, 2, 3, 4, 5].map((s) => (
-                                      <Star key={s} className={`h-3.5 w-3.5 ${s <= myReview.rating ? 'fill-current' : 'text-gray-300'}`} />
+                                      <Star key={s} className={`h-3 w-3 ${s <= myReview.rating ? 'fill-blue-500 text-blue-500' : 'fill-transparent text-gray-300'}`} />
                                     ))}
                                   </div>
                                   {myReview.comment && (
@@ -436,8 +441,8 @@ export default function OrderDetailPage() {
                                         className="focus:outline-none"
                                       >
                                         <Star
-                                          className={`h-6 w-6 transition-colors ${
-                                            reviewForm.rating >= star ? 'fill-amber-400 text-amber-400' : 'text-gray-300 hover:text-amber-200'
+                                          className={`h-5 w-5 transition-colors ${
+                                            reviewForm.rating >= star ? 'fill-blue-500 text-blue-500' : 'text-gray-300 hover:text-blue-300'
                                           }`}
                                         />
                                       </button>

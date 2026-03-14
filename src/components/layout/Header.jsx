@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useCallback } from 'react';
+import { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Search, User, LogOut, X, ShoppingBag, Bell, LayoutDashboard } from 'lucide-react';
@@ -29,7 +29,10 @@ export default function Header() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
-  
+  const [navbarVisible, setNavbarVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
+
   const { isAuthenticated, user, logout } = useAuth();
   const showDashboard = isAuthenticated && isAdmin(user);
   const cart = useContext(CartContext);
@@ -37,7 +40,9 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Scroll effect
+  const isHomePage = location.pathname === '/';
+
+  // Scroll effect: background when scrolled
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -45,6 +50,35 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Home page only: hide navbar on scroll down, show on scroll up
+  useEffect(() => {
+    if (!isHomePage) {
+      setNavbarVisible(true);
+      return;
+    }
+    const SCROLL_THRESHOLD = 60;
+    const handleScrollDirection = () => {
+      const current = window.scrollY;
+      if (current <= 20) {
+        setNavbarVisible(true);
+      } else if (current > lastScrollY.current && current > SCROLL_THRESHOLD) {
+        setNavbarVisible(false);
+      } else if (current < lastScrollY.current) {
+        setNavbarVisible(true);
+      }
+      lastScrollY.current = current;
+      ticking.current = false;
+    };
+    const onScroll = () => {
+      if (!ticking.current) {
+        window.requestAnimationFrame(handleScrollDirection);
+        ticking.current = true;
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [isHomePage]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -116,23 +150,32 @@ export default function Header() {
     }
   };
 
+  const headerHidden = isHomePage && !navbarVisible;
+
   return (
     <>
-      <header 
-        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+      <motion.header
+        initial={false}
+        animate={{ y: headerHidden ? '-100%' : 0 }}
+        transition={
+          headerHidden
+            ? { type: 'tween', duration: 0.25, ease: 'easeIn' }
+            : { type: 'spring', stiffness: 400, damping: 32 }
+        }
+        className={`fixed left-0 right-0 top-0 z-50 w-full transition-[background-color,box-shadow] duration-300 ease-out ${
           scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-white'
         }`}
       >
         {/* Promo Bar */}
-        <div className="bg-primary px-4 py-2 text-center text-[10px] font-bold uppercase tracking-widest text-white sm:text-xs">
+        <div className="bg-primary px-3 py-1.5 text-center text-[10px] font-bold uppercase tracking-widest text-white sm:px-4 sm:py-2 sm:text-xs">
           Complimentary shipping on orders over $75
         </div>
 
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Mobile Menu Button */}
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-20 sm:px-6 lg:px-8">
+          {/* Mobile Menu Button - min touch target 44px */}
           <button
             type="button"
-            className="p-2 -ml-2 text-primary lg:hidden"
+            className="flex min-h-11 min-w-11 -ml-1 items-center justify-center text-primary lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
           >
@@ -155,17 +198,17 @@ export default function Header() {
           {/* Logo (Center) */}
           <Link
             to="/"
-            className="absolute left-1/2 -translate-x-1/2 font-serif text-2xl font-medium tracking-tight text-primary lg:static lg:transform-none lg:text-3xl"
+            className="absolute left-1/2 -translate-x-1/2 font-serif text-xl font-medium tracking-tight text-primary sm:text-2xl lg:static lg:transform-none lg:text-3xl"
             aria-label="AttireHub Home"
           >
             AttireHub
           </Link>
 
-          {/* Actions (Right) */}
-          <div className="flex items-center gap-1 sm:gap-4">
+          {/* Actions (Right) - touch targets on mobile */}
+          <div className="flex items-center gap-0 sm:gap-4">
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 text-primary transition-colors hover:text-secondary"
+              className="flex min-h-11 min-w-11 items-center justify-center text-primary transition-colors hover:text-secondary sm:p-2"
               aria-label="Search"
             >
               <Search className="h-5 w-5" strokeWidth={1.5} />
@@ -209,12 +252,12 @@ export default function Header() {
             {!showDashboard && (
               <Link
                 to="/cart"
-                className="relative p-2 text-primary transition-colors hover:text-secondary"
+                className="relative flex min-h-11 min-w-11 items-center justify-center text-primary transition-colors hover:text-secondary sm:p-2"
                 aria-label="Cart"
               >
                 <ShoppingBag className="h-5 w-5" strokeWidth={1.5} />
                 {totalItems > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                  <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white sm:-right-1 sm:-top-1">
                     {totalItems}
                   </span>
                 )}
@@ -253,7 +296,10 @@ export default function Header() {
             </motion.div>
           )}
         </AnimatePresence>
-      </header>
+      </motion.header>
+
+      {/* Spacer so content is not hidden under fixed header (promo bar + nav height) */}
+      <div className="h-24 shrink-0 sm:h-28" aria-hidden />
 
       {/* Mobile Menu Drawer */}
       <AnimatePresence>
@@ -271,19 +317,21 @@ export default function Header() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 z-50 w-full max-w-sm flex flex-col bg-white shadow-2xl lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-full max-w-[min(100vw,22rem)] flex flex-col bg-white shadow-2xl lg:hidden pl-[env(safe-area-inset-left)]"
             >
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                <span className="font-serif text-2xl tracking-tight text-primary">Menu</span>
-                <button 
+              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4 sm:p-6">
+                <span className="font-serif text-xl tracking-tight text-primary sm:text-2xl">Menu</span>
+                <button
+                  type="button"
                   onClick={() => setMobileOpen(false)}
-                  className="p-2 -mr-2 text-primary hover:bg-gray-50 rounded-full transition-colors"
+                  className="flex min-h-11 min-w-11 items-center justify-center text-primary hover:bg-gray-50 rounded-full transition-colors -mr-2"
+                  aria-label="Close menu"
                 >
                   <X className="h-6 w-6" strokeWidth={1.5} />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-6 py-8">
+              <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
                 <nav className="flex flex-col gap-8">
                   {/* Main Links */}
                   <div className="flex flex-col gap-6">
@@ -296,7 +344,7 @@ export default function Header() {
                       >
                         <Link
                           to={to}
-                          className="text-3xl font-serif text-primary hover:text-secondary transition-colors block"
+                          className="block py-2 text-xl font-serif text-primary hover:text-secondary transition-colors sm:text-2xl"
                           onClick={() => setMobileOpen(false)}
                         >
                           {label}
@@ -308,23 +356,23 @@ export default function Header() {
                   <div className="h-px w-full bg-gray-100 my-2" />
 
                   {/* Account Links */}
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1">
                     {isAuthenticated ? (
                       <>
                         <Link
                           to="/profile"
-                          className="flex items-center gap-3 text-base font-medium text-secondary hover:text-primary"
+                          className="flex min-h-12 items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium text-secondary hover:bg-gray-50 hover:text-primary sm:text-base"
                           onClick={() => setMobileOpen(false)}
                         >
-                          <User className="h-5 w-5" />
+                          <User className="h-5 w-5 shrink-0" />
                           My Profile
                         </Link>
                         <Link
                           to="/account/notifications"
-                          className="flex items-center gap-3 text-base font-medium text-secondary hover:text-primary"
+                          className="flex min-h-12 items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium text-secondary hover:bg-gray-50 hover:text-primary sm:text-base"
                           onClick={() => setMobileOpen(false)}
                         >
-                          <Bell className="h-5 w-5" />
+                          <Bell className="h-5 w-5 shrink-0" />
                           Notifications
                           {unreadCount > 0 && (
                             <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
@@ -335,33 +383,34 @@ export default function Header() {
                         {showDashboard && (
                           <Link
                             to="/admin"
-                            className="flex items-center gap-3 text-base font-medium text-secondary hover:text-primary"
+                            className="flex min-h-12 items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium text-secondary hover:bg-gray-50 hover:text-primary sm:text-base"
                             onClick={() => setMobileOpen(false)}
                           >
-                            <LayoutDashboard className="h-5 w-5" />
+                            <LayoutDashboard className="h-5 w-5 shrink-0" />
                             Admin Dashboard
                           </Link>
                         )}
                         <button
+                          type="button"
                           onClick={handleLogoutClick}
-                          className="flex items-center gap-3 text-base font-medium text-red-600 hover:text-red-700 mt-2"
+                          className="flex min-h-12 items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 sm:text-base"
                         >
-                          <LogOut className="h-5 w-5" />
+                          <LogOut className="h-5 w-5 shrink-0" />
                           Sign Out
                         </button>
                       </>
                     ) : (
-                      <div className="flex flex-col gap-4">
+                      <div className="flex flex-col gap-1">
                         <Link
                           to="/login"
-                          className="text-lg font-medium text-primary hover:underline"
+                          className="flex min-h-12 items-center rounded-lg px-2 py-2 text-sm font-medium text-primary hover:bg-gray-50 sm:text-base"
                           onClick={() => setMobileOpen(false)}
                         >
                           Sign In
                         </Link>
                         <Link
                           to="/register"
-                          className="text-lg font-medium text-secondary hover:text-primary"
+                          className="flex min-h-12 items-center rounded-lg px-2 py-2 text-sm font-medium text-secondary hover:bg-gray-50 hover:text-primary sm:text-base"
                           onClick={() => setMobileOpen(false)}
                         >
                           Create Account

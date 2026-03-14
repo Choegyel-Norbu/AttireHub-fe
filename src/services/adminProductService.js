@@ -59,6 +59,11 @@ function getVariantErrorMessage(error) {
  *   material?: string | null;
  *   isActive?: boolean;
  *   isFeatured?: boolean;
+ *   featured?: boolean;
+ *   isNewArrival?: boolean;
+ *   newArrival?: boolean;
+ *   isTrending?: boolean;
+ *   trending?: boolean;
  *   imageUrl?: string | null;
  *   variants: Array<{
  *     size: string;
@@ -79,6 +84,8 @@ export async function createProduct(body) {
       categoryId: Number(body.categoryId),
       isActive: body.isActive !== false,
       featured: Boolean(body.featured ?? body.isFeatured),
+      newArrival: Boolean(body.newArrival ?? body.isNewArrival),
+      trending: Boolean(body.trending ?? body.isTrending),
       description: body.description?.trim() || null,
       slug: body.slug?.trim() || undefined,
       brand: body.brand?.trim() || null,
@@ -115,6 +122,8 @@ export async function createProduct(body) {
  *   isActive?: boolean;
  *   isFeatured?: boolean;
  *   featured?: boolean;
+ *   isNewArrival?: boolean;
+ *   newArrival?: boolean;
  *   isTrending?: boolean;
  *   trending?: boolean;
  *   imageUrl?: string | null;
@@ -134,6 +143,8 @@ export async function updateProduct(id, body) {
     if (body.isActive !== undefined) payload.isActive = Boolean(body.isActive);
     if (body.featured !== undefined) payload.featured = Boolean(body.featured);
     else if (body.isFeatured !== undefined) payload.featured = Boolean(body.isFeatured);
+    if (body.newArrival !== undefined) payload.newArrival = Boolean(body.newArrival);
+    else if (body.isNewArrival !== undefined) payload.newArrival = Boolean(body.isNewArrival);
     if (body.trending !== undefined) payload.trending = Boolean(body.trending);
     else if (body.isTrending !== undefined) payload.trending = Boolean(body.isTrending);
     if (body.imageUrl !== undefined) payload.imageUrl = body.imageUrl?.trim() || null;
