@@ -529,8 +529,8 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:gap-4">
+              {/* Actions: hidden on small screens; sticky bar below is the only Add to Cart on mobile */}
+              <div className="mt-8 hidden flex-col gap-6 lg:flex lg:flex-row lg:gap-4">
                 {/* Quantity */}
                 <div className="flex h-12 w-32 items-center justify-between rounded-full border border-border px-4">
                   <button 
