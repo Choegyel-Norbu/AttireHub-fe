@@ -28,13 +28,14 @@ const variantSchema = z.object({
   price: z.coerce.number().min(0, 'Price must be 0 or more'),
   stockQuantity: z.coerce.number().int().min(0, 'Stock must be 0 or more'),
   isActive: z.boolean().optional(),
+  applyDiscount: z.boolean().optional(),
+  discount: z.coerce.number().min(0).optional(),
 });
 
 const addProductSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   slug: z.string().optional(),
   description: z.string().optional().nullable(),
-  basePrice: z.coerce.number().min(0, 'Base price must be 0 or more'),
   categoryId: z.coerce.number().int().min(1, 'Category is required'),
   brand: z.string().optional().nullable(),
   material: z.string().optional().nullable(),
@@ -68,7 +69,9 @@ export default function AddProductPage() {
     control,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
+    reset,
   } = useForm({
     resolver: zodResolver(addProductSchema),
     defaultValues: {
@@ -84,7 +87,7 @@ export default function AddProductPage() {
       isNewArrival: false,
       isTrending: false,
       variants: [
-        { size: '', color: '', price: 0, stockQuantity: 0, isActive: true },
+        { size: '', color: '', price: 0, stockQuantity: 0, isActive: true, applyDiscount: false, discount: 0 },
       ],
     },
   });
@@ -140,6 +143,7 @@ export default function AddProductPage() {
             price: v.price,
             stockQuantity: v.stockQuantity,
             isActive: v.isActive !== false,
+            discount: v.applyDiscount ? (Number(v.discount) || 0) : 0,
           })),
         },
         imagesForRequest
@@ -167,174 +171,53 @@ export default function AddProductPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-12">
           {createdProduct ? (
-            <div className="space-y-8">
+            <div className="flex min-h-[50vh] flex-col items-center justify-center">
               <AnimatePresence mode="wait">
                 <motion.div
                   key="success"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex items-center gap-4 rounded-xl border border-border bg-white p-5"
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                  className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-white shadow-xl shadow-black/5"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <CheckCircle className="h-6 w-6 text-primary" aria-hidden />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-medium text-primary">Product created successfully</h2>
-                    <p className="text-sm text-secondary">
-                      <span className="font-medium text-primary">{createdProduct.name}</span>
-                      {createdProduct.slug && (
-                        <span className="text-tertiary"> · {createdProduct.slug}</span>
-                      )}
+                  <div className="bg-green-50/50 p-8 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 ring-8 ring-green-50">
+                      <CheckCircle className="h-8 w-8 text-green-600" strokeWidth={2} />
+                    </div>
+                    <h2 className="font-serif text-2xl text-primary">Product Created</h2>
+                    <p className="mt-2 text-sm text-secondary">
+                      <span className="font-medium text-primary">{createdProduct.name}</span> has been added to your catalog.
                     </p>
+                    {createdProduct.slug && (
+                      <p className="mt-1 font-mono text-xs text-tertiary">{createdProduct.slug}</p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-3 bg-white p-6 sm:flex-row sm:justify-center">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/admin/products')}
+                      className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary hover:shadow-lg hover:shadow-primary/20 sm:w-auto"
+                    >
+                      <List className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+                      Product Management
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCreatedProduct(null);
+                        setVariantImageFiles([]);
+                        reset();
+                      }}
+                      className="group inline-flex w-full items-center justify-center gap-2 rounded-full border border-border px-6 py-3 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:border-primary hover:bg-primary/5 sm:w-auto"
+                    >
+                      <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+                      Add Another Product
+                    </button>
                   </div>
                 </motion.div>
               </AnimatePresence>
-
-              <section>
-                <div className="mb-6 border-b border-border pb-4">
-                  <h2 className="text-lg font-medium text-primary">Product Details</h2>
-                </div>
-                <div className="rounded-xl border border-border bg-white p-5">
-                  <dl className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-0.5">
-                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Name</dt>
-                      <dd className="font-medium text-primary">{createdProduct.name}</dd>
-                    </div>
-                    {createdProduct.slug && (
-                      <div className="space-y-0.5">
-                        <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Slug</dt>
-                        <dd className="font-mono text-sm text-primary">{createdProduct.slug}</dd>
-                      </div>
-                    )}
-                    <div className="space-y-0.5">
-                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Base Price</dt>
-                      <dd className="font-medium text-primary">
-                        {typeof createdProduct.basePrice === 'number'
-                          ? createdProduct.basePrice.toLocaleString()
-                          : createdProduct.basePrice}
-                      </dd>
-                    </div>
-                    {(createdProduct.categoryName || createdProduct.categorySlug) && (
-                      <div className="space-y-0.5">
-                        <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Category</dt>
-                        <dd className="text-primary">
-                          {createdProduct.categoryName ?? createdProduct.categorySlug}
-                          {createdProduct.categorySlug && createdProduct.categoryName && (
-                            <span className="text-tertiary"> ({createdProduct.categorySlug})</span>
-                          )}
-                        </dd>
-                      </div>
-                    )}
-                    {createdProduct.brand && (
-                      <div className="space-y-0.5">
-                        <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Brand</dt>
-                        <dd className="text-primary">{createdProduct.brand}</dd>
-                      </div>
-                    )}
-                    {createdProduct.material && (
-                      <div className="space-y-0.5">
-                        <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Material</dt>
-                        <dd className="text-primary">{createdProduct.material}</dd>
-                      </div>
-                    )}
-                    <div className="space-y-0.5">
-                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Featured</dt>
-                      <dd className="text-primary">
-                        {createdProduct.featured === true ? 'Yes' : 'No'}
-                      </dd>
-                    </div>
-                    <div className="space-y-0.5">
-                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">New Arrival</dt>
-                      <dd className="text-primary">
-                        {createdProduct.newArrival === true ? 'Yes' : 'No'}
-                      </dd>
-                    </div>
-                    <div className="space-y-0.5">
-                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Trending</dt>
-                      <dd className="text-primary">
-                        {createdProduct.trending === true ? 'Yes' : 'No'}
-                      </dd>
-                    </div>
-                  </dl>
-                  {createdProduct.description && (
-                    <div className="mt-4 border-t border-border pt-4">
-                      <dt className="text-xs font-medium uppercase tracking-wider text-secondary">Description</dt>
-                      <dd className="mt-1 text-sm text-primary">{createdProduct.description}</dd>
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {Array.isArray(createdProduct.variants) && createdProduct.variants.length > 0 && (
-                <section>
-                  <div className="mb-6 border-b border-border pb-4">
-                    <h2 className="text-lg font-medium text-primary">
-                      Variants ({createdProduct.variants.length})
-                    </h2>
-                  </div>
-                  <div className="overflow-x-auto rounded-xl border border-border bg-white">
-                    <table className="w-full min-w-[520px] text-left text-sm table-fixed">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="w-20 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Image</th>
-                          <th className="w-24 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">SKU</th>
-                          <th className="w-16 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Size</th>
-                          <th className="w-20 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Color</th>
-                          <th className="w-20 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Price</th>
-                          <th className="w-16 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Stock</th>
-                          <th className="w-16 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Active</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {createdProduct.variants.map((v) => (
-                          <tr key={v.id ?? v.sku ?? `${v.size}-${v.color}`} className="border-b border-border/50 last:border-0">
-                            <td className="w-20 shrink-0 px-3 py-3 align-middle">
-                              {v.imageUrl ? (
-                                <img src={v.imageUrl} alt="" className="h-10 w-10 rounded-lg border border-border object-cover" />
-                              ) : (
-                                <span className="text-[10px] text-tertiary">—</span>
-                              )}
-                            </td>
-                            <td className="w-24 shrink-0 px-3 py-3 font-mono text-primary text-xs truncate" title={v.sku ?? ''}>{v.sku ?? '—'}</td>
-                            <td className="w-16 shrink-0 px-3 py-3 text-primary">{v.size}</td>
-                            <td className="w-20 shrink-0 px-3 py-3 text-primary">{v.color}</td>
-                            <td className="w-20 shrink-0 px-3 py-3 text-primary">
-                              {typeof v.price === 'number' ? v.price.toLocaleString() : v.price}
-                            </td>
-                            <td className="w-16 shrink-0 px-3 py-3 text-primary">{v.stockQuantity ?? 0}</td>
-                            <td className="w-16 shrink-0 px-3 py-3 text-primary">
-                              {v.active === true || v.isActive === true ? 'Yes' : 'No'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              )}
-
-              <div className="flex flex-wrap gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => navigate('/admin/products')}
-                  className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary"
-                >
-                  <List className="h-3.5 w-3.5" aria-hidden />
-                  Product Management
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCreatedProduct(null);
-                    setVariantImageFiles([]);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:bg-gray-50"
-                >
-                  <Plus className="h-3.5 w-3.5" aria-hidden />
-                  Add Another Product
-                </button>
-              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
@@ -405,22 +288,6 @@ export default function AddProductPage() {
                     />
                   </div>
                   <div className="grid gap-6 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <label htmlFor="add-product-basePrice" className="block text-xs font-medium uppercase tracking-wider text-secondary">
-                        Base Price <span className="text-primary">*</span>
-                      </label>
-                      <input
-                        id="add-product-basePrice"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className={getInputClassName(errors.basePrice)}
-                        {...register('basePrice')}
-                      />
-                      {errors.basePrice && (
-                        <p className="mt-1 text-xs text-red-500">{errors.basePrice.message}</p>
-                      )}
-                    </div>
                     <div className="space-y-1">
                       <label htmlFor="add-product-categoryId" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                         Category <span className="text-primary">*</span>
@@ -521,7 +388,7 @@ export default function AddProductPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      append({ size: '', color: '', price: 0, stockQuantity: 0, isActive: true });
+                      append({ size: '', color: '', price: 0, stockQuantity: 0, isActive: true, applyDiscount: false, discount: 0 });
                       setVariantImageFiles((prev) => [...prev, null]);
                     }}
                     className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary"
@@ -627,16 +494,45 @@ export default function AddProductPage() {
                             )}
                           </div>
                         </div>
-                        <div className="mt-4 flex items-center gap-2 pt-2">
-                          <input
-                            type="checkbox"
-                            id={`variant-active-${index}`}
-                            className="h-4 w-4 rounded border-border text-primary focus:ring-black"
-                            {...register(`variants.${index}.isActive`)}
-                          />
-                          <label htmlFor={`variant-active-${index}`} className="cursor-pointer select-none text-sm text-primary">
-                            Variant active
+                        <div className="mt-4 flex flex-wrap items-center gap-6 border-t border-border pt-4">
+                          <label className="flex cursor-pointer select-none items-center gap-2">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                              {...register(`variants.${index}.applyDiscount`)}
+                            />
+                            <span className="text-sm text-primary">Apply discount</span>
                           </label>
+                          {watch(`variants.${index}.applyDiscount`) && (
+                            <div className="flex items-center gap-2">
+                              <label htmlFor={`variant-discount-${index}`} className="text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">
+                                Discount amount
+                              </label>
+                              <input
+                                id={`variant-discount-${index}`}
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                className={getInputClassName(errors.variants?.[index]?.discount)}
+                                placeholder="0"
+                                {...register(`variants.${index}.discount`)}
+                              />
+                              {errors.variants?.[index]?.discount && (
+                                <p className="text-xs text-red-500">{errors.variants[index].discount.message}</p>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`variant-active-${index}`}
+                              className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                              {...register(`variants.${index}.isActive`)}
+                            />
+                            <label htmlFor={`variant-active-${index}`} className="cursor-pointer select-none text-sm text-primary">
+                              Variant active
+                            </label>
+                          </div>
                         </div>
                       </motion.div>
                     ))}

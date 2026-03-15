@@ -21,7 +21,6 @@ const editProductSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   slug: z.string().optional(),
   description: z.string().optional().nullable(),
-  basePrice: z.coerce.number().min(0, 'Base price must be 0 or more'),
   categoryId: z.coerce.number().int().min(1, 'Category is required'),
   brand: z.string().optional().nullable(),
   material: z.string().optional().nullable(),
@@ -75,6 +74,8 @@ export default function EditProductPage() {
     color: '',
     price: '',
     stockQuantity: '',
+    applyDiscount: false,
+    discount: '',
   });
   /** File to upload for the new variant when adding (sent via product update after add) */
   const [newVariantImageFile, setNewVariantImageFile] = useState(null);
@@ -241,6 +242,7 @@ export default function EditProductPage() {
         color,
         price,
         stockQuantity,
+        discount: newVariant.applyDiscount ? (Number(newVariant.discount) || 0) : 0,
       });
       let updated = await getProductBySlug(slug);
       setProduct(updated);
@@ -271,7 +273,7 @@ export default function EditProductPage() {
         setVariantImageFiles(Array((updated?.variants || []).length).fill(null));
       }
 
-      setNewVariant({ size: '', color: '', price: '', stockQuantity: '' });
+      setNewVariant({ size: '', color: '', price: '', stockQuantity: '', applyDiscount: false, discount: '' });
       setNewVariantImageFile(null);
     } catch (err) {
       setVariantAddError(err?.message ?? 'Failed to add variant.');
@@ -307,48 +309,52 @@ export default function EditProductPage() {
   if (updatedProduct) {
     const p = updatedProduct;
     return (
-      <div className="mx-auto max-w-5xl space-y-8">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-12">
         <AnimatePresence mode="wait">
           <motion.div
             key="success"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-4 rounded-xl border border-border bg-white p-5"
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+            className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-white shadow-xl shadow-black/5"
           >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <CheckCircle className="h-6 w-6 text-primary" aria-hidden />
-            </div>
-            <div>
-              <h2 className="text-lg font-medium text-primary">Product updated successfully</h2>
-              <p className="text-sm text-secondary">
-                <span className="font-medium text-primary">{p.name}</span>
-                {p.slug && <span className="text-tertiary"> · {p.slug}</span>}
+            <div className="bg-green-50/50 p-8 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 ring-8 ring-green-50">
+                <CheckCircle className="h-8 w-8 text-green-600" strokeWidth={2} />
+              </div>
+              <h2 className="font-serif text-2xl text-primary">Update Successful</h2>
+              <p className="mt-2 text-sm text-secondary">
+                <span className="font-medium text-primary">{p.name}</span> has been updated.
               </p>
+              {p.slug && (
+                <p className="mt-1 font-mono text-xs text-tertiary">{p.slug}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3 bg-white p-6 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={() => navigate('/admin/products')}
+                className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary hover:shadow-lg hover:shadow-primary/20 sm:w-auto"
+              >
+                <List className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+                Product Management
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUpdatedProduct(null);
+                  setVariantImageFiles(Array((product?.variants || []).length).fill(null));
+                }}
+                className="group inline-flex w-full items-center justify-center gap-2 rounded-full border border-border px-6 py-3 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:border-primary hover:bg-primary/5 sm:w-auto"
+              >
+                <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+                Continue Editing
+              </button>
             </div>
           </motion.div>
         </AnimatePresence>
-        <div className="flex flex-wrap gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => navigate('/admin/products')}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary"
-          >
-            <List className="h-3.5 w-3.5" aria-hidden />
-            Product management
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setUpdatedProduct(null);
-              setVariantImageFiles(Array((product?.variants || []).length).fill(null));
-            }}
-            className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:bg-gray-50"
-          >
-            <Plus className="h-3.5 w-3.5" aria-hidden />
-            Continue editing
-          </button>
-        </div>
       </div>
     );
   }
@@ -442,22 +448,6 @@ export default function EditProductPage() {
                   />
                 </div>
                 <div className="grid gap-6 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <label htmlFor="edit-product-basePrice" className="block text-xs font-medium uppercase tracking-wider text-secondary">
-                      Base price <span className="text-primary">*</span>
-                    </label>
-                    <input
-                      id="edit-product-basePrice"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className={getInputClassName(errors.basePrice)}
-                      {...register('basePrice')}
-                    />
-                    {errors.basePrice && (
-                      <p className="mt-1 text-xs text-red-500">{errors.basePrice.message}</p>
-                    )}
-                  </div>
                   <div className="space-y-1">
                     <label htmlFor="edit-product-categoryId" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                       Category <span className="text-primary">*</span>
@@ -701,7 +691,35 @@ export default function EditProductPage() {
                     />
                   </div>
                 </div>
-                                <div className="mt-4 space-y-1">
+                <div className="mt-4 flex flex-wrap items-center gap-6 border-t border-border pt-4">
+                  <label className="flex cursor-pointer select-none items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newVariant.applyDiscount}
+                      onChange={(e) => setNewVariant((prev) => ({ ...prev, applyDiscount: e.target.checked }))}
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                    />
+                    <span className="text-sm text-primary">Apply discount</span>
+                  </label>
+                  {newVariant.applyDiscount && (
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="var-discount" className="text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">
+                        Discount amount
+                      </label>
+                      <input
+                        id="var-discount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={newVariant.discount}
+                        onChange={(e) => setNewVariant((prev) => ({ ...prev, discount: e.target.value }))}
+                        className={getInputClassName(false)}
+                        placeholder="0"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 space-y-1">
                   <label htmlFor="var-image-upload" className="block text-xs font-medium uppercase tracking-wider text-secondary">
                     Variant image
                   </label>

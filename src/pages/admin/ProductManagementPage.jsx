@@ -11,7 +11,8 @@ import {
   ChevronUp,
   Pencil,
   Trash2,
-  Filter
+  Filter,
+  MoreHorizontal,
 } from 'lucide-react';
 import { getProducts } from '@/services/productService';
 import { getCategories, flattenCategoriesWithSlug } from '@/services/categoryService';
@@ -47,6 +48,7 @@ export default function ProductManagementPage() {
   const [productToDelete, setProductToDelete] = useState(null);
   const [productDeleting, setProductDeleting] = useState(false);
   const [productDeleteError, setProductDeleteError] = useState(null);
+  const [actionsMenuProductId, setActionsMenuProductId] = useState(null);
 
   const openEditVariant = (productId, productName, variant) => {
     setEditVariant({ productId, productName, variant });
@@ -219,6 +221,13 @@ export default function ProductManagementPage() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [editVariant]);
 
+  useEffect(() => {
+    if (actionsMenuProductId == null) return;
+    const close = () => setActionsMenuProductId(null);
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [actionsMenuProductId]);
+
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
@@ -317,22 +326,24 @@ export default function ProductManagementPage() {
                   <th className="py-4 px-4 font-bold text-primary">Product</th>
                   <th className="py-4 px-4 font-bold text-primary">Price</th>
                   <th className="py-4 px-4 font-bold text-primary">Category</th>
+                  <th className="py-4 px-4 font-bold text-primary">Brand</th>
                   <th className="py-4 px-4 font-bold text-primary">Variants</th>
-                  <th className="py-4 px-4 font-bold text-primary">Status</th>
+                  <th className="py-4 px-4 font-bold text-primary">Flags</th>
                   <th className="py-4 px-4 text-right font-bold text-primary pr-6">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {products.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-secondary">
+                    <td colSpan={8} className="py-12 text-center text-secondary">
                       No products found.
                     </td>
                   </tr>
                 ) : (
-                  products.map((p) => {
+                  products.map((p, index) => {
                     const variants = Array.isArray(p.variants) ? p.variants : [];
                     const isExpanded = expandedId === p.id;
+                    const isLastRow = index === products.length - 1;
                     const firstVariantImage = variants.find((v) => v.imageUrl)?.imageUrl ?? p.imageUrl;
                     return (
                       <Fragment key={p.id}>
@@ -365,11 +376,14 @@ export default function ProductManagementPage() {
                             </div>
                           </td>
                           <td className="py-4 px-4 font-medium text-primary">
-                            {typeof p.basePrice === 'number'
-                              ? p.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })
-                              : p.basePrice ?? '—'}
+                            {variants.length > 0 && typeof variants[0].price === 'number'
+                              ? variants[0].price.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                              : typeof p.basePrice === 'number'
+                                ? p.basePrice.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                                : '—'}
                           </td>
                           <td className="py-4 px-4 text-secondary">{p.categoryName ?? '—'}</td>
+                          <td className="py-4 px-4 text-secondary">{p.brand ?? '—'}</td>
                           <td className="py-4 px-4 text-secondary">
                             {variants.length > 0 ? (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-primary">
@@ -380,34 +394,70 @@ export default function ProductManagementPage() {
                             )}
                           </td>
                           <td className="py-4 px-4">
-                            {p.isFeatured && (
-                              <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                                Featured
-                              </span>
-                            )}
+                            <div className="flex flex-wrap gap-1">
+                              {(p.featured === true || p.isFeatured) && (
+                                <span className="inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">Featured</span>
+                              )}
+                              {(p.newArrival === true || p.isNewArrival) && (
+                                <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">New</span>
+                              )}
+                              {(p.trending === true || p.isTrending) && (
+                                <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">Trending</span>
+                              )}
+                              {!(p.featured === true || p.isFeatured) && !(p.newArrival === true || p.isNewArrival) && !(p.trending === true || p.isTrending) && '—'}
+                            </div>
                           </td>
                           <td className="py-4 px-4 text-right pr-6">
-                            <div className="flex items-center justify-end gap-3">
-                              <Link
-                                to={`/admin/products/edit/${encodeURIComponent(p.slug ?? '')}`}
-                                className="text-sm font-medium text-primary hover:text-secondary hover:underline"
-                              >
-                                Edit
-                              </Link>
+                            <div className="relative flex items-center justify-end">
                               <button
                                 type="button"
-                                onClick={() => openDeleteProductConfirm(p)}
-                                className="text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
-                                aria-label={`Delete product ${p.name}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActionsMenuProductId(actionsMenuProductId === p.id ? null : p.id);
+                                }}
+                                className="rounded p-2 text-secondary hover:bg-gray-100 hover:text-primary transition-colors"
+                                aria-label={`Actions for ${p.name}`}
+                                aria-expanded={actionsMenuProductId === p.id}
+                                aria-haspopup="true"
                               >
-                                Delete
+                                <MoreHorizontal className="h-5 w-5" />
                               </button>
+                              {actionsMenuProductId === p.id && (
+                                <div
+                                  className={`absolute right-0 z-10 min-w-[140px] rounded-lg border border-border bg-white py-1 shadow-lg ${isLastRow ? 'bottom-full mb-1' : 'top-full mt-1'}`}
+                                  role="menu"
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                >
+                                  <Link
+                                    to={`/admin/products/edit/${encodeURIComponent(p.slug ?? '')}`}
+                                    role="menuitem"
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm font-medium text-primary hover:bg-gray-50"
+                                    onClick={() => setActionsMenuProductId(null)}
+                                  >
+                                    <Pencil className="h-4 w-4 shrink-0" />
+                                    Edit
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50"
+                                    onClick={() => {
+                                      setActionsMenuProductId(null);
+                                      openDeleteProductConfirm(p);
+                                    }}
+                                    aria-label={`Delete product ${p.name}`}
+                                  >
+                                    <Trash2 className="h-4 w-4 shrink-0" />
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>
                         {isExpanded && variants.length > 0 && (
                           <tr className="bg-gray-50/30">
-                            <td colSpan={7} className="px-6 py-4">
+                            <td colSpan={8} className="px-6 py-4">
                               <div className="rounded-lg border border-border bg-white overflow-hidden">
                                 <table className="w-full text-sm">
                                   <thead className="bg-gray-50 border-b border-border">
@@ -428,7 +478,7 @@ export default function ProductManagementPage() {
                                         <td className="py-2 px-4 text-primary">{v.color ?? '—'}</td>
                                         <td className="py-2 px-4 text-primary">
                                           {typeof v.price === 'number'
-                                            ? v.price.toLocaleString(undefined, { minimumFractionDigits: 2 })
+                                            ? v.price.toLocaleString(undefined, { maximumFractionDigits: 0 })
                                             : v.price ?? '—'}
                                         </td>
                                         <td className="py-2 px-4 text-primary">{v.stockQuantity ?? 0}</td>
@@ -649,6 +699,32 @@ export default function ProductManagementPage() {
                     className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-3 border-t border-border pt-4">
+                <label className="flex cursor-pointer select-none items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={variantForm.applyDiscount}
+                    onChange={(e) => setVariantForm((f) => ({ ...f, applyDiscount: e.target.checked }))}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm font-medium text-primary">Apply discount</span>
+                </label>
+                {variantForm.applyDiscount && (
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-secondary">Discount amount</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={variantForm.discount}
+                      onChange={(e) => setVariantForm((f) => ({ ...f, discount: e.target.value }))}
+                      className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4">

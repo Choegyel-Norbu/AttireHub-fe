@@ -73,6 +73,7 @@ function buildProductPayload(body) {
         price: Number(v.price),
         stockQuantity: Number(v.stockQuantity) || 0,
         isActive: v.isActive !== false,
+        discount: Number(v.discount) || 0,
       })),
     }),
   };
@@ -178,6 +179,7 @@ export async function addVariant(productId, body) {
       stockQuantity: Number(body.stockQuantity) ?? 0,
       imageUrl: body.imageUrl?.trim() || null,
       isActive: body.isActive !== false,
+      discount: Number(body.discount) || 0,
     };
 
     const response = await api.post(`${ADMIN_PRODUCTS_PATH}/${productId}/variants`, payload);
