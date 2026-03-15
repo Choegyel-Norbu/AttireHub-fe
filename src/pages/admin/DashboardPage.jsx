@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   XCircle,
   Truck,
-  ArrowRight
+  ArrowRight,
+  PieChart,
+  Activity
 } from 'lucide-react';
 import { getProducts } from '@/services/productService';
 import { getAdminOrders } from '@/services/adminOrderService';
@@ -297,42 +299,97 @@ export default function DashboardPage() {
         {/* Inventory / Insights - Takes up 1 column */}
         <div className="space-y-6">
           {/* Order Status Breakdown */}
-          <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
-            <h2 className="font-serif text-lg text-primary mb-4">Order Status (Recent)</h2>
-            <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-white p-6 shadow-sm flex flex-col">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-serif text-lg text-primary">Order Status</h2>
+              <div className="p-2 bg-gray-50 rounded-lg">
+                <PieChart className="h-4 w-4 text-secondary" />
+              </div>
+            </div>
+
+            {/* Summary Stat */}
+            <div className="mb-8 flex items-center gap-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
+              <div className="p-3 bg-white rounded-full text-primary shadow-sm">
+                <Activity className="h-5 w-5" />
+              </div>
               <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-medium text-secondary">Pending & Processing</span>
-                  <span className="font-bold text-primary">{stats.pendingOrders}</span>
+                <p className="text-xs font-bold uppercase tracking-wider text-secondary/80">Total Analyzed</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-primary">{stats.analyzedOrdersCount}</p>
+                  <span className="text-xs font-medium text-secondary">orders</span>
                 </div>
-                <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                  <div 
-                    className="h-full bg-amber-400 rounded-full" 
-                    style={{ width: `${getPercent(stats.pendingOrders)}%` }} 
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Pending */}
+              <div className="group">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-amber-400 ring-4 ring-amber-50"></div>
+                    <span className="text-sm font-medium text-gray-700">Pending & Processing</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-primary">{stats.pendingOrders}</span>
+                    <span className="text-[10px] font-bold text-secondary bg-gray-100 px-1.5 py-0.5 rounded-md">
+                      {getPercent(stats.pendingOrders).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="relative h-2.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${getPercent(stats.pendingOrders)}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="absolute top-0 left-0 h-full bg-amber-400 rounded-full group-hover:bg-amber-500 transition-colors" 
                   />
                 </div>
               </div>
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-medium text-secondary">Delivered</span>
-                  <span className="font-bold text-primary">{stats.deliveredOrders}</span>
+
+              {/* Delivered */}
+              <div className="group">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-50"></div>
+                    <span className="text-sm font-medium text-gray-700">Delivered</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-primary">{stats.deliveredOrders}</span>
+                    <span className="text-[10px] font-bold text-secondary bg-gray-100 px-1.5 py-0.5 rounded-md">
+                      {getPercent(stats.deliveredOrders).toFixed(1)}%
+                    </span>
+                  </div>
                 </div>
-                <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                  <div 
-                    className="h-full bg-green-500 rounded-full" 
-                    style={{ width: `${getPercent(stats.deliveredOrders)}%` }} 
+                <div className="relative h-2.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${getPercent(stats.deliveredOrders)}%` }}
+                    transition={{ duration: 1, ease: "easeOut", delay: 0.1 }}
+                    className="absolute top-0 left-0 h-full bg-emerald-500 rounded-full group-hover:bg-emerald-600 transition-colors" 
                   />
                 </div>
               </div>
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-medium text-secondary">Cancelled</span>
-                  <span className="font-bold text-primary">{stats.cancelledOrders}</span>
+
+              {/* Cancelled */}
+              <div className="group">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-rose-500 ring-4 ring-rose-50"></div>
+                    <span className="text-sm font-medium text-gray-700">Cancelled</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-primary">{stats.cancelledOrders}</span>
+                    <span className="text-[10px] font-bold text-secondary bg-gray-100 px-1.5 py-0.5 rounded-md">
+                      {getPercent(stats.cancelledOrders).toFixed(1)}%
+                    </span>
+                  </div>
                 </div>
-                <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                  <div 
-                    className="h-full bg-red-400 rounded-full" 
-                    style={{ width: `${getPercent(stats.cancelledOrders)}%` }} 
+                <div className="relative h-2.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${getPercent(stats.cancelledOrders)}%` }}
+                    transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                    className="absolute top-0 left-0 h-full bg-rose-500 rounded-full group-hover:bg-rose-600 transition-colors" 
                   />
                 </div>
               </div>

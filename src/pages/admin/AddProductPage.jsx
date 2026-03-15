@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,12 +8,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as adminProductService from '@/services/adminProductService';
 import { getCategories, flattenCategories } from '@/services/categoryService';
 
+/** Renders a preview of the selected file and revokes object URL on change/unmount */
+function FilePreview({ file, className = 'h-20 w-20 rounded-lg border border-border object-cover' }) {
+  const urlRef = useRef(null);
+  const fileRef = useRef(null);
+  if (fileRef.current !== file) {
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    fileRef.current = file;
+    urlRef.current = file ? URL.createObjectURL(file) : null;
+  }
+  useEffect(() => () => { if (urlRef.current) URL.revokeObjectURL(urlRef.current); }, []);
+  if (!urlRef.current) return null;
+  return <img src={urlRef.current} alt="Preview" className={className} />;
+}
+
 const variantSchema = z.object({
   size: z.string().min(1, 'Size is required'),
   color: z.string().min(1, 'Color is required'),
   price: z.coerce.number().min(0, 'Price must be 0 or more'),
   stockQuantity: z.coerce.number().int().min(0, 'Stock must be 0 or more'),
-  imageUrl: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
 });
 
@@ -29,7 +42,6 @@ const addProductSchema = z.object({
   isFeatured: z.boolean().optional(),
   isNewArrival: z.boolean().optional(),
   isTrending: z.boolean().optional(),
-  imageUrl: z.string().optional().nullable(),
   variants: z.array(variantSchema).min(1, 'Add at least one variant'),
 });
 
@@ -47,6 +59,8 @@ export default function AddProductPage() {
   const [createdProduct, setCreatedProduct] = useState(null);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  /** One image file per variant by index; null = no image for that variant */
+  const [variantImageFiles, setVariantImageFiles] = useState([]);
   const navigate = useNavigate();
 
   const {
@@ -69,14 +83,21 @@ export default function AddProductPage() {
       isFeatured: false,
       isNewArrival: false,
       isTrending: false,
-      imageUrl: '',
       variants: [
-        { size: '', color: '', price: 0, stockQuantity: 0, imageUrl: '', isActive: true },
+        { size: '', color: '', price: 0, stockQuantity: 0, isActive: true },
       ],
     },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'variants' });
+
+  const setVariantImage = (index, file) => {
+    setVariantImageFiles((prev) => {
+      const next = [...prev];
+      next[index] = file;
+      return next;
+    });
+  };
 
   useEffect(() => {
     getCategories()
@@ -91,24 +112,41 @@ export default function AddProductPage() {
       .finally(() => setCategoriesLoading(false));
   }, [setValue]);
 
+  useEffect(() => {
+    const n = fields.length;
+    setVariantImageFiles((prev) => {
+      if (prev.length === n) return prev;
+      if (prev.length < n) return [...prev, ...Array(n - prev.length).fill(null)];
+      return prev.slice(0, n);
+    });
+  }, [fields.length]);
+
   const onSubmit = async (data) => {
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const product = await adminProductService.createProduct({
-        ...data,
-        description: data.description?.trim() || null,
-        slug: data.slug?.trim() || undefined,
-        brand: data.brand?.trim() || null,
-        material: data.material?.trim() || null,
-        imageUrl: data.imageUrl?.trim() || null,
-        variants: data.variants.map((v) => ({
-          ...v,
-          imageUrl: v.imageUrl?.trim() || null,
-        })),
-      });
+      const variantCount = data.variants?.length ?? 0;
+      const imagesForRequest = Array.from({ length: variantCount }, (_, i) => variantImageFiles[i] ?? null);
+      const product = await adminProductService.createProduct(
+        {
+          ...data,
+          description: data.description?.trim() || null,
+          slug: data.slug?.trim() || undefined,
+          brand: data.brand?.trim() || null,
+          material: data.material?.trim() || null,
+          variants: data.variants.map((v) => ({
+            size: v.size,
+            color: v.color,
+            price: v.price,
+            stockQuantity: v.stockQuantity,
+            isActive: v.isActive !== false,
+          })),
+        },
+        imagesForRequest
+      );
       const resolved = product?.data ?? product;
       setCreatedProduct(resolved);
+      setVariantImageFiles([]);
     } catch (err) {
       setSubmitError(err?.message ?? 'Failed to create product.');
     } finally {
@@ -236,28 +274,36 @@ export default function AddProductPage() {
                     </h2>
                   </div>
                   <div className="overflow-x-auto rounded-xl border border-border bg-white">
-                    <table className="w-full min-w-[400px] text-left text-sm">
+                    <table className="w-full min-w-[520px] text-left text-sm table-fixed">
                       <thead>
                         <tr className="border-b border-border">
-                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">SKU</th>
-                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Size</th>
-                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Color</th>
-                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Price</th>
-                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Stock</th>
-                          <th className="px-5 pb-3 text-xs font-medium uppercase tracking-wider text-secondary">Active</th>
+                          <th className="w-20 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Image</th>
+                          <th className="w-24 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">SKU</th>
+                          <th className="w-16 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Size</th>
+                          <th className="w-20 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Color</th>
+                          <th className="w-20 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Price</th>
+                          <th className="w-16 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Stock</th>
+                          <th className="w-16 shrink-0 px-3 py-3 text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">Active</th>
                         </tr>
                       </thead>
                       <tbody>
                         {createdProduct.variants.map((v) => (
                           <tr key={v.id ?? v.sku ?? `${v.size}-${v.color}`} className="border-b border-border/50 last:border-0">
-                            <td className="px-5 py-3 font-mono text-primary">{v.sku ?? '—'}</td>
-                            <td className="px-5 py-3 text-primary">{v.size}</td>
-                            <td className="px-5 py-3 text-primary">{v.color}</td>
-                            <td className="px-5 py-3 text-primary">
+                            <td className="w-20 shrink-0 px-3 py-3 align-middle">
+                              {v.imageUrl ? (
+                                <img src={v.imageUrl} alt="" className="h-10 w-10 rounded-lg border border-border object-cover" />
+                              ) : (
+                                <span className="text-[10px] text-tertiary">—</span>
+                              )}
+                            </td>
+                            <td className="w-24 shrink-0 px-3 py-3 font-mono text-primary text-xs truncate" title={v.sku ?? ''}>{v.sku ?? '—'}</td>
+                            <td className="w-16 shrink-0 px-3 py-3 text-primary">{v.size}</td>
+                            <td className="w-20 shrink-0 px-3 py-3 text-primary">{v.color}</td>
+                            <td className="w-20 shrink-0 px-3 py-3 text-primary">
                               {typeof v.price === 'number' ? v.price.toLocaleString() : v.price}
                             </td>
-                            <td className="px-5 py-3 text-primary">{v.stockQuantity ?? 0}</td>
-                            <td className="px-5 py-3 text-primary">
+                            <td className="w-16 shrink-0 px-3 py-3 text-primary">{v.stockQuantity ?? 0}</td>
+                            <td className="w-16 shrink-0 px-3 py-3 text-primary">
                               {v.active === true || v.isActive === true ? 'Yes' : 'No'}
                             </td>
                           </tr>
@@ -279,7 +325,10 @@ export default function AddProductPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCreatedProduct(null)}
+                  onClick={() => {
+                    setCreatedProduct(null);
+                    setVariantImageFiles([]);
+                  }}
                   className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:bg-gray-50"
                 >
                   <Plus className="h-3.5 w-3.5" aria-hidden />
@@ -425,18 +474,6 @@ export default function AddProductPage() {
                       />
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <label htmlFor="add-product-imageUrl" className="block text-xs font-medium uppercase tracking-wider text-secondary">
-                      Product Image URL
-                    </label>
-                    <input
-                      id="add-product-imageUrl"
-                      type="url"
-                      className={getInputClassName(errors.imageUrl)}
-                      placeholder="https://..."
-                      {...register('imageUrl')}
-                    />
-                  </div>
                   <div className="border-t border-border pt-6">
                     <p className="mb-3 text-xs font-medium uppercase tracking-wider text-secondary">Status &amp; homepage</p>
                     <div className="flex flex-wrap gap-6">
@@ -483,16 +520,10 @@ export default function AddProductPage() {
                   <h2 className="text-lg font-medium text-primary">Variants</h2>
                   <button
                     type="button"
-                    onClick={() =>
-                      append({
-                        size: '',
-                        color: '',
-                        price: 0,
-                        stockQuantity: 0,
-                        imageUrl: '',
-                        isActive: true,
-                      })
-                    }
+                    onClick={() => {
+                      append({ size: '', color: '', price: 0, stockQuantity: 0, isActive: true });
+                      setVariantImageFiles((prev) => [...prev, null]);
+                    }}
                     className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -519,7 +550,10 @@ export default function AddProductPage() {
                           {fields.length > 1 && (
                             <button
                               type="button"
-                              onClick={() => remove(index)}
+                              onClick={() => {
+                                remove(index);
+                                setVariantImageFiles((prev) => prev.filter((_, i) => i !== index));
+                              }}
                               className="rounded-full p-2 text-secondary transition-colors hover:bg-red-50 hover:text-red-600"
                               aria-label={`Remove variant ${index + 1}`}
                             >
@@ -576,13 +610,21 @@ export default function AddProductPage() {
                             )}
                           </div>
                           <div className="space-y-1 sm:col-span-2 lg:col-span-1">
-                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Image URL</label>
+                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Variant image</label>
+                            {variantImageFiles[index] && (
+                              <div className="mb-2">
+                                <FilePreview file={variantImageFiles[index]} className="h-24 w-24 rounded-lg border border-border object-cover shadow-sm" />
+                              </div>
+                            )}
                             <input
-                              type="url"
-                              className={getInputClassName(errors.variants?.[index]?.imageUrl)}
-                              placeholder="https://..."
-                              {...register(`variants.${index}.imageUrl`)}
+                              type="file"
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              className="w-full text-xs text-secondary file:mr-2 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-xs file:font-medium file:text-white file:uppercase file:tracking-wider hover:file:bg-secondary"
+                              onChange={(e) => setVariantImage(index, e.target.files?.[0] ?? null)}
                             />
+                            {variantImageFiles[index] && (
+                              <p className="mt-1 truncate text-[10px] text-tertiary" title={variantImageFiles[index].name}>{variantImageFiles[index].name}</p>
+                            )}
                           </div>
                         </div>
                         <div className="mt-4 flex items-center gap-2 pt-2">
@@ -627,7 +669,7 @@ export default function AddProductPage() {
           <div className="sticky top-24 rounded-xl border border-border bg-gray-50/50 p-6">
             <h3 className="font-serif text-lg text-primary">Tips</h3>
             <p className="mt-2 text-sm leading-relaxed text-secondary/80">
-              Add at least one variant with size, color, price, and stock. You can add more variants after saving. Leave slug blank to auto-generate from the product name.
+              Add at least one variant with size, color, price, and stock. Each variant can have one image (JPEG, PNG, GIF, WebP); order of images matches variant order. Leave slug blank to auto-generate from the product name.
             </p>
             <div className="mt-6 flex items-start gap-3 text-sm text-primary">
               <Lightbulb className="h-5 w-5 shrink-0 text-primary/60" />

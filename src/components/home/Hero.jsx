@@ -5,32 +5,35 @@ import { ArrowRight } from 'lucide-react';
 const Hero = () => {
   return (
     <section className="relative w-full overflow-hidden bg-quaternary">
-      <div className="grid min-h-[70vh] grid-cols-1 sm:min-h-[75vh] lg:min-h-[85vh] lg:grid-cols-12">
+      <div className="grid min-h-[70vh] grid-cols-1 lg:min-h-[85vh] lg:grid-cols-12">
         {/* Left Content Panel */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative z-10 flex flex-col justify-center bg-[#F9F9F9] px-4 py-10 sm:px-6 sm:py-16 lg:col-span-5 lg:px-16 xl:px-20"
+          className="relative z-10 flex flex-col justify-center bg-white px-4 py-12 sm:px-6 sm:py-20 lg:col-span-5 lg:px-12 xl:px-16"
         >
           <div className="max-w-xl">
-            <motion.span 
+            <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="mb-3 inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-secondary/60 sm:mb-4 sm:text-xs"
+              className="mb-4 flex items-center gap-3 sm:mb-6"
             >
-              New Collection 2026
-            </motion.span>
+              <span className="h-px w-8 bg-primary/30"></span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/80 sm:text-xs">
+                Spring / Summer 2026
+              </span>
+            </motion.div>
             
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
-              className="mb-4 font-serif text-3xl font-medium leading-[1.15] text-primary sm:mb-6 sm:text-5xl sm:leading-[1.1] lg:text-6xl xl:text-7xl"
+              className="mb-6 font-serif text-4xl font-medium leading-[1.1] text-primary sm:mb-8 sm:text-6xl sm:leading-[1.05] lg:text-7xl xl:text-[5rem]"
             >
-              The Art of <br />
-              <span className="italic text-secondary/80">Modern</span> Dressing.
+              Curated <br />
+              <span className="italic text-secondary/70">Elegance.</span>
             </motion.h1>
             
             <motion.p 
@@ -39,7 +42,7 @@ const Hero = () => {
               transition={{ delay: 0.6, duration: 0.8 }}
               className="mb-8 max-w-md text-sm leading-relaxed text-secondary/70 sm:mb-10 sm:text-base"
             >
-              Discover our curated edit of timeless essentials, designed to elevate your everyday wardrobe with effortless sophistication.
+              Discover our new collection of timeless essentials, meticulously crafted to elevate your everyday wardrobe with effortless sophistication.
             </motion.p>
             
             <motion.div 
@@ -50,73 +53,70 @@ const Hero = () => {
             >
               <Link
                 to="/products"
-                className="group relative flex min-h-12 items-center justify-center overflow-hidden rounded-full bg-primary px-6 py-3.5 text-sm font-medium text-white transition-all duration-300 hover:bg-secondary hover:shadow-lg hover:shadow-primary/20 sm:px-8 sm:py-4"
+                className="group relative flex min-h-12 items-center justify-center overflow-hidden rounded-full bg-primary px-8 py-4 text-sm font-bold uppercase tracking-wider text-white transition-all duration-300 hover:bg-secondary hover:shadow-xl hover:shadow-primary/10"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Shop Collection
+                  Shop Now
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </Link>
               
               <Link
                 to="/products?newArrivalsOnly=true"
-                className="group flex min-h-12 items-center justify-center gap-2 rounded-full border border-primary px-6 py-3.5 text-sm font-medium text-primary transition-colors hover:bg-primary/5 sm:px-8 sm:py-4"
+                className="group flex min-h-12 items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-bold uppercase tracking-wider text-primary transition-colors hover:bg-gray-50"
               >
-                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 <span>New Arrivals</span>
               </Link>
             </motion.div>
           </div>
-
-          {/* Decorative elements */}
-          <div className="absolute bottom-8 left-8 hidden lg:block">
-            <div className="flex items-center gap-4 text-xs font-medium tracking-widest text-secondary/40">
-              <span>01</span>
-              <div className="h-px w-12 bg-secondary/20"></div>
-              <span>04</span>
-            </div>
-          </div>
         </motion.div>
 
-        {/* Right Image Panel */}
-        <div className="relative h-[40vh] min-h-[240px] sm:h-[50vh] lg:col-span-7 lg:h-auto lg:min-h-0 overflow-hidden">
+        {/* Right Image Panel - Editorial Style */}
+        <div className="relative h-[50vh] min-h-[300px] bg-[#F5F5F5] sm:h-[60vh] lg:col-span-7 lg:h-auto lg:min-h-0 overflow-hidden">
+          {/* Main Background Image */}
           <motion.div
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
             className="absolute inset-0 h-full w-full"
           >
             <img
-              src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop"
-              alt="Model walking in city wearing fashionable coat"
-              className="h-full w-full object-cover object-center"
+              src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop"
+              alt="Editorial fashion shot"
+              className="h-full w-full object-cover object-top opacity-90"
             />
-            
-            {/* Subtle overlay gradient for text readability if needed on mobile, 
-                but here acts as a filter */}
-            <div className="absolute inset-0 bg-primary/5 mix-blend-multiply lg:bg-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent lg:bg-transparent" />
           </motion.div>
 
-          {/* Floating Card (Optional - adds depth) */}
+          {/* Secondary Overlapping Image (Desktop Only) */}
           <motion.div 
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1, duration: 0.8 }}
-            className="absolute bottom-8 right-8 hidden max-w-xs rounded-xl bg-white/90 p-5 backdrop-blur-md shadow-xl lg:block"
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5, duration: 1, ease: "easeOut" }}
+            className="absolute -bottom-12 -left-12 hidden h-[65%] w-[45%] overflow-hidden bg-white shadow-2xl lg:block"
+            style={{ borderRadius: '0 4rem 0 0' }}
           >
-            <div className="flex items-start gap-4">
-              <div className="h-12 w-12 overflow-hidden rounded-full bg-gray-200">
+            <div className="relative h-full w-full overflow-hidden p-2 bg-white">
+               <div className="h-full w-full overflow-hidden" style={{ borderRadius: '0 3.5rem 0 0' }}>
                 <img 
-                  src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=200&auto=format&fit=crop" 
-                  alt="Featured item" 
+                  src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1000&auto=format&fit=crop" 
+                  alt="Detail shot" 
                   className="h-full w-full object-cover"
                 />
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-secondary/60">Featured Look</p>
-                <h3 className="text-sm font-semibold text-primary">The Classic Trench</h3>
-                <p className="text-xs text-secondary"> timeless silhouette re-imagined.</p>
-              </div>
+               </div>
+            </div>
+          </motion.div>
+
+          {/* Decorative Circle/Graphic */}
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 1, duration: 0.8 }}
+            className="absolute right-12 top-12 hidden h-24 w-24 items-center justify-center rounded-full bg-white/10 backdrop-blur-md lg:flex"
+          >
+            <div className="text-center text-white">
+              <span className="block text-xs font-bold uppercase tracking-widest">Est.</span>
+              <span className="block font-serif text-xl">2026</span>
             </div>
           </motion.div>
         </div>

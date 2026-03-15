@@ -14,18 +14,18 @@ const SIDEBAR_ITEMS = [
 
 export default function AdminLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex h-screen flex-col overflow-hidden bg-gray-50">
       <Header />
-      <div className="flex flex-1 flex-col lg:flex-row">
-        {/* Sidebar */}
-        <aside className="sticky top-20 z-30 w-full shrink-0 border-b border-gray-200 bg-white lg:static lg:block lg:w-64 lg:border-b-0 lg:border-r">
-          <div className="h-full lg:sticky lg:top-20 lg:p-6">
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        {/* Sidebar - does not scroll; only main content scrolls */}
+        <aside className="z-30 flex w-full shrink-0 flex-col border-b border-gray-200 bg-white lg:flex lg:h-full lg:w-64 lg:flex-col lg:border-b-0 lg:border-r">
+          <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden lg:p-6">
             {/* Desktop Header - Hidden on mobile */}
             <div className="hidden px-2 mb-8 lg:block">
               <h2 className="font-serif text-xl text-primary">Dashboard</h2>
               <p className="mt-1 text-xs text-secondary/60">Manage your store</p>
             </div>
-            
+
             <nav className="overflow-x-auto scrollbar-hide">
               <ul className="flex min-w-full gap-2 p-4 lg:flex-col lg:gap-1 lg:p-0">
                 {SIDEBAR_ITEMS.map(({ to, end, label, icon: Icon, disabled }) => (
@@ -66,8 +66,8 @@ export default function AdminLayout() {
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-10">
+        {/* Main Content - only this area scrolls */}
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-10">
           <div className="mx-auto max-w-6xl">
             <Outlet />
           </div>

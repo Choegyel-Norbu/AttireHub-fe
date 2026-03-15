@@ -46,6 +46,46 @@ function getInputClassName(error) {
   return `${base} ${error ? invalid : normal}`;
 }
 
+function AddressFormSkeleton() {
+  return (
+    <div className="space-y-5" aria-hidden>
+      <div className="flex items-center justify-between">
+        <div className="h-6 w-32 animate-pulse rounded bg-gray-200" />
+        <div className="h-4 w-14 animate-pulse rounded bg-gray-200" />
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-1">
+          <div className="h-3 w-12 animate-pulse rounded bg-gray-200" />
+          <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
+        </div>
+        <div className="space-y-1">
+          <div className="h-3 w-14 animate-pulse rounded bg-gray-200" />
+          <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+        <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
+      </div>
+      <div className="grid gap-5 sm:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="space-y-1">
+            <div className="h-3 w-10 animate-pulse rounded bg-gray-200" />
+            <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 pt-2">
+        <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
+        <div className="h-4 w-40 animate-pulse rounded bg-gray-200" />
+      </div>
+      <div className="pt-4">
+        <div className="h-10 w-36 animate-pulse rounded-full bg-gray-200" />
+      </div>
+    </div>
+  );
+}
+
 function getDefaultProfileValues(user) {
   if (!user) return { firstName: '', lastName: '', phoneNumber: '' };
   const firstName = user.firstName ?? user.first_name ?? (user.name && user.name.split(' ')[0]) ?? '';
@@ -538,120 +578,125 @@ export default function AccountSettingsPage() {
                     className="overflow-hidden rounded-xl border border-border bg-gray-50/50"
                   >
                     <div className="p-6">
-                      <div className="mb-6 flex items-center justify-between">
-                        <h3 className="font-serif text-lg text-primary">
-                          {editingAddressId ? 'Edit Address' : 'New Address'}
-                        </h3>
-                        <button 
-                          onClick={() => {
-                            setShowAddressForm(false);
-                            setEditingAddressId(null);
-                            addressForm.reset(emptyAddress);
-                          }}
-                          className="text-xs font-bold uppercase tracking-wider text-secondary hover:text-primary"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-
-                      <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-5">
-                        {addressError && (
-                          <div className="rounded-md bg-red-50 p-3 text-xs text-red-600 border border-red-100">
-                            {addressError}
-                          </div>
-                        )}
-
-                        <div className="grid gap-5 sm:grid-cols-2">
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Type</label>
-                            <select 
-                              className={getInputClassName(addressForm.formState.errors.addressType)} 
-                              {...addressForm.register('addressType')}
+                      {addressSubmitting ? (
+                        <AddressFormSkeleton />
+                      ) : (
+                        <>
+                          <div className="mb-6 flex items-center justify-between">
+                            <h3 className="font-serif text-lg text-primary">
+                              {editingAddressId ? 'Edit Address' : 'New Address'}
+                            </h3>
+                            <button 
+                              onClick={() => {
+                                setShowAddressForm(false);
+                                setEditingAddressId(null);
+                                addressForm.reset(emptyAddress);
+                              }}
+                              className="text-xs font-bold uppercase tracking-wider text-secondary hover:text-primary"
                             >
-                              {ADDRESS_TYPES.map(({ value, label }) => (
-                                <option key={value} value={value}>{label}</option>
-                              ))}
-                            </select>
+                              Cancel
+                            </button>
                           </div>
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Country</label>
-                            <input 
-                              type="text" 
-                              autoComplete="country-name" 
-                              className={getInputClassName(addressForm.formState.errors.country)} 
-                              {...addressForm.register('country')} 
-                            />
-                            {addressForm.formState.errors.country && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.country.message}</p>}
-                          </div>
-                        </div>
 
-                        <div className="space-y-1">
-                          <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Street Address</label>
-                          <input
-                            type="text"
-                            autoComplete="street-address"
-                            className={getInputClassName(addressForm.formState.errors.streetAddress)}
-                            {...addressForm.register('streetAddress')}
-                          />
-                          {addressForm.formState.errors.streetAddress && (
-                            <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.streetAddress.message}</p>
-                          )}
-                        </div>
+                          <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-5">
+                            {addressError && (
+                              <div className="rounded-md bg-red-50 p-3 text-xs text-red-600 border border-red-100">
+                                {addressError}
+                              </div>
+                            )}
 
-                        <div className="grid gap-5 sm:grid-cols-3">
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">City</label>
-                            <input 
-                              type="text" 
-                              autoComplete="address-level2" 
-                              className={getInputClassName(addressForm.formState.errors.city)} 
-                              {...addressForm.register('city')} 
-                            />
-                            {addressForm.formState.errors.city && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.city.message}</p>}
-                          </div>
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">State / Province</label>
-                            <input 
-                              type="text" 
-                              autoComplete="address-level1" 
-                              className={getInputClassName(addressForm.formState.errors.state)} 
-                              {...addressForm.register('state')} 
-                            />
-                            {addressForm.formState.errors.state && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.state.message}</p>}
-                          </div>
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Postal Code</label>
-                            <input 
-                              type="text" 
-                              autoComplete="postal-code" 
-                              className={getInputClassName(addressForm.formState.errors.postalCode)} 
-                              {...addressForm.register('postalCode')} 
-                            />
-                            {addressForm.formState.errors.postalCode && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.postalCode.message}</p>}
-                          </div>
-                        </div>
+                            <div className="grid gap-5 sm:grid-cols-2">
+                              <div className="space-y-1">
+                                <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Type</label>
+                                <select 
+                                  className={getInputClassName(addressForm.formState.errors.addressType)} 
+                                  {...addressForm.register('addressType')}
+                                >
+                                  {ADDRESS_TYPES.map(({ value, label }) => (
+                                    <option key={value} value={value}>{label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="space-y-1">
+                                <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Country</label>
+                                <input 
+                                  type="text" 
+                                  autoComplete="country-name" 
+                                  className={getInputClassName(addressForm.formState.errors.country)} 
+                                  {...addressForm.register('country')} 
+                                />
+                                {addressForm.formState.errors.country && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.country.message}</p>}
+                              </div>
+                            </div>
 
-                        <div className="flex items-center gap-2 pt-2">
-                          <input
-                            id="addr-default"
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-border text-primary focus:ring-black"
-                            {...addressForm.register('isDefault')}
-                          />
-                          <label htmlFor="addr-default" className="text-sm text-primary cursor-pointer select-none">Set as default address</label>
-                        </div>
+                            <div className="space-y-1">
+                              <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Street Address</label>
+                              <input
+                                type="text"
+                                autoComplete="street-address"
+                                className={getInputClassName(addressForm.formState.errors.streetAddress)}
+                                {...addressForm.register('streetAddress')}
+                              />
+                              {addressForm.formState.errors.streetAddress && (
+                                <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.streetAddress.message}</p>
+                              )}
+                            </div>
 
-                        <div className="pt-4">
-                          <button
-                            type="submit"
-                            disabled={addressSubmitting}
-                            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary disabled:opacity-50"
-                          >
-                            {addressSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                            {editingAddressId != null ? 'Update Address' : 'Save Address'}
-                          </button>
-                        </div>
-                      </form>
+                            <div className="grid gap-5 sm:grid-cols-3">
+                              <div className="space-y-1">
+                                <label className="block text-xs font-medium uppercase tracking-wider text-secondary">City</label>
+                                <input 
+                                  type="text" 
+                                  autoComplete="address-level2" 
+                                  className={getInputClassName(addressForm.formState.errors.city)} 
+                                  {...addressForm.register('city')} 
+                                />
+                                {addressForm.formState.errors.city && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.city.message}</p>}
+                              </div>
+                              <div className="space-y-1">
+                                <label className="block text-xs font-medium uppercase tracking-wider text-secondary">State / Province</label>
+                                <input 
+                                  type="text" 
+                                  autoComplete="address-level1" 
+                                  className={getInputClassName(addressForm.formState.errors.state)} 
+                                  {...addressForm.register('state')} 
+                                />
+                                {addressForm.formState.errors.state && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.state.message}</p>}
+                              </div>
+                              <div className="space-y-1">
+                                <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Postal Code</label>
+                                <input 
+                                  type="text" 
+                                  autoComplete="postal-code" 
+                                  className={getInputClassName(addressForm.formState.errors.postalCode)} 
+                                  {...addressForm.register('postalCode')} 
+                                />
+                                {addressForm.formState.errors.postalCode && <p className="mt-1 text-xs text-red-500">{addressForm.formState.errors.postalCode.message}</p>}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-2">
+                              <input
+                                id="addr-default"
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                                {...addressForm.register('isDefault')}
+                              />
+                              <label htmlFor="addr-default" className="text-sm text-primary cursor-pointer select-none">Set as default address</label>
+                            </div>
+
+                            <div className="pt-4">
+                              <button
+                                type="submit"
+                                disabled={addressSubmitting}
+                                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary disabled:opacity-50"
+                              >
+                                {editingAddressId != null ? 'Update Address' : 'Save Address'}
+                              </button>
+                            </div>
+                          </form>
+                        </>
+                      )}
                     </div>
                   </motion.div>
                 )}

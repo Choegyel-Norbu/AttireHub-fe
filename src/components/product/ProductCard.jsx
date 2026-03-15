@@ -14,7 +14,7 @@ const ProductCard = ({ product }) => {
 
   const variants = Array.isArray(product.variants) ? product.variants : [];
   const firstVariant = variants.length > 0 ? variants[0] : null;
-  const displayImage = firstVariant?.imageUrl || product.imageUrl;
+  const displayImage = firstVariant?.imageUrl ?? variants.find((v) => v.imageUrl)?.imageUrl;
   const displayPrice = firstVariant?.price ?? product.basePrice;
   const hasDiscount = firstVariant?.discount > 0;
   const priceAfterDiscount =

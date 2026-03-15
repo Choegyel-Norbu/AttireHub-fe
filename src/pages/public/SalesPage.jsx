@@ -251,10 +251,13 @@ export default function SalesPage() {
       </div>
 
       <main className="mx-auto max-w-7xl w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <div className="flex flex-col lg:flex-row lg:gap-12">
-          {/* Desktop Sidebar */}
-          <aside className="hidden w-64 shrink-0 lg:block">
-            <div className="sticky top-24">
+        <div className="flex flex-col lg:flex-row lg:items-stretch lg:gap-12">
+          {/* Desktop Sidebar — sticks in place while product grid scrolls */}
+          <aside className="hidden w-64 shrink-0 lg:block lg:self-stretch">
+            <div
+              className="sticky z-10 top-30 max-h-[calc(100vh-8rem)] overflow-y-auto overflow-x-hidden bg-white pt-4"
+              style={{ position: 'sticky', top: '7rem' }}
+            >
               {filterSidebarContent}
             </div>
           </aside>

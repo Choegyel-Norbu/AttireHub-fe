@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Plus,
-  Package,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -10,13 +9,13 @@ import {
   ImageOff,
   ChevronDown,
   ChevronUp,
-  Layers,
   Pencil,
+  Trash2,
   Filter
 } from 'lucide-react';
 import { getProducts } from '@/services/productService';
 import { getCategories, flattenCategoriesWithSlug } from '@/services/categoryService';
-import { updateVariant } from '@/services/adminProductService';
+import { updateVariant, deleteVariant, deleteProduct } from '@/services/adminProductService';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const SORT_OPTIONS = [
@@ -42,6 +41,12 @@ export default function ProductManagementPage() {
   const [variantForm, setVariantForm] = useState(null);
   const [variantSubmitError, setVariantSubmitError] = useState(null);
   const [variantSaving, setVariantSaving] = useState(false);
+  const [variantToDelete, setVariantToDelete] = useState(null);
+  const [variantDeleting, setVariantDeleting] = useState(false);
+  const [variantDeleteError, setVariantDeleteError] = useState(null);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [productDeleting, setProductDeleting] = useState(false);
+  const [productDeleteError, setProductDeleteError] = useState(null);
 
   const openEditVariant = (productId, productName, variant) => {
     setEditVariant({ productId, productName, variant });
@@ -87,6 +92,57 @@ export default function ProductManagementPage() {
       setVariantSubmitError(err?.message ?? 'Failed to update variant.');
     } finally {
       setVariantSaving(false);
+    }
+  };
+
+  const openDeleteVariantConfirm = (productId, productName, variant) => {
+    setVariantToDelete({ productId, productName, variant });
+    setVariantDeleteError(null);
+  };
+
+  const closeDeleteVariantConfirm = () => {
+    setVariantToDelete(null);
+    setVariantDeleteError(null);
+  };
+
+  const handleDeleteVariantConfirm = async () => {
+    if (!variantToDelete) return;
+    setVariantDeleting(true);
+    setVariantDeleteError(null);
+    try {
+      await deleteVariant(variantToDelete.productId, variantToDelete.variant.id);
+      closeDeleteVariantConfirm();
+      fetchProducts();
+    } catch (err) {
+      setVariantDeleteError(err?.message ?? 'Failed to delete variant.');
+    } finally {
+      setVariantDeleting(false);
+    }
+  };
+
+  const openDeleteProductConfirm = (product) => {
+    setProductToDelete(product);
+    setProductDeleteError(null);
+  };
+
+  const closeDeleteProductConfirm = () => {
+    setProductToDelete(null);
+    setProductDeleteError(null);
+  };
+
+  const handleDeleteProductConfirm = async () => {
+    if (!productToDelete?.id) return;
+    setProductDeleting(true);
+    setProductDeleteError(null);
+    try {
+      await deleteProduct(productToDelete.id);
+      closeDeleteProductConfirm();
+      if (expandedId === productToDelete.id) setExpandedId(null);
+      fetchProducts();
+    } catch (err) {
+      setProductDeleteError(err?.message ?? 'Failed to delete product.');
+    } finally {
+      setProductDeleting(false);
     }
   };
 
@@ -277,6 +333,7 @@ export default function ProductManagementPage() {
                   products.map((p) => {
                     const variants = Array.isArray(p.variants) ? p.variants : [];
                     const isExpanded = expandedId === p.id;
+                    const firstVariantImage = variants.find((v) => v.imageUrl)?.imageUrl ?? p.imageUrl;
                     return (
                       <Fragment key={p.id}>
                         <tr className="group hover:bg-gray-50/50 transition-colors">
@@ -293,8 +350,8 @@ export default function ProductManagementPage() {
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-4">
                               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border bg-gray-100">
-                                {p.imageUrl ? (
-                                  <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+                                {firstVariantImage ? (
+                                  <img src={firstVariantImage} alt="" className="h-full w-full object-cover" />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-tertiary">
                                     <ImageOff className="h-4 w-4" />
@@ -330,12 +387,22 @@ export default function ProductManagementPage() {
                             )}
                           </td>
                           <td className="py-4 px-4 text-right pr-6">
-                            <Link
-                              to={`/admin/products/edit/${encodeURIComponent(p.slug ?? '')}`}
-                              className="text-sm font-medium text-primary hover:text-secondary hover:underline"
-                            >
-                              Edit
-                            </Link>
+                            <div className="flex items-center justify-end gap-3">
+                              <Link
+                                to={`/admin/products/edit/${encodeURIComponent(p.slug ?? '')}`}
+                                className="text-sm font-medium text-primary hover:text-secondary hover:underline"
+                              >
+                                Edit
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => openDeleteProductConfirm(p)}
+                                className="text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
+                                aria-label={`Delete product ${p.name}`}
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                         {isExpanded && variants.length > 0 && (
@@ -366,12 +433,24 @@ export default function ProductManagementPage() {
                                         </td>
                                         <td className="py-2 px-4 text-primary">{v.stockQuantity ?? 0}</td>
                                         <td className="py-2 px-4 text-right">
-                                          <button
-                                            onClick={() => openEditVariant(p.id, p.name, v)}
-                                            className="text-xs font-medium text-primary hover:text-secondary hover:underline"
-                                          >
-                                            Edit Variant
-                                          </button>
+                                          <div className="flex items-center justify-end gap-3">
+                                            <button
+                                              onClick={() => openEditVariant(p.id, p.name, v)}
+                                              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-secondary hover:underline"
+                                            >
+                                              <Pencil className="h-3.5 w-3.5" />
+                                              Edit
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => openDeleteVariantConfirm(p.id, p.name, v)}
+                                              className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 hover:underline"
+                                              aria-label={`Delete variant ${v.sku ?? `${v.size} / ${v.color}`}`}
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                              Delete
+                                            </button>
+                                          </div>
                                         </td>
                                       </tr>
                                     ))}
@@ -408,6 +487,99 @@ export default function ProductManagementPage() {
                 className="rounded p-1 text-primary hover:bg-gray-100 disabled:opacity-30"
               >
                 <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Product Confirmation Dialog */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeDeleteProductConfirm} />
+          <div
+            className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-product-title"
+            aria-describedby="delete-product-description"
+          >
+            <h2 id="delete-product-title" className="text-lg font-bold text-primary">
+              Delete product?
+            </h2>
+            <p id="delete-product-description" className="mt-2 text-sm text-secondary">
+              <span className="font-medium text-primary">{productToDelete.name}</span>
+              {productToDelete.slug && (
+                <span className="text-tertiary"> ({productToDelete.slug})</span>
+              )}
+              . This cannot be undone.
+            </p>
+            {productDeleteError && (
+              <p className="mt-4 text-sm text-red-600" role="alert">{productDeleteError}</p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteProductConfirm}
+                disabled={productDeleting}
+                className="rounded-md border border-border px-4 py-2 text-sm font-medium text-primary hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteProductConfirm}
+                disabled={productDeleting}
+                className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {productDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                {productDeleting ? 'Deleting…' : 'Delete product'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Variant Confirmation Dialog */}
+      {variantToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeDeleteVariantConfirm} />
+          <div
+            className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-variant-title"
+            aria-describedby="delete-variant-description"
+          >
+            <h2 id="delete-variant-title" className="text-lg font-bold text-primary">
+              Delete variant?
+            </h2>
+            <p id="delete-variant-description" className="mt-2 text-sm text-secondary">
+              <span className="font-medium text-primary">{variantToDelete.productName}</span>
+              {' — '}
+              {variantToDelete.variant.sku ?? `${variantToDelete.variant.size} / ${variantToDelete.variant.color}`}.
+              This cannot be undone.
+            </p>
+            {variantDeleteError && (
+              <p className="mt-4 text-sm text-red-600" role="alert">{variantDeleteError}</p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteVariantConfirm}
+                disabled={variantDeleting}
+                className="rounded-md border border-border px-4 py-2 text-sm font-medium text-primary hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteVariantConfirm}
+                disabled={variantDeleting}
+                className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {variantDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                {variantDeleting ? 'Deleting…' : 'Delete variant'}
               </button>
             </div>
           </div>

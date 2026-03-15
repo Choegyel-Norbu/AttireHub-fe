@@ -275,7 +275,7 @@ export default function ProductDetailPage() {
   const displayPrice = priceAfterDiscount;
   
   // Image Logic
-  const displayImage = selectedVariant?.imageUrl || product?.imageUrl || activeVariants[0]?.imageUrl;
+  const displayImage = selectedVariant?.imageUrl || activeVariants[0]?.imageUrl;
   
   const maxQty = selectedVariant != null && typeof selectedVariant.stockQuantity === 'number'
     ? Math.max(0, selectedVariant.stockQuantity)
