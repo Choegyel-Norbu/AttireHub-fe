@@ -19,7 +19,7 @@ export default function AuthLayout({ children, title, subtitle }) {
           Back to store
         </Link>
         
-        <Link to="/" className="text-2xl font-serif tracking-tight text-primary">
+        <Link to="/" className="font-serif text-xl font-medium tracking-tight text-primary sm:text-2xl lg:text-3xl" aria-label="AttireHub Home">
           AttireHub
         </Link>
         

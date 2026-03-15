@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/product/ProductCard';
-import { getProductBySlug, getProducts } from '@/services/productService';
+import { getProductBySlug, getRelatedProducts } from '@/services/productService';
 import { getProductReviews } from '@/services/reviewService';
 import { useCart } from '@/hooks/useCart';
 import {
@@ -193,24 +193,18 @@ export default function ProductDetailPage() {
     }
   }, [location.hash, loading, product]);
 
-  // Fetch Related Products
-  const categorySlug = product?.categorySlug ?? product?.category_slug ?? null;
+  // Fetch Related Products (You may also like) from /products/slug/{slug}/related
   useEffect(() => {
-    if (!categorySlug) {
+    if (!slug || typeof slug !== 'string' || !slug.trim()) {
       setRelatedProducts([]);
       return;
     }
     setRelatedLoading(true);
-    getProducts({ category: categorySlug, size: 4 })
-      .then((res) => {
-        const list = res?.content ?? [];
-        const currentSlug = product?.slug ?? product?.id;
-        const filtered = list.filter((p) => String(p.slug ?? p.id) !== String(currentSlug));
-        setRelatedProducts(filtered.slice(0, 4));
-      })
+    getRelatedProducts(slug)
+      .then((list) => setRelatedProducts(Array.isArray(list) ? list : []))
       .catch(() => setRelatedProducts([]))
       .finally(() => setRelatedLoading(false));
-  }, [categorySlug, product?.slug, product?.id]);
+  }, [slug]);
 
   // Fetch Reviews
   const productId = product?.id != null ? Number(product.id) : null;

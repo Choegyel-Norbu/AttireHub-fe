@@ -134,3 +134,39 @@ export async function refreshToken(refreshToken) {
     throw new Error(getErrorMessage(err));
   }
 }
+
+/**
+ * Request a password reset link to be sent to the user's email.
+ * Public endpoint – always resolves to a generic success message on the backend.
+ * @param {string} email
+ * @returns {Promise<void>}
+ */
+export async function forgotPassword(email) {
+  try {
+    // Backend sends email which can take a bit longer, so allow a higher timeout.
+    await api.post(`${AUTH_BASE}/forgot-password`, { email }, { timeout: 30000 });
+  } catch (err) {
+    throw new Error(getErrorMessage(err));
+  }
+}
+
+/**
+ * Reset password using a token from the reset email.
+ * Public endpoint.
+ * @param {string} token
+ * @param {string} newPassword
+ * @returns {Promise<void>}
+ */
+export async function resetPassword(token, newPassword) {
+  if (!token || typeof token !== 'string' || !token.trim()) {
+    throw new Error('Reset link is invalid. Please use the link from your email.');
+  }
+  try {
+    await api.post(`${AUTH_BASE}/reset-password`, {
+      token: token.trim(),
+      newPassword,
+    });
+  } catch (err) {
+    throw new Error(getErrorMessage(err));
+  }
+}

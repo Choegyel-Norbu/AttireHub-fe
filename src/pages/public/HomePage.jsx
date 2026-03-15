@@ -115,43 +115,72 @@ export default function HomePage() {
       <Hero />
 
       {/* Shop by Category */}
-      <section className="bg-[#F9F9F9] py-12 sm:py-20 lg:py-28">
+      <section className="bg-[#F9F9F9] py-14 sm:py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-          <div className="mb-10 text-center sm:mb-16">
-            <h2 className="font-serif text-xl font-medium text-primary sm:text-2xl lg:text-3xl">Shop by Category</h2>
-            <p className="mt-2 text-sm text-secondary/70 sm:mt-3 sm:text-base">Explore our comprehensive range of apparel.</p>
+          <div className="mb-10 flex flex-col items-center gap-3 text-center sm:mb-16">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-primary/70">
+              Curated For Every Wardrobe
+            </p>
+            <h2 className="font-serif text-2xl font-medium text-primary sm:text-3xl lg:text-4xl">
+              Shop by Category
+            </h2>
+            <p className="max-w-xl text-sm text-secondary/70 sm:mt-1 sm:text-base">
+              Discover pieces tailored for him, her, little ones, and the finishing touches that make every look feel complete.
+            </p>
           </div>
-          
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {categories.map((category, index) => (
-              <Link
-                key={category.id}
-                to={`/products?category=${encodeURIComponent(category.slug)}`}
-                className="group relative block aspect-[3/4] overflow-hidden rounded-xl bg-gray-200"
-              >
-                <img
-                  src={`https://images.unsplash.com/photo-${
-                    index === 0
-                      ? '1490481651871-ab68de25d43d' // Men
-                      : index === 1
-                      ? '1515886657613-9f3515b0c78f' // Women
-                      : index === 2
-                      ? '1532453288672-3a27e9be9efd' // Accessories
-                      : '1483985988355-763728e1935b' // Other
-                  }?q=80&w=600&auto=format&fit=crop`}
-                  alt={category.name}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-80" />
-                <div className="absolute bottom-0 left-0 p-3 sm:p-6">
-                  <h3 className="font-serif text-base font-medium text-white sm:text-xl lg:text-2xl">{category.name}</h3>
-                  <div className="mt-2 flex items-center gap-2 text-xs font-medium text-white opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
-                    <span>Shop Now</span>
-                    <ArrowRight className="h-3 w-3" />
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {categories.map((category, index) => {
+              const key = `${(category?.slug || category?.name || '').toLowerCase()}`;
+
+              const imageUrl = key.includes('women')
+                ? 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1200&q=80'
+                : key.includes('men')
+                ? 'https://images.unsplash.com/photo-1514996937319-344454492b37?auto=format&fit=crop&w=1200&q=80'
+                : key.includes('kid')
+                ? 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=1200&q=80'
+                : key.includes('accessor')
+                ? 'https://images.unsplash.com/photo-1514986888952-8cd320577b68?auto=format&fit=crop&w=1200&q=80'
+                : index === 0
+                ? 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1200&q=80'
+                : index === 1
+                ? 'https://images.unsplash.com/photo-1528701800489-20be3c30c1d5?auto=format&fit=crop&w=1200&q=80'
+                : index === 2
+                ? 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80'
+                : 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80';
+
+              return (
+                <Link
+                  key={category.id}
+                  to={`/products?category=${encodeURIComponent(category.slug)}`}
+                  className="group relative overflow-hidden rounded-3xl border border-black/5 bg-white/60 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="relative aspect-[4/5] overflow-hidden">
+                    <img
+                      src={imageUrl}
+                      alt={category.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent opacity-80 mix-blend-multiply" />
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),transparent_55%)]" />
                   </div>
-                </div>
-              </Link>
-            ))}
+
+                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 lg:p-6">
+                    <span className="mb-2 inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary/80 backdrop-blur">
+                      Category
+                    </span>
+                    <h3 className="font-serif text-lg font-semibold text-white sm:text-xl lg:text-2xl">
+                      {category.name}
+                    </h3>
+                    <div className="mt-2 flex items-center gap-2 text-xs font-medium text-white/90">
+                      <span>Explore pieces</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>

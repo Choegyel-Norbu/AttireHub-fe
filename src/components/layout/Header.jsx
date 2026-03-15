@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, User, LogOut, X, ShoppingBag, Bell, LayoutDashboard } from 'lucide-react';
+import { Menu, Search, User, LogOut, X, ShoppingBag, Bell, LayoutDashboard, ImageOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { CartContext } from '@/context/CartContext';
@@ -11,6 +11,7 @@ import {
   filterNotificationsForAdmin,
   filterNotificationsForCustomer,
 } from '@/services/notificationService';
+import { getProductSuggestions } from '@/services/productService';
 
 const NAV_LINKS = [
   { to: '/products', label: 'Collection' },
@@ -26,6 +27,9 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const suggestDebounceRef = useRef(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
@@ -147,7 +151,40 @@ export default function Header() {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setSearchOpen(false);
+      setSuggestions([]);
     }
+  };
+
+  // Debounced product suggestions (name, slug, first variant image as thumbnail)
+  useEffect(() => {
+    if (!searchOpen) {
+      setSuggestions([]);
+      return;
+    }
+    const q = searchQuery.trim();
+    if (!q) {
+      setSuggestions([]);
+      return;
+    }
+    if (suggestDebounceRef.current) clearTimeout(suggestDebounceRef.current);
+    suggestDebounceRef.current = setTimeout(() => {
+      setSuggestionsLoading(true);
+      getProductSuggestions({ q, limit: 5 })
+        .then((list) => setSuggestions(Array.isArray(list) ? list : []))
+        .catch(() => setSuggestions([]))
+        .finally(() => setSuggestionsLoading(false));
+      suggestDebounceRef.current = null;
+    }, 300);
+    return () => {
+      if (suggestDebounceRef.current) clearTimeout(suggestDebounceRef.current);
+    };
+  }, [searchOpen, searchQuery]);
+
+  const handleSuggestionClick = (slug) => {
+    if (slug) navigate(`/products/${encodeURIComponent(slug)}`);
+    setSearchQuery('');
+    setSuggestions([]);
+    setSearchOpen(false);
   };
 
   const headerHidden = isHomePage && !navbarVisible;
@@ -168,7 +205,7 @@ export default function Header() {
       >
         {/* Promo Bar */}
         <div className="bg-primary px-3 py-1.5 text-center text-[10px] font-bold uppercase tracking-widest text-white sm:px-4 sm:py-2 sm:text-xs">
-          Complimentary shipping on orders over $75
+          New Season • Fresh Styles • Limited-Time Offers
         </div>
 
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-20 sm:px-6 lg:px-8">
@@ -188,7 +225,7 @@ export default function Header() {
               <Link
                 key={to}
                 to={to}
-                className="text-sm font-medium text-secondary transition-colors hover:text-primary"
+                className="text-[11px] font-semibold tracking-[0.22em] uppercase text-secondary/80 transition-colors hover:text-primary relative after:absolute after:left-0 after:-bottom-1 after:h-[1px] after:w-0 after:bg-primary after:transition-[width] after:duration-300 hover:after:w-full"
               >
                 {label}
               </Link>
@@ -209,9 +246,13 @@ export default function Header() {
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className="flex min-h-11 min-w-11 items-center justify-center text-primary transition-colors hover:text-secondary sm:p-2"
-              aria-label="Search"
+              aria-label={searchOpen ? 'Close search' : 'Search'}
             >
-              <Search className="h-5 w-5" strokeWidth={1.5} />
+              {searchOpen ? (
+                <X className="h-5 w-5" strokeWidth={1.5} />
+              ) : (
+                <Search className="h-5 w-5" strokeWidth={1.5} />
+              )}
             </button>
 
             {isAuthenticated ? (
@@ -243,7 +284,7 @@ export default function Header() {
             ) : (
               <Link
                 to="/login"
-                className="hidden text-sm font-medium text-primary hover:text-secondary sm:block"
+                className="hidden text-[11px] font-semibold tracking-[0.22em] uppercase text-secondary/80 transition-colors hover:text-primary relative after:absolute after:left-0 after:-bottom-1 after:h-[1px] after:w-0 after:bg-primary after:transition-[width] after:duration-300 hover:after:w-full sm:block"
               >
                 Sign In
               </Link>
@@ -284,6 +325,9 @@ export default function Header() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search for products..."
                     className="w-full border-b border-primary/20 bg-transparent py-4 text-center text-xl text-primary placeholder:text-tertiary focus:border-primary focus:outline-none"
+                    aria-autocomplete="list"
+                    aria-controls="search-suggestions"
+                    aria-expanded={suggestions.length > 0 || suggestionsLoading}
                   />
                   <button
                     type="submit"
@@ -292,6 +336,51 @@ export default function Header() {
                     Search
                   </button>
                 </form>
+                {/* Product suggestions: name, slug, first variant image as thumbnail */}
+                {(suggestionsLoading || suggestions.length > 0) && (
+                  <div
+                    id="search-suggestions"
+                    role="listbox"
+                    className="mx-auto mt-4 max-w-2xl rounded-md border border-border bg-white shadow-sm"
+                    aria-label="Product suggestions"
+                  >
+                    {suggestionsLoading && (
+                      <div className="px-4 py-6 text-center text-sm text-secondary">Searching…</div>
+                    )}
+                    {!suggestionsLoading && suggestions.length > 0 && (
+                      <ul className="divide-y divide-border">
+                        {suggestions.map((item) => (
+                          <li key={item.id ?? item.slug}>
+                            <button
+                              type="button"
+                              role="option"
+                              className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                              onClick={() => handleSuggestionClick(item.slug)}
+                            >
+                              <div className="h-12 w-12 shrink-0 overflow-hidden rounded bg-[#F0F0F0]">
+                                {item.thumbnail ? (
+                                  <img
+                                    src={item.thumbnail}
+                                    alt=""
+                                    className="h-full w-full object-cover object-center"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-tertiary">
+                                    <ImageOff className="h-5 w-5 opacity-40" strokeWidth={1.5} />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="block truncate font-medium text-primary">{item.name}</span>
+                                <span className="block truncate text-xs text-secondary">{item.slug}</span>
+                              </div>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

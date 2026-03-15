@@ -124,3 +124,43 @@ export async function getProductBySlug(slug) {
   const body = response?.data ?? response;
   return body?.data ?? body;
 }
+
+/**
+ * Fetch product search suggestions (e.g. for header search dropdown).
+ * API returns { success, message, data: ProductListItem[] } with variants including imageUrl.
+ * @param {{ q: string; limit?: number }} params
+ * @returns {Promise<Array<{ id: number; name: string; slug: string; thumbnail: string | null; variants?: Array<{ imageUrl?: string | null }> }>>}
+ */
+export async function getProductSuggestions({ q, limit = 5 }) {
+  if (!q || typeof q !== 'string' || !q.trim()) return [];
+  const searchParams = new URLSearchParams({ q: q.trim() });
+  if (limit != null) searchParams.set('limit', String(Number(limit) || 5));
+  const response = await api.get(`${PRODUCTS_PATH}/suggest?${searchParams.toString()}`);
+  const body = response?.data ?? response;
+  const data = Array.isArray(body?.data) ? body.data : (Array.isArray(body) ? body : []);
+  return data.map((p) => {
+    const variants = Array.isArray(p.variants) ? p.variants : [];
+    const first = variants[0];
+    return {
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      thumbnail: first?.imageUrl ?? variants.find((v) => v?.imageUrl)?.imageUrl ?? null,
+      variants: p.variants,
+    };
+  });
+}
+
+/**
+ * Fetch related products for a product detail page (You may also like).
+ * API returns { success, message, data: ProductListItem[] } with variants including imageUrl.
+ * @param {string} slug - Product slug
+ * @returns {Promise<ProductListItem[]>}
+ */
+export async function getRelatedProducts(slug) {
+  if (!slug || typeof slug !== 'string' || !slug.trim()) return [];
+  const response = await api.get(`${PRODUCTS_PATH}/slug/${encodeURIComponent(slug.trim())}/related`);
+  const body = response?.data ?? response;
+  const data = Array.isArray(body?.data) ? body.data : (Array.isArray(body) ? body : []);
+  return data;
+}

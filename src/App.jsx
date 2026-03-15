@@ -17,6 +17,8 @@ import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import RegisterAddressPage from '@/pages/auth/RegisterAddressPage';
 import VerifyEmailPage from '@/pages/auth/VerifyEmailPage';
+import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 
 // Protected / account pages
 import ProfilePage from '@/pages/account/ProfilePage';
@@ -96,6 +98,8 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/register/address" element={<RegisterAddressPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
