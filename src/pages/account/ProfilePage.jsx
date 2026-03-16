@@ -7,7 +7,7 @@ import {
   getAddressesFromStorage,
   setAddressesInStorage,
 } from '@/utils/addressStorage';
-import { User, MapPin, Package, Settings } from 'lucide-react';
+import { User, MapPin, Package, Settings, Edit, LogOut } from 'lucide-react';
 
 function isAdmin(u) {
   return u?.role === 'ADMIN' || u?.role === 'ROLE_ADMIN';
@@ -104,65 +104,82 @@ export default function ProfilePage() {
             Welcome back, {displayName.split(' ')[0]}
           </h1>
           <p className="mt-2 text-secondary/70">{email}</p>
-          <div className="mt-4 flex flex-wrap justify-center gap-3 sm:justify-start">
-            <Link 
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+            <Link
               to="/account/settings"
-              className="rounded-full border border-border bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary hover:bg-gray-50"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-secondary hover:text-primary hover:bg-gray-50"
+              aria-label="Edit profile"
+              title="Edit profile"
             >
-              Edit Profile
+              <Edit className="h-4 w-4" strokeWidth={1.5} />
             </Link>
             <button
               type="button"
               onClick={() => window.dispatchEvent(new Event('request-logout'))}
-              className="rounded-full border border-transparent px-4 py-2 text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-50"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50"
+              aria-label="Sign out"
+              title="Sign out"
             >
-              Sign Out
+              <LogOut className="h-4 w-4" strokeWidth={1.5} />
             </button>
           </div>
         </div>
       </motion.div>
 
-      {/* Dashboard Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Dashboard links */}
+      <div className="space-y-3 sm:space-y-4">
         {menuItems.map((item, index) => (
           <motion.div
             key={item.label}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
+            transition={{ duration: 0.35, delay: index * 0.05 }}
           >
-            <Link 
+            <Link
               to={item.to}
-              className="group flex h-full flex-col rounded-xl border border-border bg-white p-5 transition-all hover:border-primary/20 hover:shadow-lg"
+              className="group flex items-center justify-between rounded-xl bg-white px-4 py-3 text-left transition-colors hover:bg-primary/3 sm:px-5 sm:py-4"
             >
-              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                <item.icon className="h-5 w-5" strokeWidth={1.5} />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gray-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white sm:h-10 sm:w-10">
+                  <item.icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-serif text-sm text-primary sm:text-base">{item.label}</p>
+                  <p className="mt-0.5 text-[11px] text-secondary/70 sm:text-xs line-clamp-2">{item.description}</p>
+                </div>
               </div>
-              <h3 className="font-serif text-lg text-primary">{item.label}</h3>
-              <p className="mt-1.5 text-xs text-secondary/70">{item.description}</p>
+              <span className="ml-3 text-xs font-medium text-secondary/60 group-hover:text-primary hidden xs:inline">
+                View
+              </span>
             </Link>
           </motion.div>
         ))}
       </div>
 
       {/* Default Address Preview */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.6 }}
-        className="mt-12 rounded-xl border border-border bg-white p-6"
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25, duration: 0.4 }}
+        className="mt-10 rounded-xl bg-white px-4 py-4 sm:px-5 sm:py-5"
       >
-        <div className="flex items-center justify-between">
-          <h2 className="font-serif text-lg text-primary">Default Address</h2>
-          <Link
-            to="/account/settings#addresses"
-            className="text-xs font-medium text-primary underline underline-offset-4 hover:text-secondary"
-          >
-            Manage
-          </Link>
-        </div>
-        
-        <div className="mt-4">
+        <div>
+          <div className="flex items-baseline justify-between gap-3">
+            <div>
+              <h2 className="font-serif text-base text-primary sm:text-lg">Default address</h2>
+              <p className="mt-0.5 text-[11px] text-secondary/70 sm:text-xs">
+                Used for shipping unless you choose another at checkout.
+              </p>
+            </div>
+            <Link
+              to="/account/settings#addresses"
+              className="text-[11px] font-medium text-primary underline underline-offset-4 hover:text-secondary"
+            >
+              Manage
+            </Link>
+          </div>
+
+          <div className="mt-4">
           {addressLoading ? (
             <div className="h-16 w-full animate-pulse rounded-lg bg-gray-100" />
           ) : defaultAddress ? (
@@ -185,8 +202,9 @@ export default function ProfilePage() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-secondary/60">No default address set.</p>
+            <p className="text-sm text-secondary/60">No default address set yet.</p>
           )}
+          </div>
         </div>
       </motion.div>
     </div>

@@ -477,7 +477,7 @@ export default function ProductDetailPage() {
                             onClick={() => variant && setSelectedVariant(variant)}
                             className={`relative flex h-9 min-w-[2.5rem] items-center justify-center rounded-md border px-2.5 text-xs transition-all sm:h-10 sm:min-w-[3rem] sm:px-3 sm:text-sm ${
                               isSelected 
-                                ? 'border-gray-700 bg-gray-700 text-white' 
+                                ? 'border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] text-primary' 
                                 : 'border-border bg-white text-primary hover:border-primary'
                             }`}
                           >
@@ -508,7 +508,7 @@ export default function ProductDetailPage() {
                             disabled={disabled}
                             className={`relative flex h-9 min-w-[2.5rem] items-center justify-center rounded-md border px-2.5 text-xs transition-all sm:h-10 sm:min-w-[3rem] sm:px-3 sm:text-sm ${
                               isSelected 
-                                ? 'border-gray-700 bg-gray-700 text-white' 
+                                ? 'border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] text-primary' 
                                 : disabled
                                   ? 'cursor-not-allowed border-transparent bg-gray-100 text-gray-400 decoration-slice line-through'
                                   : 'border-border bg-white text-primary hover:border-primary'
@@ -561,7 +561,7 @@ export default function ProductDetailPage() {
               <div className="mt-6 grid grid-cols-2 gap-3 border-t border-border pt-6 text-xs text-secondary sm:mt-8 sm:gap-4 sm:pt-8 sm:text-sm">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <Truck className="h-4 w-4 shrink-0 text-primary sm:h-5 sm:w-5" />
-                  <span>Free shipping over $75</span>
+                  <span>Hassle‑free returns within 14 days</span>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
                   <ShieldCheck className="h-4 w-4 shrink-0 text-primary sm:h-5 sm:w-5" />

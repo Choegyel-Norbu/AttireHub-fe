@@ -102,6 +102,41 @@ export async function getProductReviews(productId, params = {}) {
 }
 
 /**
+ * Get the current user's review for a product (optionally scoped to a variant).
+ * GET /api/v1/products/{productId}/reviews/me?variantId={variantId}
+ * @param {number} productId
+ * @param {{ variantId?: number }} [params]
+ * @returns {Promise<Review | null>}
+ */
+export async function getMyProductReview(productId, params = {}) {
+  if (productId == null || Number.isNaN(Number(productId))) {
+    throw new Error('Product ID is required.');
+  }
+  const searchParams = new URLSearchParams();
+  if (params.variantId != null && !Number.isNaN(Number(params.variantId))) {
+    searchParams.set('variantId', String(params.variantId));
+  }
+  const query = searchParams.toString();
+  const url = `${PRODUCTS_PATH}/${Number(productId)}/reviews/me${query ? `?${query}` : ''}`;
+
+  try {
+    const response = await api.get(url);
+    const data = unwrapData(response);
+    if (data && typeof data === 'object' && data.id != null) {
+      return data;
+    }
+    return null;
+  } catch (err) {
+    const message = getErrorMessage(err);
+    // Treat not-found as \"no review\" instead of surfacing an error
+    if (message && message.toLowerCase().includes('not found')) {
+      return null;
+    }
+    throw new Error(message);
+  }
+}
+
+/**
  * Create or replace own review (verified purchase required). Auth: Bearer token.
  * @param {number} productId
  * @param {{ rating: number; comment?: string; variantId: number }} body - rating 1-5, comment optional max 2000, variantId required

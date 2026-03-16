@@ -59,7 +59,7 @@ export default function HomePage() {
   const ProductSection = ({ title, subtitle, products, loading, linkTo }) => (
     <section className="py-6 sm:py-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-5 flex flex-col gap-1 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+        <div className="mb-4 flex flex-col gap-1 sm:mb-7 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <motion.div
             initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -94,18 +94,16 @@ export default function HomePage() {
           </p>
         ) : (
           <div
-            className="flex overflow-x-auto overflow-y-hidden scrollbar-hide snap-x snap-mandatory gap-4 pb-2 pt-1 -mx-4 sm:mx-0 sm:gap-6 sm:pb-3 sm:pt-0"
+            className="flex overflow-x-auto overflow-y-hidden scrollbar-hide snap-x snap-mandatory gap-5 pb-3 pt-2 -mx-4 sm:mx-0 sm:gap-7 sm:pb-4 sm:pt-1"
             style={{ scrollPaddingLeft: '1.25rem', scrollPaddingRight: '1.25rem' }}
           >
             <div className="shrink-0 w-5 sm:w-0" aria-hidden />
             {products.map((product) => (
               <div
                 key={product.id}
-                className="flex shrink-0 snap-start"
+                className="flex shrink-0 snap-start w-[190px] sm:w-[210px] lg:w-[240px]"
               >
-                <div className="h-[340px] w-[180px] overflow-hidden rounded-xl bg-white sm:h-[420px] sm:w-[220px] lg:h-[468px] lg:w-[240px]">
-                  <ProductCard product={product} />
-                </div>
+                <ProductCard product={product} />
               </div>
             ))}
             <div className="shrink-0 w-5 sm:w-0" aria-hidden />

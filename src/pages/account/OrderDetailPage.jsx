@@ -6,7 +6,7 @@ import {
   createReview,
   updateReview,
   deleteReview,
-  getProductReviews,
+  getMyProductReview,
 } from '@/services/reviewService';
 import { getProductBySlug } from '@/services/productService';
 import { useAuth } from '@/context/AuthContext';
@@ -79,7 +79,8 @@ export default function OrderDetailPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState(null);
   const [reviewDeletingId, setReviewDeletingId] = useState(null);
-  const [myReviewsByProductId, setMyReviewsByProductId] = useState({});
+  // key: `${productId}:${variantId || 'null'}` -> review
+  const [myReviewsByVariantKey, setMyReviewsByVariantKey] = useState({});
   const [resolvedProductIdBySlug, setResolvedProductIdBySlug] = useState({});
   const [resolvingSlugForReview, setResolvingSlugForReview] = useState(null);
 
@@ -115,28 +116,52 @@ export default function OrderDetailPage() {
   const canReview = orderStatus === 'SHIPPED' || orderStatus === 'DELIVERED';
   const userId = user?.id != null ? String(user.id) : null;
 
-  // Load existing reviews
+  const makeReviewKey = (productId, variantId) => {
+    const id = Number(productId);
+    const vId = variantId != null ? Number(variantId) : null;
+    return `${Number.isNaN(id) ? '' : id}:${vId != null && !Number.isNaN(vId) ? vId : 'null'}`;
+  };
+
+  // Load existing reviews per product/variant for this order when viewing details
   useEffect(() => {
     if (!order || !canReview || !userId) return;
     const orderItems = order.items ?? [];
-    const ids = new Set();
-    orderItems.forEach((i) => {
-      const raw = i.productId ?? i.product_id;
-      if (raw != null) {
-        const id = Number(raw);
-        if (!Number.isNaN(id)) ids.add(id);
-      }
-    });
-    ids.forEach((productId) => {
-      getProductReviews(productId, { page: 0, size: 50 })
-        .then((data) => {
-          const myReview = (data.content ?? []).find((r) => String(r.userId) === userId);
-          if (myReview) {
-            setMyReviewsByProductId((prev) => ({ ...prev, [productId]: myReview }));
-          }
-        })
-        .catch(() => {});
-    });
+    const tasks = orderItems
+      .map((i) => {
+        const rawProductId = i.productId ?? i.product_id;
+        if (rawProductId == null) return null;
+        const productId = Number(rawProductId);
+        if (Number.isNaN(productId)) return null;
+        const rawVariantId = i.variantId ?? i.productVariantId ?? i.variant_id ?? null;
+        const variantId = rawVariantId != null ? Number(rawVariantId) : null;
+        const key = makeReviewKey(productId, variantId);
+        return getMyProductReview(productId, { variantId }).then((review) => ({ key, review }));
+      })
+      .filter(Boolean);
+
+    if (tasks.length === 0) return;
+
+    let cancelled = false;
+    Promise.all(tasks)
+      .then((results) => {
+        if (cancelled) return;
+        setMyReviewsByVariantKey((prev) => {
+          const next = { ...prev };
+          results.forEach((res) => {
+            if (res && res.review) {
+              next[res.key] = res.review;
+            }
+          });
+          return next;
+        });
+      })
+      .catch(() => {
+        // swallow errors; reviews are optional
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [order?.id, canReview, userId]);
 
   const openReviewForm = useCallback((productId, existingReview, variantId = null) => {
@@ -164,7 +189,8 @@ export default function OrderDetailPage() {
       const variantId = rawVariantId != null ? Number(rawVariantId) : null;
       let id = rawId != null ? Number(rawId) : null;
       if (id != null && !Number.isNaN(id)) {
-        openReviewForm(id, myReviewsByProductId[id] ?? null, variantId);
+        const key = makeReviewKey(id, variantId);
+        openReviewForm(id, myReviewsByVariantKey[key] ?? null, variantId);
         return;
       }
       if (slug != null && String(slug).trim()) {
@@ -175,7 +201,8 @@ export default function OrderDetailPage() {
           const resolvedId = product?.id != null ? Number(product.id) : null;
           if (resolvedId != null && !Number.isNaN(resolvedId)) {
             setResolvedProductIdBySlug((prev) => ({ ...prev, [slug]: resolvedId }));
-            openReviewForm(resolvedId, myReviewsByProductId[resolvedId] ?? null, variantId);
+            const key = makeReviewKey(resolvedId, variantId);
+            openReviewForm(resolvedId, myReviewsByVariantKey[key] ?? null, variantId);
           } else {
             setReviewError('Could not load product. Try opening the product page to review.');
           }
@@ -188,7 +215,7 @@ export default function OrderDetailPage() {
       }
       setReviewError('Product link is missing.');
     },
-    [openReviewForm, myReviewsByProductId]
+    [openReviewForm, myReviewsByVariantKey]
   );
 
   const handleReviewSubmit = useCallback(
@@ -199,20 +226,21 @@ export default function OrderDetailPage() {
       setReviewError(null);
       setReviewSubmitting(true);
       try {
-        const myReview = myReviewsByProductId[id];
+        const key = makeReviewKey(id, expandedReviewVariantId);
+        const myReview = myReviewsByVariantKey[key];
         if (myReview) {
           const updated = await updateReview(id, myReview.id, {
             rating: reviewForm.rating,
             comment: reviewForm.comment,
           });
-          setMyReviewsByProductId((prev) => ({ ...prev, [id]: updated }));
+          setMyReviewsByVariantKey((prev) => ({ ...prev, [key]: updated }));
         } else {
           const created = await createReview(id, {
             rating: reviewForm.rating,
             comment: reviewForm.comment,
             variantId: expandedReviewVariantId,
           });
-          setMyReviewsByProductId((prev) => ({ ...prev, [id]: created }));
+          setMyReviewsByVariantKey((prev) => ({ ...prev, [key]: created }));
         }
         setExpandedReviewProductId(null);
         setExpandedReviewVariantId(null);
@@ -223,7 +251,7 @@ export default function OrderDetailPage() {
         setReviewSubmitting(false);
       }
     },
-    [reviewForm.rating, reviewForm.comment, myReviewsByProductId, expandedReviewProductId, expandedReviewVariantId]
+    [reviewForm.rating, reviewForm.comment, myReviewsByVariantKey, expandedReviewProductId, expandedReviewVariantId]
   );
 
   const handleReviewDelete = useCallback(async (productId, reviewId) => {
@@ -233,9 +261,13 @@ export default function OrderDetailPage() {
     setReviewError(null);
     try {
       await deleteReview(id, reviewId);
-      setMyReviewsByProductId((prev) => {
+      setMyReviewsByVariantKey((prev) => {
         const next = { ...prev };
-        delete next[id];
+        Object.entries(next).forEach(([key, value]) => {
+          if (value && value.id === reviewId) {
+            delete next[key];
+          }
+        });
         return next;
       });
       setExpandedReviewProductId(null);
@@ -351,11 +383,14 @@ export default function OrderDetailPage() {
                 const rawId = item.productId ?? item.product_id;
                 const productSlug = item.productSlug ?? item.product_slug ?? rawId;
                 const productPath = productSlug != null ? `/products/${encodeURIComponent(String(productSlug))}` : null;
+                const rawVariantIdForRow = item.variantId ?? item.productVariantId ?? item.variant_id ?? null;
+                const variantId = rawVariantIdForRow != null ? Number(rawVariantIdForRow) : null;
                 const idFromItem = rawId != null ? Number(rawId) : null;
                 const id = (idFromItem != null && !Number.isNaN(idFromItem))
                   ? idFromItem
                   : (productSlug != null ? resolvedProductIdBySlug[productSlug] : null);
-                const myReview = id != null ? myReviewsByProductId[id] : null;
+                const key = id != null ? makeReviewKey(id, variantId) : null;
+                const myReview = key != null ? myReviewsByVariantKey[key] : null;
                 const isFormExpanded = expandedReviewProductId === id;
                 const isResolving = resolvingSlugForReview === (item.productSlug ?? item.product_slug);
 

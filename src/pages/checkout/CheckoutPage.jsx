@@ -283,10 +283,10 @@ useEffect(() => {
             <div className="lg:col-span-5">
               <section className="sticky top-24 rounded-xl bg-gray-50 p-6">
                 <h2 className="font-serif text-lg font-medium text-primary">Order Summary</h2>
-                <ul className="mt-4 space-y-3">
+                <ul className="mt-4 space-y-4">
                   {items.map((item) => (
-                    <li key={item.id} className="flex gap-3 border-b border-border/50 pb-3 last:border-0">
-                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-sm bg-gray-100">
+                    <li key={item.id} className="flex gap-4 border-b border-border/50 pb-4 last:border-0">
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-sm bg-gray-100 sm:h-18 sm:w-18">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -300,13 +300,13 @@ useEffect(() => {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-primary">
+                        <p className="truncate text-sm font-medium text-primary sm:text-base">
                           {item.productName}
                         </p>
-                        <p className="text-xs text-secondary">
+                        <p className="mt-0.5 text-xs text-secondary sm:text-[13px]">
                           {item.size} / {item.color} × {item.quantity}
                         </p>
-                        <p className="mt-0.5 text-sm font-semibold text-primary">
+                        <p className="mt-1 text-sm font-semibold text-primary sm:text-base">
                           Nu {formatPrice(item.totalPrice)} /-
                         </p>
                       </div>
