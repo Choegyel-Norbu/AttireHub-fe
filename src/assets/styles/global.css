@@ -10,6 +10,9 @@
   --color-tertiary: #bcabb0;
   --color-quaternary: #FFFFFF;
 
+  /* Accent – soft blush used for primary hero CTA */
+  --color-accent-blush: #F8E8DE;
+
   /* Semantic tokens derived from palette */
   --color-background: #FFFFFF;
   --color-foreground: #5d3543;
@@ -24,6 +27,7 @@
   /* #80B5AE */
   --color-tertiary: #bcabb0;
   --color-quaternary: #FFFFFF;
+  --color-accent-blush: #F8E8DE;
 
   /* Legacy HSL tokens – pure white background */
   --background: 0 0% 100%;

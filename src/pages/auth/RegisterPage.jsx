@@ -24,7 +24,7 @@ const registerSchema = z
 
 function getInputClassName(error) {
   const base =
-    'w-full rounded-none border-b border-border bg-transparent px-3 py-3 text-primary placeholder-tertiary outline-none transition-colors focus:border-black focus:ring-0';
+    'w-full rounded-none border-b border-border bg-transparent px-3 py-3 text-primary placeholder-tertiary placeholder:text-xs sm:placeholder:text-[13px] outline-none transition-colors focus:border-black focus:ring-0';
   const normal = 'border-border focus:border-primary';
   const invalid = 'border-red-500 focus:border-red-500 text-red-600';
   return `${base} ${error ? invalid : normal}`;
@@ -117,7 +117,7 @@ export default function RegisterPage() {
               id="register-firstName"
               type="text"
               autoComplete="given-name"
-              placeholder="Jane"
+              placeholder="Enter your first name"
               className={getInputClassName(errors.firstName)}
               {...register('firstName')}
             />
@@ -133,7 +133,7 @@ export default function RegisterPage() {
               id="register-lastName"
               type="text"
               autoComplete="family-name"
-              placeholder="Doe"
+              placeholder="Enter your last name"
               className={getInputClassName(errors.lastName)}
               {...register('lastName')}
             />

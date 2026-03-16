@@ -53,7 +53,7 @@ const Hero = () => {
             >
               <Link
                 to="/products"
-                className="group relative flex min-h-12 items-center justify-center overflow-hidden rounded-full bg-primary px-8 py-4 text-sm font-bold uppercase tracking-wider text-white transition-all duration-300 hover:bg-secondary hover:shadow-xl hover:shadow-primary/10"
+                className="group relative flex min-h-11 items-center justify-center overflow-hidden rounded-full border border-[#F8E8DE] bg-[#F8E8DE] px-7 py-3 text-xs sm:text-[13px] font-semibold uppercase tracking-[0.22em] text-primary transition-all duration-300 hover:bg-[#f4d7c5] hover:border-[#f4d7c5] hover:shadow-xl hover:shadow-primary/10"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   Shop Now
@@ -63,7 +63,7 @@ const Hero = () => {
               
               <Link
                 to="/products?newArrivalsOnly=true"
-                className="group flex min-h-12 items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-bold uppercase tracking-wider text-primary transition-colors hover:bg-gray-50"
+                className="group flex min-h-11 items-center justify-center gap-2 rounded-full px-7 py-3 text-xs sm:text-[13px] font-semibold uppercase tracking-[0.22em] text-primary transition-colors hover:bg-gray-50"
               >
                 <span>New Arrivals</span>
               </Link>

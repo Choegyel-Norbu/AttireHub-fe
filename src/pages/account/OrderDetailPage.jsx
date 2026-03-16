@@ -248,8 +248,49 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
+      <div className="mx-auto max-w-5xl space-y-8 pb-16">
+        {/* Header skeleton */}
+        <div className="space-y-4">
+          <div className="h-4 w-32 rounded-full bg-gray-100" />
+          <div className="space-y-2">
+            <div className="h-8 w-64 rounded-full bg-gray-100" />
+            <div className="h-4 w-40 rounded-full bg-gray-100" />
+          </div>
+        </div>
+
+        {/* Content skeleton: items + summary */}
+        <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="space-y-3 rounded-2xl border border-border bg-white p-4 shadow-sm">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 border-b border-border/60 pb-3 last:border-0 last:pb-0"
+              >
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-2/3 rounded-full bg-gray-100" />
+                  <div className="h-3 w-1/3 rounded-full bg-gray-100" />
+                  <div className="flex items-center gap-3">
+                    <div className="h-3 w-16 rounded-full bg-gray-100" />
+                    <div className="h-3 w-10 rounded-full bg-gray-100" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3 rounded-2xl border border-border bg-white p-4 shadow-sm">
+            <div className="h-4 w-24 rounded-full bg-gray-100" />
+            <div className="space-y-2">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="flex justify-between gap-3">
+                  <div className="h-3 w-20 rounded-full bg-gray-100" />
+                  <div className="h-3 w-12 rounded-full bg-gray-100" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

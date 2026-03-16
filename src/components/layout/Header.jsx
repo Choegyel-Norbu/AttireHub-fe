@@ -220,12 +220,12 @@ export default function Header() {
           </button>
 
           {/* Desktop Nav (Left) */}
-          <nav className="hidden items-center gap-8 lg:flex">
+          <nav className="hidden items-center gap-10 lg:flex">
             {NAV_LINKS.map(({ to, label }) => (
               <Link
                 key={to}
                 to={to}
-                className="text-[11px] font-semibold tracking-[0.22em] uppercase text-secondary/80 transition-colors hover:text-primary relative after:absolute after:left-0 after:-bottom-1 after:h-[1px] after:w-0 after:bg-primary after:transition-[width] after:duration-300 hover:after:w-full"
+                className="text-xs sm:text-sm font-semibold tracking-[0.22em] uppercase text-secondary/80 transition-colors hover:text-primary relative after:absolute after:left-0 after:-bottom-1 after:h-[1px] after:w-0 after:bg-primary after:transition-[width] after:duration-300 hover:after:w-full"
               >
                 {label}
               </Link>
@@ -284,7 +284,7 @@ export default function Header() {
             ) : (
               <Link
                 to="/login"
-                className="hidden text-[11px] font-semibold tracking-[0.22em] uppercase text-secondary/80 transition-colors hover:text-primary relative after:absolute after:left-0 after:-bottom-1 after:h-[1px] after:w-0 after:bg-primary after:transition-[width] after:duration-300 hover:after:w-full sm:block"
+                className="hidden text-xs sm:text-sm font-semibold tracking-[0.22em] uppercase text-secondary/80 transition-colors hover:text-primary relative after:absolute after:left-0 after:-bottom-1 after:h-[1px] after:w-0 after:bg-primary after:transition-[width] after:duration-300 hover:after:w-full sm:block"
               >
                 Sign In
               </Link>
@@ -319,16 +319,25 @@ export default function Header() {
               <div className="mx-auto max-w-7xl px-4 py-8">
                 <form onSubmit={handleSearch} className="relative mx-auto max-w-2xl">
                   <input
-                    type="search"
+                    type="text"
                     autoFocus
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search for products..."
-                    className="w-full border-b border-primary/20 bg-transparent py-4 text-center text-xl text-primary placeholder:text-tertiary focus:border-primary focus:outline-none"
+                    className="w-full border-b border-primary/20 bg-transparent py-4 pr-24 text-center text-xl text-primary placeholder:text-tertiary focus:border-primary focus:outline-none"
                     aria-autocomplete="list"
                     aria-controls="search-suggestions"
                     aria-expanded={suggestions.length > 0 || suggestionsLoading}
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-24 top-1/2 -translate-y-1/2 inline-flex items-center justify-center text-xs font-semibold uppercase tracking-[0.16em] text-secondary hover:text-primary"
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    </button>
+                  )}
                   <button
                     type="submit"
                     className="absolute right-0 top-1/2 -translate-y-1/2 text-sm font-bold uppercase tracking-wider text-primary"
@@ -337,50 +346,72 @@ export default function Header() {
                   </button>
                 </form>
                 {/* Product suggestions: name, slug, first variant image as thumbnail */}
-                {(suggestionsLoading || suggestions.length > 0) && (
-                  <div
-                    id="search-suggestions"
-                    role="listbox"
-                    className="mx-auto mt-4 max-w-2xl rounded-md border border-border bg-white shadow-sm"
-                    aria-label="Product suggestions"
-                  >
-                    {suggestionsLoading && (
-                      <div className="px-4 py-6 text-center text-sm text-secondary">Searching…</div>
-                    )}
-                    {!suggestionsLoading && suggestions.length > 0 && (
-                      <ul className="divide-y divide-border">
-                        {suggestions.map((item) => (
-                          <li key={item.id ?? item.slug}>
-                            <button
-                              type="button"
-                              role="option"
-                              className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
-                              onClick={() => handleSuggestionClick(item.slug)}
+                <AnimatePresence>
+                  {(suggestionsLoading || suggestions.length > 0) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      id="search-suggestions"
+                      role="listbox"
+                      className="mx-auto mt-4 max-w-2xl rounded-md border border-border bg-white shadow-sm"
+                      aria-label="Product suggestions"
+                    >
+                      {suggestionsLoading && (
+                        <div className="divide-y divide-border px-4 py-3" aria-hidden="true">
+                          {[0, 1, 2].map((i) => (
+                            <div key={i} className="flex items-center gap-4 py-3 animate-pulse">
+                              <div className="h-12 w-12 shrink-0 overflow-hidden rounded bg-gray-100" />
+                              <div className="flex-1 space-y-2">
+                                <div className="h-3 w-2/3 rounded-full bg-gray-100" />
+                                <div className="h-3 w-1/3 rounded-full bg-gray-100" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {!suggestionsLoading && suggestions.length > 0 && (
+                        <ul className="divide-y divide-border">
+                          {suggestions.map((item, index) => (
+                            <motion.li
+                              key={item.id ?? item.slug}
+                              initial={{ opacity: 0, y: 3 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 3 }}
+                              transition={{ duration: 0.18, delay: 0.03 * index, ease: 'easeOut' }}
                             >
-                              <div className="h-12 w-12 shrink-0 overflow-hidden rounded bg-[#F0F0F0]">
-                                {item.thumbnail ? (
-                                  <img
-                                    src={item.thumbnail}
-                                    alt=""
-                                    className="h-full w-full object-cover object-center"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-tertiary">
-                                    <ImageOff className="h-5 w-5 opacity-40" strokeWidth={1.5} />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <span className="block truncate font-medium text-primary">{item.name}</span>
-                                <span className="block truncate text-xs text-secondary">{item.slug}</span>
-                              </div>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
+                              <button
+                                type="button"
+                                role="option"
+                                className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                onClick={() => handleSuggestionClick(item.slug)}
+                              >
+                                <div className="h-12 w-12 shrink-0 overflow-hidden rounded bg-[#F0F0F0]">
+                                  {item.thumbnail ? (
+                                    <img
+                                      src={item.thumbnail}
+                                      alt=""
+                                      className="h-full w-full object-cover object-center"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-tertiary">
+                                      <ImageOff className="h-5 w-5 opacity-40" strokeWidth={1.5} />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <span className="block truncate font-medium text-primary">{item.name}</span>
+                                  <span className="block truncate text-xs text-secondary">{item.slug}</span>
+                                </div>
+                              </button>
+                            </motion.li>
+                          ))}
+                        </ul>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           )}

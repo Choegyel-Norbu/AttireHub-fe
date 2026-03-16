@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -59,14 +60,19 @@ export default function HomePage() {
     <section className="py-6 sm:py-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-5 flex flex-col gap-1 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+          >
             <h2 className="font-serif text-xl font-medium tracking-tight text-primary sm:text-2xl lg:text-3xl">
               {title}
             </h2>
             {subtitle && (
               <p className="mt-1 text-sm text-secondary/80 sm:mt-1.5 sm:text-base">{subtitle}</p>
             )}
-          </div>
+          </motion.div>
           {linkTo && (
             <Link
               to={linkTo}
@@ -129,7 +135,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {categories.map((category, index) => {
               const key = `${(category?.slug || category?.name || '').toLowerCase()}`;
 

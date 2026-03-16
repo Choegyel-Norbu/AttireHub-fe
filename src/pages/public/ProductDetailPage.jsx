@@ -382,14 +382,14 @@ export default function ProductDetailPage() {
                     <button
                       key={v.id}
                       onClick={() => setSelectedVariant(v)}
-                      className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-sm border transition-all sm:h-20 sm:w-20 ${
+                      className={`relative aspect-square w-16 shrink-0 overflow-hidden rounded-sm border transition-all sm:w-20 ${
                         selectedVariant?.id === v.id 
                           ? 'border-primary ring-1 ring-primary' 
                           : 'border-transparent opacity-70 hover:opacity-100'
                       }`}
                     >
                       {v.imageUrl ? (
-                        <img src={v.imageUrl} alt="" className="h-full w-full object-cover" />
+                        <img src={v.imageUrl} alt="" className="h-full w-full object-cover object-center" />
                       ) : (
                         <div className="h-full w-full bg-gray-100" />
                       )}
