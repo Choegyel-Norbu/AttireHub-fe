@@ -21,6 +21,13 @@ const ProductCard = ({ product }) => {
     hasDiscount && typeof firstVariant.price === 'number' && typeof firstVariant.discount === 'number'
       ? firstVariant.price - firstVariant.discount
       : null;
+  const discountPercent =
+    hasDiscount && typeof firstVariant.price === 'number' && firstVariant.price > 0
+      ? Math.round((firstVariant.discount / firstVariant.price) * 100)
+      : null;
+
+  const distinctColors = [...new Set(variants.map((v) => v.color).filter(Boolean))];
+  const distinctSizes = [...new Set(variants.map((v) => v.size).filter(Boolean))];
 
   const formatPrice = (value) => {
     if (typeof value !== 'number') return String(value ?? '');
@@ -50,17 +57,24 @@ const ProductCard = ({ product }) => {
   return (
     <Link
       to={`/products/${encodeURIComponent(product.slug ?? product.id)}`}
-      className="group relative flex h-full flex-col"
+      className="group relative flex h-full flex-col bg-white/90 p-2 transition-transform duration-300 hover:-translate-y-1 sm:p-3"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-[3/4] w-full flex-shrink-0 overflow-hidden bg-[#F0F0F0]">
+      <div className="relative aspect-[3/4] w-full flex-shrink-0 overflow-hidden bg-[#F5F5F5]">
         {/* Badges */}
-        {(product.newArrival === true || product.new_arrival === true) && (
-          <span className="absolute left-3 top-3 z-10 bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-primary backdrop-blur-sm">
-            New
-          </span>
-        )}
+        <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
+          {(product.newArrival === true || product.new_arrival === true) && (
+            <span className="inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary backdrop-blur-sm">
+              New
+            </span>
+          )}
+          {hasDiscount && discountPercent != null && (
+            <span className="inline-flex items-center rounded-full bg-primary text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 px-2 py-0.5">
+              -{discountPercent}%
+            </span>
+          )}
+        </div>
 
         {/* Image: first variant or product */}
         {displayImage ? (
@@ -86,13 +100,13 @@ const ProductCard = ({ product }) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="absolute bottom-4 left-4 right-4 hidden lg:flex gap-2"
+              className="absolute bottom-4 left-4 right-4 hidden gap-2 lg:flex"
             >
               <button
                 type="button"
                 disabled={!firstVariant || adding}
                 onClick={handleAddToCart}
-                className="flex flex-1 items-center justify-center gap-2 bg-white py-3 text-xs font-bold uppercase tracking-wider text-primary shadow-sm transition-colors hover:bg-primary hover:text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary shadow-sm transition-all hover:bg-[#f4d7c5] hover:border-[#f4d7c5] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {adding ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -108,19 +122,42 @@ const ProductCard = ({ product }) => {
         </AnimatePresence>
       </div>
 
-      {/* Product Info — fixed height for uniform card size; smaller on narrow cards */}
-      <div className="mt-2 flex min-h-[100px] flex-col gap-0.5 sm:mt-4 sm:min-h-[132px] sm:gap-1">
-        <div className="flex justify-between items-start gap-1 sm:gap-2">
-          <h3 className="text-xs font-medium text-primary line-clamp-2 group-hover:underline decoration-1 underline-offset-2 flex-1 min-w-0 sm:text-sm sm:underline-offset-4 sm:decoration-primary/30">
-            {product.name}
-          </h3>
-          <p className="text-xs font-semibold text-primary whitespace-nowrap flex-shrink-0 sm:text-sm">
-            Nu {formatPrice(priceAfterDiscount ?? displayPrice)}
+      {/* Product Info */}
+      <div className="mt-2 flex min-h-[112px] flex-col gap-1 sm:mt-4 sm:min-h-[140px]">
+        {/* Meta row */}
+        <div className="flex items-center justify-between gap-2">
+          <p className="truncate text-[10px] font-medium uppercase tracking-[0.18em] text-secondary/70 sm:text-[11px]">
+            {product.categoryName || product.brand || 'Apparel'}
           </p>
+          {distinctColors.length > 0 && (
+            <p className="text-[10px] text-secondary/50 sm:text-[11px]">
+              {distinctColors.length} color{distinctColors.length > 1 ? 's' : ''}
+            </p>
+          )}
         </div>
 
-        <p className="text-[10px] text-secondary/60 line-clamp-1 min-h-[1rem] sm:text-xs sm:min-h-[1.25rem]">
-          {product.categoryName || '\u00A0'}
+        {/* Name */}
+        <h3 className="line-clamp-2 min-w-0 text-xs font-medium text-primary underline-offset-4 group-hover:underline sm:text-sm">
+          {product.name}
+        </h3>
+
+        {/* Price block */}
+        <div className="mt-0.5 flex items-baseline gap-2">
+          <span className="text-sm font-semibold text-primary sm:text-base">
+            Nu {formatPrice(priceAfterDiscount ?? displayPrice)}
+          </span>
+          {hasDiscount && priceAfterDiscount != null && (
+            <span className="text-[11px] text-secondary/60 line-through">
+              Nu {formatPrice(displayPrice)}
+            </span>
+          )}
+        </div>
+
+        {/* Subline */}
+        <p className="mt-0.5 text-[10px] text-secondary/60 sm:text-xs">
+          {distinctSizes.length > 0
+            ? `Available in ${distinctSizes.length} size${distinctSizes.length > 1 ? 's' : ''}`
+            : '\u00A0'}
         </p>
 
         {/* Mobile Add to Cart — always reserve space when variants exist for consistent height */}
@@ -129,7 +166,7 @@ const ProductCard = ({ product }) => {
             type="button"
             disabled={adding}
             onClick={handleAddToCart}
-            className="mt-1.5 flex w-full min-h-8 items-center justify-center gap-1.5 rounded-full border border-border bg-transparent py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary hover:text-white disabled:opacity-60 sm:mt-2 sm:py-2 sm:text-xs lg:hidden"
+            className="mt-1.5 flex w-full min-h-8 items-center justify-center gap-1.5 rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary transition-all hover:bg-[#f4d7c5] hover:border-[#f4d7c5] disabled:opacity-60 sm:mt-2 sm:py-2 sm:text-xs lg:hidden"
           >
             {adding ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
