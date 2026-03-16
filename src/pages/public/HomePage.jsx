@@ -103,7 +103,7 @@ export default function HomePage() {
                 key={product.id}
                 className="flex shrink-0 snap-start"
               >
-                <div className="h-[320px] w-[152px] overflow-hidden rounded-xl bg-white sm:h-[420px] sm:w-[200px] lg:h-[468px] lg:w-[220px]">
+                <div className="h-[340px] w-[180px] overflow-hidden rounded-xl bg-white sm:h-[420px] sm:w-[220px] lg:h-[468px] lg:w-[240px]">
                   <ProductCard product={product} />
                 </div>
               </div>

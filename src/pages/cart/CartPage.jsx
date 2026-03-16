@@ -263,7 +263,7 @@ export default function CartPage() {
                 <div className="mt-8">
                   <Link
                     to="/checkout"
-                    className="flex w-full items-center justify-center rounded-full bg-primary py-4 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition-all hover:bg-secondary hover:shadow-xl"
+                    className="flex w-full items-center justify-center rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] py-4 text-xs sm:text-sm font-semibold uppercase tracking-[0.22em] text-primary shadow-lg transition-all hover:bg-[#f4d7c5] hover:border-[#f4d7c5] hover:shadow-xl"
                   >
                     Checkout
                   </Link>

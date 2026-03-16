@@ -161,28 +161,35 @@ useEffect(() => {
           </div>
 
           <form onSubmit={handlePlaceOrder} className="mt-8 grid gap-8 lg:grid-cols-12">
-            <div className="lg:col-span-7 flex flex-col gap-4">
-              <section className="rounded-xl border border-border bg-white p-4 sm:p-5">
-                <h2 className="text-sm font-semibold text-primary uppercase tracking-wide">
-                  Shipping address
-                </h2>
+            <div className="lg:col-span-7 flex flex-col gap-6">
+              {/* Shipping address */}
+              <section className="rounded-2xl border border-border bg-white p-4 sm:p-6">
+                <div className="border-b border-border pb-4">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-secondary">
+                    Shipping address
+                  </h2>
+                  <p className="mt-1 text-xs text-secondary/70">
+                    Choose where you’d like this order delivered.
+                  </p>
+                </div>
                 {loadingAddresses ? (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-gray-50 p-3 text-secondary">
+                  <div className="mt-4 flex items-center gap-2 rounded-lg border border-border bg-gray-50 p-3 text-secondary">
                     <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
                     <span className="text-sm">Loading addresses…</span>
                   </div>
                 ) : addresses.length === 0 ? (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-gray-50 p-3 text-secondary">
-                    <MapPin className="h-5 w-5 shrink-0" aria-hidden />
+                  <div className="mt-4 flex items-start gap-3 rounded-lg border border-border bg-gray-50 p-3 text-secondary">
+                    <MapPin className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                     <p className="text-sm">
                       No addresses found.{' '}
                       <Link to="/account/settings#addresses" className="font-medium text-primary hover:underline">
-                        Add an address
+                        Add an address in Settings
                       </Link>
+                      .
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-3 space-y-2 rounded-lg border border-border p-3">
+                  <div className="mt-4 space-y-2 rounded-xl border border-border bg-gray-50/60 p-3 sm:p-4">
                     {(addresses.filter(
                       (a) => (a.addressType || a.type || '').toUpperCase() === 'SHIPPING'
                     ).length > 0
@@ -191,68 +198,84 @@ useEffect(() => {
                         )
                       : addresses
                     ).map((addr) => (
-                        <label
-                          key={addr.id}
-                          className="flex cursor-pointer items-start gap-3 rounded-lg bg-gray-50 p-3 transition-colors has-[:checked]:bg-primary/5 has-[:checked]:ring-2 has-[:checked]:ring-primary/30"
-                        >
-                          <input
-                            type="radio"
-                            name="shippingAddress"
-                            value={addr.id}
-                            checked={shippingAddressId === String(addr.id)}
-                            onChange={() => setShippingAddressId(String(addr.id))}
-                            className="mt-1.5 h-4 w-4 border-border text-primary focus:ring-primary"
-                            aria-label={`Select ${addr.streetAddress}, ${addr.city}`}
-                          />
-                          <div className="min-w-0 flex-1 text-sm">
-                            <p className="font-medium text-primary">
-                              {addr.streetAddress}
-                              {addr.isDefault && (
-                                <span className="ml-2 text-xs text-secondary">(Default)</span>
-                              )}
-                            </p>
-                            <p className="text-secondary">
-                              {[addr.city, addr.state, addr.postalCode, addr.country]
-                                .filter(Boolean)
-                                .join(', ')}
-                            </p>
-                          </div>
-                        </label>
-                      ))}
+                      <label
+                        key={addr.id}
+                        className="flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3 text-sm text-secondary transition-colors shadow-[0_1px_0_rgba(15,23,42,0.03)] has-[:checked]:bg-primary/3 has-[:checked]:ring-2 has-[:checked]:ring-primary/25"
+                      >
+                        <input
+                          type="radio"
+                          name="shippingAddress"
+                          value={addr.id}
+                          checked={shippingAddressId === String(addr.id)}
+                          onChange={() => setShippingAddressId(String(addr.id))}
+                          className="mt-1.5 h-4 w-4 border-border text-primary focus:ring-primary"
+                          aria-label={`Select ${addr.streetAddress}, ${addr.city}`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-primary">
+                            {addr.streetAddress}
+                            {addr.isDefault && (
+                              <span className="ml-2 inline-flex items-center rounded-full bg-primary/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+                                Default
+                              </span>
+                            )}
+                          </p>
+                          <p className="mt-0.5 text-xs text-secondary">
+                            {[addr.city, addr.state, addr.postalCode, addr.country]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
                   </div>
                 )}
               </section>
 
-              <section className="rounded-xl border border-border bg-white p-4 sm:p-5">
-                <h2 className="text-sm font-semibold text-primary uppercase tracking-wide">
-                  Order notes (optional)
-                </h2>
-                <div className="mt-3">
+              {/* Order notes */}
+              <section className="rounded-2xl border border-border bg-white p-4 sm:p-6">
+                <div className="border-b border-border pb-4">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-secondary">
+                    Order notes
+                  </h2>
+                  <p className="mt-1 text-xs text-secondary/70">Optional instructions for your delivery.</p>
+                </div>
+                <div className="mt-4">
                   <input
                     type="text"
                     id="checkout-notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Delivery instructions, leave at door, etc."
-                    className="w-full rounded-lg border border-border bg-gray-50 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    placeholder="Delivery instructions, gate code, preferred time, etc."
+                    className="w-full border-b border-border bg-transparent px-0 py-2.5 text-sm text-primary placeholder-tertiary placeholder:text-xs focus:outline-none focus:border-primary"
                     aria-label="Order notes"
                   />
                 </div>
               </section>
 
-              <section className="rounded-xl border border-border bg-white p-4 sm:p-5">
-                <h2 className="text-sm font-semibold text-primary uppercase tracking-wide">
-                  Coupon (optional)
-                </h2>
-                <div className="mt-3">
+              {/* Coupon */}
+              <section className="rounded-2xl border border-border bg-white p-4 sm:p-6">
+                <div className="border-b border-border pb-4">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-secondary">
+                    Coupon
+                  </h2>
+                  <p className="mt-1 text-xs text-secondary/70">Have a promo code? Apply it to this order.</p>
+                </div>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <input
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     placeholder="Enter coupon code"
-                    className="w-full rounded-lg border border-border bg-gray-50 px-3 py-2.5 text-sm text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full border-b border-border bg-transparent px-0 py-2.5 text-sm text-primary placeholder-tertiary placeholder:text-xs focus:outline-none focus:border-primary sm:flex-1"
                     aria-label="Coupon code"
                   />
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center rounded-full border border-dashed border-border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary hover:border-primary hover:text-primary"
+                  >
+                    Apply
+                  </button>
                 </div>
               </section>
             </div>
@@ -319,7 +342,7 @@ useEffect(() => {
                     addresses.length === 0 ||
                     !shippingAddressId?.trim()
                   }
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:bg-gray-300"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] px-4 py-3 text-xs sm:text-[13px] font-semibold uppercase tracking-[0.22em] text-primary transition-colors hover:bg-[#f4d7c5] hover:border-[#f4d7c5] disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   {placing ? (
                     <>
