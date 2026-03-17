@@ -148,7 +148,9 @@ export default function CartPage() {
 
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
-              <p className="text-lg text-secondary">Your shopping bag is currently empty.</p>
+              <p className="text-sm sm:text-base text-secondary">
+                Your shopping bag is currently empty.
+              </p>
               <Link
                 to="/products"
                 className="mt-8 inline-flex items-center gap-2 rounded-full border border-primary px-8 py-3 text-sm font-bold uppercase tracking-wider text-primary hover:bg-primary hover:text-white transition-colors"

@@ -196,8 +196,50 @@ export default function OrdersPage() {
       )}
 
       {loading ? (
-        <div className="flex h-64 w-full items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="overflow-hidden rounded-xl border border-border bg-white"
+            >
+              {/* Card header skeleton */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-gray-50/50 p-3 sm:p-4">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                  <div className="space-y-1">
+                    <div className="h-2.5 w-20 rounded-full bg-gray-100" />
+                    <div className="h-3 w-28 rounded-full bg-gray-100" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="h-2.5 w-14 rounded-full bg-gray-100" />
+                    <div className="h-3 w-16 rounded-full bg-gray-100" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="h-2.5 w-16 rounded-full bg-gray-100" />
+                    <div className="h-3 w-24 rounded-full bg-gray-100" />
+                  </div>
+                </div>
+                <div className="h-6 w-24 rounded-full bg-gray-100" />
+              </div>
+
+              {/* Card body skeleton */}
+              <div className="p-3 sm:p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    {[0, 1, 2].map((img) => (
+                      <div
+                        key={img}
+                        className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-gray-100"
+                      />
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    <div className="h-3 w-32 rounded-full bg-gray-100" />
+                    <div className="h-8 w-28 rounded-full bg-gray-100" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : orders.length === 0 ? (
         <div className="flex h-80 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-gray-50/50 text-center">

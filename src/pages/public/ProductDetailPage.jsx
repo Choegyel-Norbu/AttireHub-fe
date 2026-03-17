@@ -19,7 +19,9 @@ import {
   Minus,
   Plus,
   ShieldCheck,
-  Truck
+  Truck,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 /** Get initials from display name (e.g. "John Doe" → "JD", "Customer" → "C"). */
@@ -270,6 +272,27 @@ export default function ProductDetailPage() {
   
   // Image Logic
   const displayImage = selectedVariant?.imageUrl || activeVariants[0]?.imageUrl;
+
+  const currentVariantIndex =
+    selectedVariant && activeVariants.length > 0
+      ? Math.max(
+          0,
+          activeVariants.findIndex((v) => v.id === selectedVariant.id)
+        )
+      : 0;
+
+  const goToRelativeVariant = (delta) => {
+    if (!activeVariants.length) return;
+    const safeIndex = Number.isFinite(currentVariantIndex)
+      ? currentVariantIndex
+      : 0;
+    const nextIndex =
+      (safeIndex + delta + activeVariants.length) % activeVariants.length;
+    const nextVariant = activeVariants[nextIndex];
+    if (nextVariant && nextVariant.id !== selectedVariant?.id) {
+      setSelectedVariant(nextVariant);
+    }
+  };
   
   const maxQty = selectedVariant != null && typeof selectedVariant.stockQuantity === 'number'
     ? Math.max(0, selectedVariant.stockQuantity)
@@ -372,6 +395,26 @@ export default function ProductDetailPage() {
                   <div className="flex h-full w-full items-center justify-center text-tertiary">
                     <ImageOff className="h-12 w-12 opacity-30" />
                   </div>
+                )}
+                {activeVariants.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => goToRelativeVariant(-1)}
+                      className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-r-full bg-white/80 text-primary shadow-sm ring-1 ring-border transition hover:bg-white hover:text-black"
+                      aria-label="Previous variant image"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => goToRelativeVariant(1)}
+                      className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-l-full bg-white/80 text-primary shadow-sm ring-1 ring-border transition hover:bg-white hover:text-black"
+                      aria-label="Next variant image"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </>
                 )}
               </div>
               
@@ -645,7 +688,9 @@ export default function ProductDetailPage() {
                         >
                           {getInitials(review.userDisplayName)}
                         </span>
-                        <span className="text-sm font-bold text-primary sm:text-base">{review.userDisplayName || 'Customer'}</span>
+                        <span className="text-sm font-bold text-primary sm:text-base">
+                          {review.userDisplayName || 'Customer'}
+                        </span>
                         {review.verifiedPurchase && (
                           <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-green-600">
                             <Check className="h-3 w-3" /> Verified

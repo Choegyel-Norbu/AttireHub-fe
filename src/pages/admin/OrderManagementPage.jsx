@@ -17,6 +17,7 @@ import {
   Truck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import * as XLSX from 'xlsx';
 import {
   getAdminOrders,
   updateOrderStatus,
@@ -377,6 +378,7 @@ export default function OrderManagementPage() {
 
   const [expandedOrderNumber, setExpandedOrderNumber] = useState(null);
   const [detailError, setDetailError] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [cancelConfirm, setCancelConfirm] = useState(null);
@@ -410,6 +412,87 @@ export default function OrderManagementPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  const handleExportAll = useCallback(async () => {
+    setExporting(true);
+    try {
+      const allRows = [];
+      let exportPage = 0;
+      let lastPage = false;
+
+      while (!lastPage) {
+        // Reuse the admin orders API to page through all data with current status filter
+        const result = await getAdminOrders({
+          page: exportPage,
+          size: PAGE_SIZE,
+          status: statusFilter.trim() || undefined,
+        });
+        const batch = Array.isArray(result.content) ? result.content : [];
+        batch.forEach((o) => {
+          const created = o.createdAt ?? o.created_at;
+          const dateStr = created ? new Date(created).toISOString() : '';
+          const customerName =
+            o.customer?.firstName || o.customer?.lastName
+              ? `${o.customer?.firstName ?? ''} ${o.customer?.lastName ?? ''}`.trim()
+              : o.customerEmail ?? o.customer?.email ?? '';
+          const shippingCity = o.shippingAddress?.city ?? '';
+          const shippingCountry = o.shippingAddress?.country ?? '';
+          const itemCount = Array.isArray(o.items) ? o.items.length : 0;
+
+          allRows.push({
+            orderNumber: o.orderNumber ?? o.id,
+            date: dateStr,
+            status: o.status ?? '',
+            total: o.total ?? 0,
+            subtotal: o.subtotal ?? 0,
+            discount: o.discount ?? 0,
+            tax: o.tax ?? 0,
+            shippingCost: o.shippingCost ?? 0,
+            paymentMethod: o.paymentMethod ?? '',
+            paymentStatus: o.paymentStatus ?? '',
+            customerName,
+            customerEmail: o.customerEmail ?? o.customer?.email ?? '',
+            shippingCity,
+            shippingCountry,
+            itemCount,
+          });
+        });
+
+        lastPage = result.last ?? true;
+        exportPage += 1;
+      }
+
+      if (!allRows.length) {
+        return;
+      }
+
+      const worksheetData = allRows.map((row) => ({
+        'Order Number': row.orderNumber,
+        'Date (ISO)': row.date,
+        Status: row.status,
+        Total: row.total,
+        Subtotal: row.subtotal,
+        Discount: row.discount,
+        Tax: row.tax,
+        'Shipping Cost': row.shippingCost,
+        'Payment Method': row.paymentMethod,
+        'Payment Status': row.paymentStatus,
+        'Customer Name': row.customerName,
+        'Customer Email': row.customerEmail,
+        'Shipping City': row.shippingCity,
+        'Shipping Country': row.shippingCountry,
+        'Item Count': row.itemCount,
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
+      const filename = `orders-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
+    } finally {
+      setExporting(false);
+    }
+  }, [statusFilter]);
 
   const toggleExpand = (order) => {
     const key = order.orderNumber ?? String(order.id);
@@ -467,35 +550,56 @@ export default function OrderManagementPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-3xl text-primary">Orders</h1>
           <p className="mt-1 text-sm text-secondary/70">
             Manage customer orders and status updates.
           </p>
         </div>
-        
-        {/* Filter */}
-        <div className="relative min-w-[200px]">
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(0);
-            }}
-            className="w-full appearance-none rounded-full border border-border bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer transition-shadow hover:shadow-md"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value || 'all'} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-secondary">
-            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          {/* Filter */}
+          <div className="relative min-w-[200px]">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(0);
+              }}
+              className="w-full appearance-none rounded-full border border-border bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer transition-shadow hover:shadow-md"
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value || 'all'} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-secondary">
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleExportAll}
+            disabled={exporting || loading}
+            className="inline-flex items-center justify-center rounded-full border border-border bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-primary shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {exporting ? (
+              <>
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <ArrowRight className="mr-2 h-3.5 w-3.5" />
+                Export Orders (Excel)
+              </>
+            )}
+          </button>
         </div>
       </div>
 

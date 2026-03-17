@@ -8,7 +8,7 @@ import {
   deleteReview,
   getMyProductReview,
 } from '@/services/reviewService';
-import { getProductBySlug } from '@/services/productService';
+import { getProductBySlug, getProductSuggestions } from '@/services/productService';
 import { useAuth } from '@/context/AuthContext';
 import { 
   Package, 
@@ -82,6 +82,7 @@ export default function OrderDetailPage() {
   // key: `${productId}:${variantId || 'null'}` -> review
   const [myReviewsByVariantKey, setMyReviewsByVariantKey] = useState({});
   const [resolvedProductIdBySlug, setResolvedProductIdBySlug] = useState({});
+  const [resolvedItemInfo, setResolvedItemInfo] = useState({});
   const [resolvingSlugForReview, setResolvingSlugForReview] = useState(null);
 
   // Always start from the top when the order detail page is loaded or order changes
@@ -122,47 +123,122 @@ export default function OrderDetailPage() {
     return `${Number.isNaN(id) ? '' : id}:${vId != null && !Number.isNaN(vId) ? vId : 'null'}`;
   };
 
-  // Load existing reviews per product/variant for this order when viewing details
+  // Load existing reviews per product/variant for this order when viewing details.
+  // Order items may lack productId/variantId, so resolve them from product name + SKU/size/color.
   useEffect(() => {
     if (!order || !canReview || !userId) return;
     const orderItems = order.items ?? [];
-    const tasks = orderItems
-      .map((i) => {
-        const rawProductId = i.productId ?? i.product_id;
-        if (rawProductId == null) return null;
-        const productId = Number(rawProductId);
-        if (Number.isNaN(productId)) return null;
-        const rawVariantId = i.variantId ?? i.productVariantId ?? i.variant_id ?? null;
-        const variantId = rawVariantId != null ? Number(rawVariantId) : null;
-        const key = makeReviewKey(productId, variantId);
-        return getMyProductReview(productId, { variantId }).then((review) => ({ key, review }));
-      })
-      .filter(Boolean);
-
-    if (tasks.length === 0) return;
+    if (orderItems.length === 0) return;
 
     let cancelled = false;
-    Promise.all(tasks)
-      .then((results) => {
-        if (cancelled) return;
-        setMyReviewsByVariantKey((prev) => {
-          const next = { ...prev };
-          results.forEach((res) => {
-            if (res && res.review) {
-              next[res.key] = res.review;
+
+    (async () => {
+      const uniqueNames = [
+        ...new Set(
+          orderItems
+            .filter((i) => (i.productId ?? i.product_id) == null && i.productName)
+            .map((i) => i.productName)
+        ),
+      ];
+
+      const productDataByName = {};
+      if (uniqueNames.length > 0) {
+        await Promise.all(
+          uniqueNames.map(async (name) => {
+            try {
+              const results = await getProductSuggestions({ q: name, limit: 5 });
+              const match =
+                results.find((r) => r.name?.toLowerCase().trim() === name.toLowerCase().trim()) ??
+                results[0];
+              if (!match?.id) return;
+              let variants = Array.isArray(match.variants) ? match.variants : [];
+              if (variants.length === 0 && match.slug) {
+                try {
+                  const full = await getProductBySlug(match.slug);
+                  variants = Array.isArray(full?.variants) ? full.variants : [];
+                } catch {
+                  /* use suggestion data as-is */
+                }
+              }
+              productDataByName[name] = {
+                productId: Number(match.id),
+                slug: match.slug ?? null,
+                variants,
+              };
+            } catch {
+              /* skip unresolvable products */
             }
-          });
-          return next;
-        });
-      })
-      .catch(() => {
-        // swallow errors; reviews are optional
+          })
+        );
+      }
+
+      if (cancelled) return;
+
+      const infoMap = {};
+      const reviewTasks = [];
+
+      orderItems.forEach((item, idx) => {
+        const itemKey = item.id ?? idx;
+        let productId = null;
+        let variantId = null;
+        let slug = null;
+
+        const rawPid = item.productId ?? item.product_id;
+        if (rawPid != null && !Number.isNaN(Number(rawPid))) {
+          productId = Number(rawPid);
+          const rawVid = item.variantId ?? item.productVariantId ?? item.variant_id ?? null;
+          variantId = rawVid != null ? Number(rawVid) : null;
+          slug = item.productSlug ?? item.product_slug ?? null;
+        } else if (item.productName && productDataByName[item.productName]) {
+          const resolved = productDataByName[item.productName];
+          productId = resolved.productId;
+          slug = resolved.slug;
+          const variants = resolved.variants;
+          if (item.sku) {
+            const v = variants.find((vt) => vt.sku === item.sku);
+            if (v) variantId = Number(v.id);
+          }
+          if (variantId == null && (item.size || item.color)) {
+            const v = variants.find(
+              (vt) =>
+                (!item.size || vt.size?.toLowerCase() === item.size?.toLowerCase()) &&
+                (!item.color || vt.color?.toLowerCase() === item.color?.toLowerCase())
+            );
+            if (v) variantId = Number(v.id);
+          }
+        }
+
+        if (productId != null && !Number.isNaN(productId)) {
+          infoMap[itemKey] = { productId, variantId, slug };
+          const key = makeReviewKey(productId, variantId);
+          reviewTasks.push(
+            getMyProductReview(productId, { variantId })
+              .then((review) => ({ key, review }))
+              .catch(() => null)
+          );
+        }
       });
+
+      setResolvedItemInfo(infoMap);
+
+      if (reviewTasks.length === 0 || cancelled) return;
+
+      const results = await Promise.all(reviewTasks);
+      if (cancelled) return;
+
+      setMyReviewsByVariantKey((prev) => {
+        const next = { ...prev };
+        results.forEach((res) => {
+          if (res?.review) next[res.key] = res.review;
+        });
+        return next;
+      });
+    })().catch(() => {});
 
     return () => {
       cancelled = true;
     };
-  }, [order?.id, canReview, userId]);
+  }, [order?.orderNumber, canReview, userId]);
 
   const openReviewForm = useCallback((productId, existingReview, variantId = null) => {
     setExpandedReviewProductId(productId);
@@ -183,6 +259,14 @@ export default function OrderDetailPage() {
 
   const openReviewFormForItem = useCallback(
     async (item) => {
+      const itemKey = item.id;
+      const info = resolvedItemInfo[itemKey];
+      if (info?.productId) {
+        const key = makeReviewKey(info.productId, info.variantId);
+        openReviewForm(info.productId, myReviewsByVariantKey[key] ?? null, info.variantId);
+        return;
+      }
+
       const rawId = item.productId ?? item.product_id;
       const slug = item.productSlug ?? item.product_slug;
       const rawVariantId = item.variantId ?? item.productVariantId ?? item.variant_id ?? null;
@@ -215,7 +299,7 @@ export default function OrderDetailPage() {
       }
       setReviewError('Product link is missing.');
     },
-    [openReviewForm, myReviewsByVariantKey]
+    [openReviewForm, myReviewsByVariantKey, resolvedItemInfo]
   );
 
   const handleReviewSubmit = useCallback(
@@ -380,15 +464,18 @@ export default function OrderDetailPage() {
             </div>
             <ul className="divide-y divide-border">
               {items.map((item, idx) => {
+                const itemKey = item.id ?? idx;
+                const info = resolvedItemInfo[itemKey];
                 const rawId = item.productId ?? item.product_id;
-                const productSlug = item.productSlug ?? item.product_slug ?? rawId;
+                const productSlug = info?.slug ?? item.productSlug ?? item.product_slug ?? rawId;
                 const productPath = productSlug != null ? `/products/${encodeURIComponent(String(productSlug))}` : null;
                 const rawVariantIdForRow = item.variantId ?? item.productVariantId ?? item.variant_id ?? null;
-                const variantId = rawVariantIdForRow != null ? Number(rawVariantIdForRow) : null;
                 const idFromItem = rawId != null ? Number(rawId) : null;
-                const id = (idFromItem != null && !Number.isNaN(idFromItem))
-                  ? idFromItem
-                  : (productSlug != null ? resolvedProductIdBySlug[productSlug] : null);
+                const id = info?.productId
+                  ?? ((idFromItem != null && !Number.isNaN(idFromItem)) ? idFromItem : null)
+                  ?? (productSlug != null ? resolvedProductIdBySlug[productSlug] : null);
+                const variantId = info?.variantId
+                  ?? (rawVariantIdForRow != null ? Number(rawVariantIdForRow) : null);
                 const key = id != null ? makeReviewKey(id, variantId) : null;
                 const myReview = key != null ? myReviewsByVariantKey[key] : null;
                 const isFormExpanded = expandedReviewProductId === id;
@@ -474,7 +561,7 @@ export default function OrderDetailPage() {
                                     <p className="font-medium text-primary">Your Review</p>
                                     <div className="flex gap-2">
                                       <button
-                                        onClick={() => openReviewForm(id, myReview)}
+                                        onClick={() => openReviewForm(id, myReview, variantId)}
                                         className="p-1 text-secondary hover:text-primary"
                                         title="Edit review"
                                       >
@@ -621,7 +708,9 @@ export default function OrderDetailPage() {
               <CreditCard className="mt-0.5 h-5 w-5 text-secondary" />
               <div className="text-sm text-secondary">
                 <p className="font-medium text-primary">Payment Method</p>
-                <p className="mt-1 capitalize">{order.paymentMethod?.replace(/_/g, ' ') ?? '—'}</p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-secondary">
+                  ONLINE PAYMENT
+                </p>
               </div>
             </div>
             {order.status === 'SHIPPED' && (

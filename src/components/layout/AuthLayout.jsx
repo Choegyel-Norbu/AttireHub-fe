@@ -18,13 +18,9 @@ export default function AuthLayout({ children, title, subtitle }) {
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Back to store
         </Link>
-        
-        <Link to="/" className="font-serif text-xl font-medium tracking-tight text-primary sm:text-2xl lg:text-3xl" aria-label="AttireHub Home">
-          AttireHub
-        </Link>
-        
-        {/* Spacer to balance the header if needed, or could be a help link */}
-        <div className="w-[100px] hidden sm:block"></div> 
+
+        {/* Optional right-side actions could go here */}
+        <div className="w-[100px] hidden sm:block" aria-hidden="true"></div> 
       </header>
 
       {/* Main Content Area */}
