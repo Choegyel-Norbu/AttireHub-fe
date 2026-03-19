@@ -1,33 +1,123 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ImageOff, ShoppingBag, Loader2, Check } from 'lucide-react';
+import { ImageOff, ShoppingBag, Loader2, Check, Heart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/context/AuthContext';
+import { getProductCardImageUrl } from '@/utils/productImages';
+import { addWishlistItem } from '@/services/wishlistService';
 
 const ProductCard = ({ product }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [wishlisting, setWishlisting] = useState(false);
+  const [wishlisted, setWishlisted] = useState(false);
   const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
   const { show: showToast } = useToast();
 
-  const variants = Array.isArray(product.variants) ? product.variants : [];
-  const firstVariant = variants.length > 0 ? variants[0] : null;
-  const displayImage = firstVariant?.imageUrl ?? variants.find((v) => v.imageUrl)?.imageUrl;
-  const displayPrice = firstVariant?.price ?? product.basePrice;
-  const hasDiscount = firstVariant?.discount > 0;
-  const priceAfterDiscount =
-    hasDiscount && typeof firstVariant.price === 'number' && typeof firstVariant.discount === 'number'
-      ? firstVariant.price - firstVariant.discount
-      : null;
-  const discountPercent =
-    hasDiscount && typeof firstVariant.price === 'number' && firstVariant.price > 0
-      ? Math.round((firstVariant.discount / firstVariant.price) * 100)
+  const variantGroups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
+  const legacyVariants = Array.isArray(product.variants) ? product.variants : [];
+
+  // Flatten sizeOptions from all active groups (new model).
+  const sizeOptions = variantGroups.flatMap((g) =>
+    Array.isArray(g?.sizeOptions)
+      ? g.sizeOptions.map((s) => ({
+          ...s,
+          color: s.color ?? g.color,
+        }))
+      : []
+  );
+
+  // Pick a primary purchasable variant: first active size in first active group, else legacy first variant.
+  const primarySizeOption =
+    sizeOptions.find((s) => s.active !== false && s.isActive !== false) || sizeOptions[0] || null;
+  const firstVariant = primarySizeOption || (legacyVariants.length > 0 ? legacyVariants[0] : null);
+
+  const displayImage = getProductCardImageUrl(product);
+  // Pricing & discount logic with variantGroups support.
+  const activeSizeEntries = sizeOptions
+    .filter((s) => s.active !== false && s.isActive !== false && typeof s.price === 'number')
+    .map((s) => ({
+      price: Number(s.price),
+      discount: typeof s.discount === 'number' ? Number(s.discount) : 0,
+    }));
+
+  const productLevelDiscount = typeof product.discount === 'number' ? Number(product.discount) : 0;
+
+  const anySizeDiscount = activeSizeEntries.some((e) => e.discount > 0);
+  const hasDiscount = anySizeDiscount || productLevelDiscount > 0;
+
+  // Base price candidates (no discount applied yet)
+  const minActivePrice =
+    activeSizeEntries.length > 0
+      ? Math.min(...activeSizeEntries.map((e) => e.price))
+      : typeof firstVariant?.price === 'number'
+        ? Number(firstVariant.price)
+        : typeof product.basePrice === 'number'
+          ? Number(product.basePrice)
+          : null;
+
+  // Original price for discounted variants (used as struck-through value).
+  const minDiscountedBasePrice =
+    anySizeDiscount && activeSizeEntries.length > 0
+      ? Math.min(...activeSizeEntries.filter((e) => e.discount > 0).map((e) => e.price))
+      : minActivePrice;
+
+  // Effective price after discount.
+  const minEffectiveSizePrice =
+    activeSizeEntries.length > 0
+      ? Math.min(
+          ...activeSizeEntries.map((e) =>
+            e.discount > 0 && e.discount < e.price ? e.price - e.discount : e.price
+          )
+        )
       : null;
 
-  const distinctColors = [...new Set(variants.map((v) => v.color).filter(Boolean))];
-  const distinctSizes = [...new Set(variants.map((v) => v.size).filter(Boolean))];
+  let displayPrice = minActivePrice;
+  let priceBeforeDiscount = null;
+  let priceAfterDiscount = null;
+
+  if (hasDiscount) {
+    if (anySizeDiscount && minEffectiveSizePrice != null) {
+      displayPrice = minEffectiveSizePrice;
+      priceBeforeDiscount = minDiscountedBasePrice ?? minActivePrice;
+      priceAfterDiscount = displayPrice;
+    } else if (productLevelDiscount > 0 && minActivePrice != null) {
+      priceBeforeDiscount = minActivePrice;
+      priceAfterDiscount = Math.max(0, minActivePrice - productLevelDiscount);
+      displayPrice = priceAfterDiscount;
+    }
+  }
+
+  if (!hasDiscount && displayPrice == null && typeof firstVariant?.price === 'number') {
+    displayPrice = Number(firstVariant.price);
+  }
+  if (!hasDiscount && displayPrice == null && typeof product.basePrice === 'number') {
+    displayPrice = Number(product.basePrice);
+  }
+
+  const discountPercent =
+    hasDiscount && priceBeforeDiscount != null && priceAfterDiscount != null && priceBeforeDiscount > 0
+      ? Math.round(((priceBeforeDiscount - priceAfterDiscount) / priceBeforeDiscount) * 100)
+      : null;
+
+  const showStruckOriginalPrice =
+    hasDiscount &&
+    priceBeforeDiscount != null &&
+    priceAfterDiscount != null &&
+    priceBeforeDiscount > priceAfterDiscount;
+
+  const distinctColors =
+    variantGroups.length > 0
+      ? [...new Set(variantGroups.map((g) => g.color).filter(Boolean))]
+      : [...new Set(legacyVariants.map((v) => v.color).filter(Boolean))];
+  const distinctSizes =
+    sizeOptions.length > 0
+      ? [...new Set(sizeOptions.map((s) => s.size).filter(Boolean))]
+      : [...new Set(legacyVariants.map((v) => v.size).filter(Boolean))];
 
   const formatPrice = (value) => {
     if (typeof value !== 'number') return String(value ?? '');
@@ -51,6 +141,36 @@ const ProductCard = ({ product }) => {
       showToast({ message: err?.message ?? 'Could not add to cart', variant: 'error' });
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handleAddToWishlist = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!product?.id || wishlisting) return;
+
+    if (!isAuthenticated) {
+      showToast({
+        message: 'Please sign in to add items to wishlist.',
+        variant: 'error',
+      });
+      return;
+    }
+
+    setWishlisting(true);
+    try {
+      await addWishlistItem(product.id);
+      setWishlisted(true);
+      showToast({ message: 'Added to wishlist', variant: 'success' });
+    } catch (err) {
+      if (err?.status === 409) {
+        setWishlisted(true);
+        showToast({ message: err?.message ?? 'Product already in wishlist.', variant: 'success' });
+      } else {
+        showToast({ message: err?.message ?? 'Could not add to wishlist', variant: 'error' });
+      }
+    } finally {
+      setWishlisting(false);
     }
   };
 
@@ -143,12 +263,12 @@ const ProductCard = ({ product }) => {
 
         {/* Price block */}
         <div className="mt-0.5 flex items-baseline gap-2">
-          <span className="text-sm font-semibold text-primary sm:text-base">
+          <span className="text-xs font-semibold text-primary sm:text-sm">
             Nu {formatPrice(priceAfterDiscount ?? displayPrice)}
           </span>
-          {hasDiscount && priceAfterDiscount != null && (
+          {showStruckOriginalPrice && (
             <span className="text-[11px] text-secondary/60 line-through">
-              Nu {formatPrice(displayPrice)}
+              Nu {formatPrice(priceBeforeDiscount)}
             </span>
           )}
         </div>
@@ -162,21 +282,41 @@ const ProductCard = ({ product }) => {
 
         {/* Mobile Add to Cart — always reserve space when variants exist for consistent height */}
         {firstVariant ? (
-          <button
-            type="button"
-            disabled={adding}
-            onClick={handleAddToCart}
-            className="mt-1.5 flex w-full min-h-8 items-center justify-center gap-1.5 rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary transition-all hover:bg-[#f4d7c5] hover:border-[#f4d7c5] disabled:opacity-60 sm:mt-2 sm:py-2 sm:text-xs lg:hidden"
-          >
-            {adding ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : added ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <ShoppingBag className="h-3.5 w-3.5" />
-            )}
-            {adding ? 'Adding…' : added ? 'Added' : 'Add to Cart'}
-          </button>
+          <div className="mt-1.5 space-y-2 sm:mt-2">
+            <button
+              type="button"
+              disabled={adding}
+              onClick={handleAddToCart}
+              className="flex w-full min-h-8 items-center justify-center gap-1.5 rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary transition-all hover:bg-[#f4d7c5] hover:border-[#f4d7c5] disabled:opacity-60 sm:py-2 sm:text-xs lg:hidden"
+            >
+              {adding ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : added ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <ShoppingBag className="h-3.5 w-3.5" />
+              )}
+              {adding ? 'Adding…' : added ? 'Added' : 'Add to Cart'}
+            </button>
+
+            <button
+              type="button"
+              disabled={wishlisting}
+              onClick={handleAddToWishlist}
+              className={`flex w-full min-h-8 items-center justify-center gap-1.5 rounded-full border py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] transition-all sm:py-2 sm:text-xs ${
+                wishlisted
+                  ? 'border-primary/30 bg-primary/5 text-primary'
+                  : 'border-border bg-white text-secondary hover:border-primary hover:text-primary'
+              } disabled:opacity-60`}
+            >
+              {wishlisting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Heart className={`h-3.5 w-3.5 ${wishlisted ? 'fill-primary/20' : ''}`} />
+              )}
+              {wishlisted ? 'Wishlisted' : 'Add to Wishlist'}
+            </button>
+          </div>
         ) : (
           <div className="mt-2 h-9" aria-hidden />
         )}

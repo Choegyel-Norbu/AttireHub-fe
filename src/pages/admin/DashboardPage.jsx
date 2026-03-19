@@ -77,6 +77,8 @@ export default function DashboardPage() {
   
   const [recentOrders, setRecentOrders] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);
+  const [lowStockItemsAll, setLowStockItemsAll] = useState([]);
+  const [isLowStockModalOpen, setIsLowStockModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -96,23 +98,71 @@ export default function DashboardPage() {
         let lowStock = 0;
         let outOfStock = 0;
         const lowStockList = [];
+        const lowStockListAll = [];
 
         for (const p of products) {
-          if (Array.isArray(p.variants)) {
-            for (const v of p.variants) {
-              const qty = Number(v.stockQuantity ?? 0);
-              if (qty === 0) outOfStock++;
-              else if (qty <= 5) {
-                lowStock++;
-                if (lowStockList.length < 5) {
-                  lowStockList.push({
-                    id: v.id,
-                    name: p.name,
-                    sku: v.sku,
+          // New model: variantGroups[].sizeOptions[]
+          const groups = Array.isArray(p.variantGroups) ? p.variantGroups : [];
+          if (groups.length > 0) {
+            for (const g of groups) {
+              const sizeOptions = Array.isArray(g?.sizeOptions) ? g.sizeOptions : [];
+              for (const s of sizeOptions) {
+                const qty = Number(s?.stockQuantity ?? 0);
+                if (qty === 0) outOfStock++;
+                else if (qty < 4) {
+                  lowStock++;
+                  lowStockListAll.push({
+                    id: s?.id,
+                    name: p?.name,
+                    sku: s?.sku,
                     quantity: qty,
-                    slug: p.slug
+                    slug: p?.slug,
+                    color: g?.color,
+                    size: s?.size,
+                    categoryName: p?.categoryName,
                   });
+                  if (lowStockList.length < 5) {
+                    lowStockList.push({
+                      id: s?.id,
+                      name: p?.name,
+                      sku: s?.sku,
+                      quantity: qty,
+                      slug: p?.slug,
+                      color: g?.color,
+                      size: s?.size,
+                      categoryName: p?.categoryName,
+                    });
+                  }
                 }
+              }
+            }
+            continue;
+          }
+
+          // Legacy fallback: variants[]
+          const variants = Array.isArray(p.variants) ? p.variants : [];
+          for (const v of variants) {
+            const qty = Number(v.stockQuantity ?? 0);
+            if (qty === 0) outOfStock++;
+            else if (qty < 4) {
+              lowStock++;
+                  lowStockListAll.push({
+                    id: v?.id,
+                    name: p?.name,
+                    sku: v?.sku,
+                    quantity: qty,
+                    slug: p?.slug,
+                    categoryName: p?.categoryName,
+                  });
+                  if (lowStockList.length < 5) {
+                lowStockList.push({
+                  id: v.id,
+                  name: p.name,
+                  sku: v.sku,
+                  quantity: qty,
+                  slug: p.slug,
+                      categoryName: p?.categoryName,
+                });
               }
             }
           }
@@ -149,6 +199,7 @@ export default function DashboardPage() {
 
         setRecentOrders(orders.slice(0, 5));
         setLowStockItems(lowStockList);
+        setLowStockItemsAll(lowStockListAll);
       } catch (err) {
         console.error("Failed to load dashboard data", err);
       } finally {
@@ -400,9 +451,13 @@ export default function DashboardPage() {
           <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-serif text-lg text-primary">Low Stock</h2>
-              <Link to="/admin/products" className="text-xs font-bold uppercase tracking-wider text-secondary hover:text-primary">
+              <button
+                type="button"
+                onClick={() => setIsLowStockModalOpen(true)}
+                className="text-xs font-bold uppercase tracking-wider text-secondary hover:text-primary"
+              >
                 View All
-              </Link>
+              </button>
             </div>
             
             {loading ? (
@@ -419,7 +474,16 @@ export default function DashboardPage() {
                     <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-primary truncate">{item.name}</p>
-                      <p className="text-xs text-secondary truncate">SKU: {item.sku}</p>
+                      <p className="text-xs text-secondary truncate">
+                        SKU: {item.sku}
+                        {item.color ? ` • ${item.color}` : ''}
+                        {item.size ? ` • ${item.size}` : ''}
+                      </p>
+                      {item.categoryName ? (
+                        <p className="mt-0.5 text-[11px] text-secondary/80 truncate">
+                          Category: {item.categoryName}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="text-right">
                       <span className="block text-sm font-bold text-red-600">{item.quantity}</span>
@@ -432,6 +496,71 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Low Stock Modal */}
+      {isLowStockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsLowStockModalOpen(false)}
+            role="presentation"
+          />
+          <div
+            className="relative w-full max-w-2xl overflow-hidden rounded-xl border border-border bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border bg-gray-50/50 p-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Low stock items</h3>
+              <button
+                type="button"
+                onClick={() => setIsLowStockModalOpen(false)}
+                className="rounded-full p-2 text-secondary hover:bg-gray-100 hover:text-primary"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="max-h-[70vh] overflow-auto p-4">
+              {loading ? (
+                <div className="text-xs text-secondary">Loading...</div>
+              ) : lowStockItemsAll.length === 0 ? (
+                <div className="flex items-center gap-2 rounded-lg border border-green-100 bg-green-50 px-3 py-2 text-sm text-green-700">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Inventory looks healthy!
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {lowStockItemsAll.map((item) => (
+                    <div
+                      key={`${item.id}-${item.sku}`}
+                      className="flex items-start justify-between gap-3 rounded-lg border border-red-100 bg-red-50/50 p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-primary">{item.name}</p>
+                        <p className="mt-0.5 text-[12px] text-secondary truncate">
+                          {item.sku ? `SKU: ${item.sku}` : 'SKU: —'}
+                          {item.color ? ` • ${item.color}` : ''}
+                          {item.size ? ` • ${item.size}` : ''}
+                        </p>
+                        {item.categoryName ? (
+                          <p className="mt-0.5 text-[11px] text-secondary/80 truncate">
+                            Category: {item.categoryName}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="text-right">
+                        <span className="block text-sm font-bold text-red-600">{item.quantity}</span>
+                        <span className="text-[10px] font-bold uppercase text-red-500">Left</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

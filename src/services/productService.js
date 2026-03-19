@@ -1,4 +1,5 @@
 import { api } from './api';
+import { getProductCardImageUrl } from '@/utils/productImages';
 
 const PRODUCTS_PATH = '/products';
 
@@ -30,8 +31,13 @@ const PRODUCTS_PATH = '/products';
  *   color: string;
  *   price: number;
  *   stockQuantity: number;
- *   imageUrl: string | null;
  *   isActive: boolean;
+ *   images?: Array<{
+ *     id: number;
+ *     imageUrl: string;
+ *     primary: boolean;
+ *     sortOrder: number;
+ *   }>;
  * }} ProductListVariant
  */
 
@@ -45,7 +51,6 @@ const PRODUCTS_PATH = '/products';
  *   categoryName: string;
  *   categorySlug: string;
  *   brand: string | null;
- *   imageUrl: string | null;
  *   isFeatured: boolean;
  *   variants?: ProductListVariant[];
  * }} ProductListItem
@@ -127,9 +132,9 @@ export async function getProductBySlug(slug) {
 
 /**
  * Fetch product search suggestions (e.g. for header search dropdown).
- * API returns { success, message, data: ProductListItem[] } with variants including imageUrl.
+ * API returns { success, message, data: ProductListItem[] } with variants including images[].
  * @param {{ q: string; limit?: number }} params
- * @returns {Promise<Array<{ id: number; name: string; slug: string; thumbnail: string | null; variants?: Array<{ imageUrl?: string | null }> }>>}
+ * @returns {Promise<Array<{ id: number; name: string; slug: string; thumbnail: string | null; variants?: Array<{ images?: Array<{ imageUrl?: string | null; primary?: boolean; sortOrder?: number }> }> }>>}
  */
 export async function getProductSuggestions({ q, limit = 5 }) {
   if (!q || typeof q !== 'string' || !q.trim()) return [];
@@ -138,22 +143,18 @@ export async function getProductSuggestions({ q, limit = 5 }) {
   const response = await api.get(`${PRODUCTS_PATH}/suggest?${searchParams.toString()}`);
   const body = response?.data ?? response;
   const data = Array.isArray(body?.data) ? body.data : (Array.isArray(body) ? body : []);
-  return data.map((p) => {
-    const variants = Array.isArray(p.variants) ? p.variants : [];
-    const first = variants[0];
-    return {
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      thumbnail: first?.imageUrl ?? variants.find((v) => v?.imageUrl)?.imageUrl ?? null,
-      variants: p.variants,
-    };
-  });
+  return data.map((p) => ({
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    thumbnail: getProductCardImageUrl(p),
+    variants: p.variants,
+  }));
 }
 
 /**
  * Fetch related products for a product detail page (You may also like).
- * API returns { success, message, data: ProductListItem[] } with variants including imageUrl.
+ * API returns { success, message, data: ProductListItem[] } with variants including images[].
  * @param {string} slug - Product slug
  * @returns {Promise<ProductListItem[]>}
  */

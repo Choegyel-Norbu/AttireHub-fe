@@ -25,6 +25,7 @@ import ProfilePage from '@/pages/account/ProfilePage';
 import OrdersPage from '@/pages/account/OrdersPage';
 import OrderDetailPage from '@/pages/account/OrderDetailPage';
 import NotificationsPage from '@/pages/account/NotificationsPage';
+import WishlistPage from '@/pages/account/WishlistPage';
 import AccountSettingsPage from '@/pages/account/AccountSettingsPage';
 import AccountAddressesPage from '@/pages/account/AccountAddressesPage';
 import CartPage from '@/pages/cart/CartPage';
@@ -111,6 +112,7 @@ function App() {
                 <Route path="/account/addresses" element={<AccountAddressesPage />} />
                 <Route path="/account/orders" element={<OrdersPage />} />
                 <Route path="/account/orders/:orderNumber" element={<OrderDetailPage />} />
+                <Route path="/account/wishlist" element={<WishlistPage />} />
                 <Route path="/account/notifications" element={<NotificationsPage />} />
               </Route>
             </Route>

@@ -8,6 +8,8 @@ import {
   ArrowLeft,
   Package,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   Plus,
   List,
@@ -16,6 +18,8 @@ import {
 import * as adminProductService from '@/services/adminProductService';
 import { getProductBySlug } from '@/services/productService';
 import { getCategories, flattenCategoriesWithSlug } from '@/services/categoryService';
+import { getVariantMainImageUrl } from '@/utils/productImages';
+import { useToast } from '@/hooks/useToast';
 
 const editProductSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
@@ -38,6 +42,71 @@ function getInputClassName(error) {
   return `${base} ${error ? invalid : normal}`;
 }
 
+function normalizeColorKey(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '');
+}
+
+function hexToRgb(hex) {
+  const raw = String(hex).trim().replace(/^#/, '');
+  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return null;
+  const num = parseInt(full, 16);
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+function colorNameToRgb(name) {
+  const key = normalizeColorKey(name);
+  const table = {
+    black: { r: 0, g: 0, b: 0 },
+    white: { r: 255, g: 255, b: 255 },
+    gray: { r: 107, g: 114, b: 128 },
+    grey: { r: 107, g: 114, b: 128 },
+    red: { r: 239, g: 68, b: 68 },
+    blue: { r: 59, g: 130, b: 246 },
+    green: { r: 34, g: 197, b: 94 },
+    yellow: { r: 234, g: 179, b: 8 },
+    orange: { r: 249, g: 115, b: 22 },
+    purple: { r: 168, g: 85, b: 247 },
+    indigo: { r: 99, g: 102, b: 241 },
+    pink: { r: 236, g: 72, b: 153 },
+    brown: { r: 120, g: 53, b: 15 },
+    beige: { r: 245, g: 245, b: 220 },
+    cream: { r: 255, g: 251, b: 235 },
+  };
+  return table[key] ?? null;
+}
+
+function hashStringToRgb(value) {
+  const s = String(value ?? '');
+  let hash = 0;
+  for (let i = 0; i < s.length; i += 1) {
+    hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  // create a pleasant pastel-ish color
+  const r = 80 + (hash & 0x7f);
+  const g = 80 + ((hash >> 8) & 0x7f);
+  const b = 80 + ((hash >> 16) & 0x7f);
+  return { r, g, b };
+}
+
+function resolveAccentRgb(color) {
+  const c = String(color ?? '').trim();
+  if (!c) return { r: 99, g: 102, b: 241 }; // indigo-ish default
+  if (c.startsWith('#')) return hexToRgb(c) ?? hashStringToRgb(c);
+  return colorNameToRgb(c) ?? hashStringToRgb(c);
+}
+
+function buildAccentGradientStyle(color, alpha = 0.14) {
+  const { r, g, b } = resolveAccentRgb(color);
+  const a = Math.max(0, Math.min(1, alpha));
+  return {
+    backgroundImage: `linear-gradient(90deg, rgba(${r}, ${g}, ${b}, ${a}), rgba(${r}, ${g}, ${b}, 0) 65%, rgba(${r}, ${g}, ${b}, 0) 100%)`,
+  };
+}
+
 /** Renders a file preview and revokes object URLs on change or unmount */
 function FilePreview({ file, className = 'h-10 w-10 rounded object-cover' }) {
   const urlRef = useRef(null);
@@ -52,9 +121,362 @@ function FilePreview({ file, className = 'h-10 w-10 rounded object-cover' }) {
   return <img src={urlRef.current} alt="" className={className} />;
 }
 
+function VariantGroupEditor({
+  group,
+  groupIndex,
+  totalGroups,
+  isSubmitting,
+  pendingFiles,
+  existingImages,
+  removingKeys,
+  onDeleteImage,
+  onSetPendingFiles,
+  groupDraft,
+  onChangeGroupDraft,
+  onDeleteSizeOption,
+}) {
+  const [addError, setAddError] = useState(null);
+  const [deletingSizeIds, setDeletingSizeIds] = useState(() => new Set());
+  const [sizesOpen, setSizesOpen] = useState(false);
+
+  const sizeRows = Array.isArray(groupDraft?.sizes) ? groupDraft.sizes : [];
+
+  const colorLabel = String(group?.color ?? `Group ${groupIndex + 1}`).trim();
+  const sizeCount = sizeRows.length;
+  const sizesSectionId = `group-sizes-${group?.id ?? groupIndex}`;
+  const isMulti = Number(totalGroups) > 1;
+  const accentStyle = buildAccentGradientStyle(colorLabel, 0.14);
+
+  return (
+    <div className={`relative space-y-4 ${isMulti ? 'rounded-2xl border border-border/70 bg-white/60 p-4 shadow-sm shadow-black/5' : ''}`}>
+      {isMulti ? (
+        <div className="pointer-events-none absolute inset-0 rounded-2xl" style={accentStyle} />
+      ) : null}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-primary">{colorLabel}</p>
+          <p className="text-[11px] text-tertiary">Images are shared by all sizes in this color.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setSizesOpen((v) => {
+              const next = !v;
+              if (next) {
+                // wait for the sizes section to render expanded, then scroll
+                setTimeout(() => {
+                  document.getElementById(sizesSectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 0);
+              }
+              return next;
+            });
+          }}
+          className="relative inline-flex items-center gap-1.5 rounded-full border border-border bg-white/70 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-white"
+          aria-expanded={sizesOpen}
+          aria-controls={sizesSectionId}
+        >
+          {sizesOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          {sizesOpen ? 'Hide sizes' : 'Show sizes'}
+          <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-secondary">
+            {sizeCount}
+          </span>
+        </button>
+      </div>
+
+      <div className="relative flex flex-col gap-4">
+        {/* Left: Color + Images */}
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Color</label>
+            <input className="w-full rounded-md bg-white px-3 py-2 text-sm text-primary ring-1 ring-border/60" value={colorLabel} readOnly />
+          </div>
+
+          {/* Existing group images */}
+          {existingImages.length > 0 && pendingFiles.length === 0 && (
+            <div className="w-full overflow-x-auto pb-1 scrollbar-hide">
+              <div className="flex items-center gap-2">
+                {existingImages.map((img, imgIdx) => {
+                  const removing = removingKeys.has(`g:${group.id}:${img.id}`);
+                  return (
+                    <div key={img.id ?? imgIdx} className="group relative h-14 w-14 shrink-0">
+                      <img
+                        src={img.imageUrl}
+                        alt=""
+                        className={`h-14 w-14 rounded-lg object-cover ring-1 ring-border/60 transition-opacity ${removing ? 'opacity-60' : ''}`}
+                      />
+                      {removing && (
+                        <div className="absolute inset-0 grid place-items-center">
+                          <div className="grid h-6 w-6 place-items-center rounded-full bg-white/90 ring-1 ring-border/60">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          </div>
+                        </div>
+                      )}
+                      {img.id != null && (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteImage(group.id, img.id)}
+                          disabled={isSubmitting || removing}
+                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white opacity-100 ring-1 ring-black/10 transition-opacity disabled:opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
+                          aria-label="Delete image"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Pending uploads for this group */}
+          {pendingFiles.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {pendingFiles.map((file, fileIdx) => (
+                <div key={fileIdx} className="group relative h-14 w-14 shrink-0">
+                  <FilePreview file={file} className="h-14 w-14 rounded-lg object-cover ring-1 ring-border/60" />
+                  <button
+                    type="button"
+                    onClick={() => onSetPendingFiles(groupIndex, (cur) => cur.filter((_, i) => i !== fileIdx))}
+                    disabled={isSubmitting}
+                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white opacity-100 ring-1 ring-black/10 transition-opacity disabled:opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
+                    aria-label="Remove file"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {pendingFiles.length < 5 && (
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              multiple
+              className="w-full cursor-pointer text-xs text-secondary file:mr-2 file:cursor-pointer file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-medium file:uppercase file:tracking-wider file:text-white hover:file:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              onChange={(e) => {
+                const incoming = Array.from(e.target.files ?? []);
+                onSetPendingFiles(groupIndex, (current) => [...current, ...incoming].slice(0, 5));
+                e.target.value = '';
+              }}
+              disabled={isSubmitting}
+            />
+          )}
+          <p className="text-[10px] text-tertiary">
+            Uploads happen when you click <span className="font-medium text-primary">Save changes</span>.
+          </p>
+        </div>
+
+        {/* Right: Sizes (editable) */}
+        <div id={sizesSectionId} className="space-y-3">
+          {sizesOpen ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-secondary">Sizes</p>
+              </div>
+
+              <div className="space-y-3">
+                {sizeRows.map((s, idx) => {
+                  return (
+                    <div key={s.id ?? `new-${idx}`} className="rounded-lg bg-white/70 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-medium text-secondary">Size {idx + 1}</p>
+                        {sizeRows.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const row = sizeRows[idx];
+                              const rowId = row?.id;
+                              const groupId = group?.id;
+
+                              // New, unsaved row: remove locally only
+                              if (rowId == null || groupId == null) {
+                                onChangeGroupDraft((prev) => ({
+                                  ...prev,
+                                  sizes: prev.sizes.filter((_, i) => i !== idx),
+                                }));
+                                return;
+                              }
+
+                              // Existing row: delete immediately from backend
+                              setDeletingSizeIds((prev) => new Set(prev).add(rowId));
+                              Promise.resolve(onDeleteSizeOption?.(groupId, rowId))
+                                .then(() => {
+                                  onChangeGroupDraft((prev) => ({
+                                    ...prev,
+                                    sizes: prev.sizes.filter((_, i) => i !== idx),
+                                  }));
+                                })
+                                .finally(() => {
+                                  setDeletingSizeIds((prev) => {
+                                    const next = new Set(prev);
+                                    next.delete(rowId);
+                                    return next;
+                                  });
+                                });
+                            }}
+                            disabled={isSubmitting || deletingSizeIds.has(sizeRows[idx]?.id)}
+                            className="rounded-full p-1.5 text-secondary hover:bg-red-50 hover:text-red-600 disabled:opacity-60"
+                            aria-label="Remove size"
+                          >
+                            {deletingSizeIds.has(sizeRows[idx]?.id) ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-secondary">Size</label>
+                          <input
+                            className={getInputClassName(false)}
+                            value={s.size ?? ''}
+                            onChange={(e) =>
+                              onChangeGroupDraft((prev) => ({
+                                ...prev,
+                                sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, size: e.target.value } : row)),
+                              }))
+                            }
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-secondary">Price</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className={getInputClassName(false)}
+                            value={s.price ?? ''}
+                            onChange={(e) =>
+                              onChangeGroupDraft((prev) => ({
+                                ...prev,
+                                sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, price: e.target.value } : row)),
+                              }))
+                            }
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-secondary">Stock</label>
+                          <input
+                            type="number"
+                            min="0"
+                            className={getInputClassName(false)}
+                            value={s.stockQuantity ?? 0}
+                            onChange={(e) =>
+                              onChangeGroupDraft((prev) => ({
+                                ...prev,
+                                sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, stockQuantity: e.target.value } : row)),
+                              }))
+                            }
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-4">
+                          <label className="flex cursor-pointer select-none items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={s.isActive !== false}
+                              onChange={(e) =>
+                                onChangeGroupDraft((prev) => ({
+                                  ...prev,
+                                  sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, isActive: e.target.checked } : row)),
+                                }))
+                              }
+                              disabled={isSubmitting}
+                              className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                            />
+                            <span className="text-xs text-primary">Active</span>
+                          </label>
+                          <label className="flex cursor-pointer select-none items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(s.applyDiscount)}
+                              onChange={(e) =>
+                                onChangeGroupDraft((prev) => ({
+                                  ...prev,
+                                  sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, applyDiscount: e.target.checked } : row)),
+                                }))
+                              }
+                              disabled={isSubmitting}
+                              className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                            />
+                            <span className="text-xs text-primary">Discount</span>
+                          </label>
+                          {s.applyDiscount && (
+                            <div className="flex items-center gap-2">
+                              <label className="text-[10px] font-bold uppercase tracking-wider text-secondary">Amount</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                className={getInputClassName(false)}
+                                value={s.discount ?? 0}
+                                onChange={(e) =>
+                                  onChangeGroupDraft((prev) => ({
+                                    ...prev,
+                                    sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, discount: e.target.value } : row)),
+                                  }))
+                                }
+                                disabled={isSubmitting}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-lg bg-white/70 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-secondary">Add size</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddError(null);
+                      onChangeGroupDraft((prev) => ({
+                        ...prev,
+                        sizes: [
+                          ...(Array.isArray(prev.sizes) ? prev.sizes : []),
+                          { id: undefined, sku: '', size: '', price: '', stockQuantity: '', isActive: true, applyDiscount: false, discount: '' },
+                        ],
+                      }));
+                    }}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary disabled:opacity-60"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add
+                  </button>
+                </div>
+                {addError && <p className="mt-2 text-xs text-red-600">{addError}</p>}
+                <p className="mt-2 text-[10px] text-tertiary">Sizes are saved when you click Save changes.</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[11px] text-tertiary">
+              Sizes are hidden. Click <span className="font-medium text-primary">Show sizes</span> to view and edit.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EditProductPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { show: showToast } = useToast();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -63,22 +485,21 @@ export default function EditProductPage() {
   const [updatedProduct, setUpdatedProduct] = useState(null);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  /** One image file per variant by index; null = no change for that variant */
+  /** Legacy: up to 5 image files per variant by index; [] = no change for that variant */
   const [variantImageFiles, setVariantImageFiles] = useState([]);
-  /** Set of variant IDs currently having their image removed (for loading state) */
+  /** New: up to 5 image files per color group by index; [] = no change for that group */
+  const [groupImageFiles, setGroupImageFiles] = useState([]);
+  /** Set of image keys currently being removed (for loading state) */
   const [removingVariantImageIds, setRemovingVariantImageIds] = useState(() => new Set());
-  const [variantAddError, setVariantAddError] = useState(null);
-  const [variantAdding, setVariantAdding] = useState(false);
-  const [newVariant, setNewVariant] = useState({
-    size: '',
+  const [groupDrafts, setGroupDrafts] = useState([]);
+  const [pendingNewGroups, setPendingNewGroups] = useState([]);
+  const [newGroupDraft, setNewGroupDraft] = useState(() => ({
     color: '',
-    price: '',
-    stockQuantity: '',
-    applyDiscount: false,
-    discount: '',
-  });
-  /** File to upload for the new variant when adding (sent via product update after add) */
-  const [newVariantImageFile, setNewVariantImageFile] = useState(null);
+    isActive: true,
+    sizes: [{ size: '', price: '', stockQuantity: '', isActive: true, applyDiscount: false, discount: '' }],
+  }));
+  const [newGroupImageFiles, setNewGroupImageFiles] = useState([]);
+  const [groupDraftError, setGroupDraftError] = useState(null);
 
   const {
     register,
@@ -131,8 +552,43 @@ export default function EditProductPage() {
         setValue('isFeatured', Boolean(p?.featured ?? p?.isFeatured));
         setValue('isNewArrival', Boolean(p?.newArrival ?? p?.isNewArrival));
         setValue('isTrending', Boolean(p?.trending ?? p?.isTrending));
-        const variantCount = (p?.variants || []).length;
-        setVariantImageFiles(Array(variantCount).fill(null));
+        const groupsCount = (p?.variantGroups || []).length;
+        if (groupsCount > 0) {
+          setGroupImageFiles(Array.from({ length: groupsCount }, () => []));
+          setVariantImageFiles([]);
+          setGroupDrafts(
+            (p.variantGroups || []).map((g) => ({
+              groupId: g.id,
+              color: g.color ?? '',
+              isActive: g.isActive !== false && g.active !== false,
+              sizes: Array.isArray(g.sizeOptions)
+                ? g.sizeOptions.map((s) => ({
+                    id: s.id,
+                    sku: s.sku ?? '',
+                    size: s.size ?? '',
+                    price: typeof s.price === 'number' ? s.price : s.price ?? '',
+                    stockQuantity: s.stockQuantity ?? 0,
+                    isActive: s.isActive !== false && s.active !== false,
+                    applyDiscount: (s.discount ?? 0) > 0,
+                    discount: s.discount ?? 0,
+                  }))
+                : [],
+            }))
+          );
+          setPendingNewGroups([]);
+          setNewGroupDraft({
+            color: '',
+            isActive: true,
+            sizes: [{ size: '', price: '', stockQuantity: '', isActive: true, applyDiscount: false, discount: '' }],
+          });
+          setNewGroupImageFiles([]);
+        } else {
+          const variantCount = (p?.variants || []).length;
+          setVariantImageFiles(Array.from({ length: variantCount }, () => []));
+          setGroupImageFiles([]);
+          setGroupDrafts([]);
+          setPendingNewGroups([]);
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -154,15 +610,104 @@ export default function EditProductPage() {
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const variantCount = (product.variants || []).length;
-      const imagesForRequest = Array.from({ length: variantCount }, (_, i) => variantImageFiles[i] ?? null);
+      const groups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
+      const usingGroups = groups.length > 0;
+      const indexCount = usingGroups ? groups.length : (product.variants || []).length;
+      const source = usingGroups ? groupImageFiles : variantImageFiles;
+      let imagesForRequest = Array.from({ length: indexCount }, (_, i) => source[i] ?? []);
+
+      let variantGroupsForUpdate = usingGroups
+        ? (Array.isArray(groupDrafts) && groupDrafts.length > 0
+            ? groupDrafts.map((g) => ({
+                color: String(g.color ?? '').trim(),
+                isActive: g.isActive !== false,
+                sizes: Array.isArray(g.sizes)
+                  ? g.sizes
+                      .map((s) => ({
+                        ...(s?.id ? { id: s.id } : {}),
+                        size: String(s.size ?? '').trim(),
+                        price: Number(s.price),
+                        discount: s.applyDiscount ? (Number(s.discount) || 0) : 0,
+                        stockQuantity: Number(s.stockQuantity) || 0,
+                        isActive: s.isActive !== false,
+                      }))
+                      .filter(
+                        (s) =>
+                          s.size &&
+                          Number.isFinite(s.price) &&
+                          s.price >= 0 &&
+                          Number.isFinite(s.stockQuantity) &&
+                          s.stockQuantity >= 0
+                      )
+                  : [],
+              }))
+            : groups.map((g) => ({
+                color: String(g?.color ?? '').trim(),
+                isActive: g?.isActive !== false && g?.active !== false,
+                sizes: Array.isArray(g.sizeOptions)
+                  ? g.sizeOptions.map((s) => ({
+                      id: s.id,
+                      size: s.size,
+                      price: s.price,
+                      discount: s.discount ?? 0,
+                      stockQuantity: s.stockQuantity ?? 0,
+                      isActive: s.isActive !== false && s.active !== false,
+                    }))
+                  : [],
+              })))
+        : undefined;
+
+      // If admin has started drafting a new color group (and/or selected images) but clicks "Save changes",
+      // include that draft in the same update request so images are not silently dropped.
+      if (usingGroups) {
+        const draftColor = String(newGroupDraft?.color ?? '').trim();
+        const hasInlineDraft =
+          Boolean(draftColor) ||
+          (Array.isArray(newGroupImageFiles) && newGroupImageFiles.some((f) => f && f.size > 0));
+
+        const normalizedExistingColors = new Set(
+          (variantGroupsForUpdate ?? []).map((g) => String(g?.color ?? '').trim().toLowerCase())
+        );
+
+        const staged = Array.isArray(pendingNewGroups) ? pendingNewGroups : [];
+        const combinedNew = [...staged];
+        if (hasInlineDraft) {
+          combinedNew.push({ draft: newGroupDraft, files: newGroupImageFiles });
+        }
+
+        combinedNew.forEach((entry) => {
+          const draft = entry?.draft ?? entry;
+          const files = entry?.files ?? [];
+          const color = String(draft?.color ?? '').trim();
+          if (!color) return;
+          const key = color.toLowerCase();
+          if (normalizedExistingColors.has(key)) {
+            throw new Error(`That color already exists: ${color}`);
+          }
+          const sizes = Array.isArray(draft?.sizes) ? draft.sizes : [];
+          if (sizes.length === 0) throw new Error(`Add Color (${color}): add at least one size.`);
+          const normalizedSizes = sizes.map((s) => ({
+            size: String(s.size ?? '').trim(),
+            price: Number(s.price),
+            discount: s.applyDiscount ? (Number(s.discount) || 0) : 0,
+            stockQuantity: Number(s.stockQuantity) || 0,
+            isActive: s.isActive !== false,
+          }));
+          if (normalizedSizes.some((s) => !s.size)) throw new Error(`Add Color (${color}): each size needs a size value.`);
+          if (normalizedSizes.some((s) => Number.isNaN(s.price) || s.price < 0)) throw new Error(`Add Color (${color}): each size needs a valid price.`);
+          if (normalizedSizes.some((s) => s.stockQuantity < 0)) throw new Error(`Add Color (${color}): stock must be 0 or more.`);
+
+          variantGroupsForUpdate = [...(variantGroupsForUpdate ?? []), { color, isActive: true, sizes: normalizedSizes }];
+          imagesForRequest = [...imagesForRequest, files];
+          normalizedExistingColors.add(key);
+        });
+      }
       const result = await adminProductService.updateProduct(
         product.id,
         {
           name: data.name,
           slug: data.slug?.trim() || undefined,
           description: data.description?.trim() || null,
-          basePrice: Number(data.basePrice),
           categoryId: Number(data.categoryId),
           brand: data.brand?.trim() || null,
           material: data.material?.trim() || null,
@@ -170,12 +715,26 @@ export default function EditProductPage() {
           isFeatured: Boolean(data.isFeatured),
           isNewArrival: Boolean(data.isNewArrival),
           isTrending: Boolean(data.isTrending),
+          ...(usingGroups && { variantGroups: variantGroupsForUpdate }),
         },
         imagesForRequest
       );
       const resolved = result?.data ?? result;
       setUpdatedProduct(resolved);
-      setVariantImageFiles(Array((resolved?.variants || []).length).fill(null));
+      if (Array.isArray(resolved?.variantGroups) && resolved.variantGroups.length > 0) {
+        setGroupImageFiles(Array.from({ length: resolved.variantGroups.length }, () => []));
+        setVariantImageFiles([]);
+        setPendingNewGroups([]);
+        setNewGroupDraft({
+          color: '',
+          isActive: true,
+          sizes: [{ size: '', price: '', stockQuantity: '', isActive: true, applyDiscount: false, discount: '' }],
+        });
+        setNewGroupImageFiles([]);
+      } else {
+        setVariantImageFiles(Array((resolved?.variants || []).length).fill(null));
+        setGroupImageFiles([]);
+      }
     } catch (err) {
       setSubmitError(err?.message ?? 'Failed to update product.');
     } finally {
@@ -183,103 +742,95 @@ export default function EditProductPage() {
     }
   };
 
-  const setVariantImage = (index, file) => {
+  const setVariantImages = (index, updater) => {
     setVariantImageFiles((prev) => {
       const next = [...prev];
-      next[index] = file;
+      const current = Array.isArray(next[index]) ? next[index] : [];
+      const updated = typeof updater === 'function' ? updater(current) : updater;
+      next[index] = updated;
       return next;
     });
   };
 
-  const handleRemoveVariantImage = async (variantId, index) => {
-    if (variantImageFiles[index]) {
-      setVariantImage(index, null);
+  const setGroupImages = (index, updater) => {
+    setGroupImageFiles((prev) => {
+      const next = [...prev];
+      const current = Array.isArray(next[index]) ? next[index] : [];
+      const updated = typeof updater === 'function' ? updater(current) : updater;
+      next[index] = updated;
+      return next;
+    });
+  };
+
+  const handleRemoveVariantImage = async (variantId, index, imageId) => {
+    if (Array.isArray(variantImageFiles[index]) && variantImageFiles[index].length > 0) {
+      setVariantImages(index, []);
       return;
     }
     const v = product?.variants?.[index];
-    if (!v?.imageUrl || !product?.id) return;
-    setRemovingVariantImageIds((prev) => new Set(prev).add(variantId));
+    const existingUrl = v ? getVariantMainImageUrl(v) : null;
+    if (!existingUrl || !product?.id) return;
+    const key = imageId != null ? `${variantId}:${imageId}` : String(variantId);
+    setRemovingVariantImageIds((prev) => new Set(prev).add(key));
     setSubmitError(null);
     try {
-      await adminProductService.deleteVariantImage(product.id, variantId);
+      await adminProductService.deleteVariantImage(product.id, variantId, imageId);
       const updated = await getProductBySlug(slug);
       setProduct(updated);
-      setVariantImageFiles(Array((updated?.variants || []).length).fill(null));
+      setVariantImageFiles(Array.from({ length: (updated?.variants || []).length }, () => []));
     } catch (err) {
       setSubmitError(err?.message ?? 'Failed to remove variant image.');
     } finally {
       setRemovingVariantImageIds((prev) => {
         const next = new Set(prev);
-        next.delete(variantId);
+        next.delete(key);
         return next;
       });
     }
   };
 
-  const handleAddVariant = async () => {
-    if (!product?.id) return;
-    setVariantAddError(null);
-    const size = String(newVariant.size).trim();
-    const color = String(newVariant.color).trim();
-    if (!size || !color) {
-      setVariantAddError('Size and color are required.');
-      return;
-    }
-    const price = Number(newVariant.price);
-    if (Number.isNaN(price) || price < 0) {
-      setVariantAddError('Price must be 0 or more.');
-      return;
-    }
-    const stockQuantity = Number(newVariant.stockQuantity) || 0;
-    if (stockQuantity < 0) {
-      setVariantAddError('Stock must be 0 or more.');
-      return;
-    }
-    setVariantAdding(true);
+  const handleDeleteGroupImage = async (groupId, imageId) => {
+    if (!product?.id || !groupId || !imageId) return;
+    const key = `g:${groupId}:${imageId}`;
+    setRemovingVariantImageIds((prev) => new Set(prev).add(key));
+    setSubmitError(null);
     try {
-      await adminProductService.addVariant(product.id, {
-        size,
-        color,
-        price,
-        stockQuantity,
-        discount: newVariant.applyDiscount ? (Number(newVariant.discount) || 0) : 0,
-      });
-      let updated = await getProductBySlug(slug);
+      await adminProductService.deleteVariantGroupImage(product.id, groupId, imageId);
+      const updated = await getProductBySlug(slug);
       setProduct(updated);
-      setVariantImageFiles(Array((updated?.variants || []).length).fill(null));
-
-      if (newVariantImageFile && newVariantImageFile.size > 0) {
-        const formData = getValues();
-        const body = {
-          name: formData.name,
-          slug: formData.slug?.trim() || undefined,
-          description: formData.description?.trim() || null,
-          basePrice: Number(formData.basePrice),
-          categoryId: Number(formData.categoryId),
-          brand: formData.brand?.trim() || null,
-          material: formData.material?.trim() || null,
-          isActive: formData.isActive !== false,
-          isFeatured: Boolean(formData.isFeatured),
-          isNewArrival: Boolean(formData.isNewArrival),
-          isTrending: Boolean(formData.isTrending),
-        };
-        const variantCount = (updated?.variants || []).length;
-        const imagesForNewVariant = variantCount <= 1
-          ? [newVariantImageFile]
-          : [...Array(variantCount - 1).fill(null), newVariantImageFile];
-        await adminProductService.updateProduct(updated.id, body, imagesForNewVariant);
-        updated = await getProductBySlug(slug);
-        setProduct(updated);
-        setVariantImageFiles(Array((updated?.variants || []).length).fill(null));
-      }
-
-      setNewVariant({ size: '', color: '', price: '', stockQuantity: '', applyDiscount: false, discount: '' });
-      setNewVariantImageFile(null);
+      setGroupImageFiles(Array.from({ length: (updated?.variantGroups || []).length }, () => []));
     } catch (err) {
-      setVariantAddError(err?.message ?? 'Failed to add variant.');
+      setSubmitError(err?.message ?? 'Failed to delete image.');
     } finally {
-      setVariantAdding(false);
+      setRemovingVariantImageIds((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
     }
+  };
+
+  // Legacy add-variant flow removed (replaced by Add Color + Add size within group)
+
+  const stageNewGroup = () => {
+    setGroupDraftError(null);
+    const color = String(newGroupDraft.color ?? '').trim();
+    if (!color) {
+      setGroupDraftError('Color is required.');
+      return;
+    }
+    const sizes = Array.isArray(newGroupDraft.sizes) ? newGroupDraft.sizes : [];
+    if (sizes.length === 0) {
+      setGroupDraftError('Add at least one size.');
+      return;
+    }
+    setPendingNewGroups((prev) => [...(Array.isArray(prev) ? prev : []), { draft: newGroupDraft, files: newGroupImageFiles }]);
+    setNewGroupDraft({
+      color: '',
+      isActive: true,
+      sizes: [{ size: '', price: '', stockQuantity: '', isActive: true, applyDiscount: false, discount: '' }],
+    });
+    setNewGroupImageFiles([]);
   };
 
   if (loading) {
@@ -345,7 +896,7 @@ export default function EditProductPage() {
                 type="button"
                 onClick={() => {
                   setUpdatedProduct(null);
-                  setVariantImageFiles(Array((product?.variants || []).length).fill(null));
+                  setVariantImageFiles(Array.from({ length: (product?.variants || []).length }, () => []));
                 }}
                 className="group inline-flex w-full items-center justify-center gap-2 rounded-full border border-border px-6 py-3 text-xs font-bold uppercase tracking-wider text-primary transition-all hover:border-primary hover:bg-primary/5 sm:w-auto"
               >
@@ -359,6 +910,7 @@ export default function EditProductPage() {
     );
   }
 
+  const variantGroups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
   const variants = Array.isArray(product.variants) ? product.variants : [];
 
   return (
@@ -541,13 +1093,322 @@ export default function EditProductPage() {
               </div>
             </section>
 
-            {/* Variants */}
+            {/* Variant Groups / Variants */}
             <section>
               <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
-                <h2 className="text-lg font-medium text-primary">Variants</h2>
+                <h2 className="text-lg font-medium text-primary">Color Variants</h2>
+                {variantGroups.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('add-color-group');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add Color
+                  </button>
+                ) : null}
               </div>
 
-              {variants.length > 0 ? (
+              {variantGroups.length > 0 ? (
+                <div className="space-y-5">
+                  {variantGroups.map((g, groupIndex) => {
+                    const pending = Array.isArray(groupImageFiles[groupIndex]) ? groupImageFiles[groupIndex] : [];
+                    const existing = Array.isArray(g?.images)
+                      ? g.images
+                          .filter((img) => img && typeof img.imageUrl === 'string' && img.imageUrl.trim())
+                          .slice(0, 5)
+                      : [];
+                    const groupDraft = Array.isArray(groupDrafts) ? groupDrafts[groupIndex] : undefined;
+                    return (
+                      <VariantGroupEditor
+                        key={g.id ?? `${g.color}-${groupIndex}`}
+                        group={g}
+                        groupIndex={groupIndex}
+                        totalGroups={variantGroups.length}
+                        isSubmitting={isSubmitting}
+                        pendingFiles={pending}
+                        existingImages={existing}
+                        removingKeys={removingVariantImageIds}
+                        onDeleteImage={handleDeleteGroupImage}
+                        onSetPendingFiles={setGroupImages}
+                        groupDraft={groupDraft}
+                        onDeleteSizeOption={async (groupId, sizeOptionId) => {
+                          try {
+                            await adminProductService.deleteSizeOption(product.id, groupId, sizeOptionId);
+                            showToast({
+                              title: 'Size deleted',
+                              message: 'The size option was removed successfully.',
+                              variant: 'success',
+                            });
+                            // keep local product state in sync so subsequent saves don't re-send the deleted row
+                            setProduct((prev) => {
+                              if (!prev) return prev;
+                              const nextGroups = Array.isArray(prev.variantGroups) ? [...prev.variantGroups] : [];
+                              const idx = nextGroups.findIndex((gg) => gg?.id === groupId);
+                              if (idx === -1) return prev;
+                              const gg = nextGroups[idx];
+                              const nextSizeOptions = Array.isArray(gg?.sizeOptions)
+                                ? gg.sizeOptions.filter((s) => s?.id !== sizeOptionId)
+                                : [];
+                              nextGroups[idx] = { ...gg, sizeOptions: nextSizeOptions };
+                              return { ...prev, variantGroups: nextGroups };
+                            });
+                          } catch (err) {
+                            showToast({
+                              title: 'Delete failed',
+                              message: err?.message ?? 'Failed to delete size option.',
+                              variant: 'error',
+                            });
+                            throw err;
+                          }
+                        }}
+                        onChangeGroupDraft={(updater) => {
+                          setGroupDrafts((prev) => {
+                            const arr = Array.isArray(prev) ? [...prev] : [];
+                            const current = arr[groupIndex] ?? { groupId: g.id, color: g.color ?? '', isActive: true, sizes: [] };
+                            const next = typeof updater === 'function' ? updater(current) : updater;
+                            arr[groupIndex] = next;
+                            return arr;
+                          });
+                        }}
+                      />
+                    );
+                  })}
+
+                  {/* Add color group (like Add Product) */}
+                  <div
+                    id="add-color-group"
+                    className="relative space-y-4 rounded-2xl border border-dashed border-border/80 bg-gray-50/30 p-4 shadow-sm shadow-black/5"
+                  >
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/5 via-transparent to-transparent" />
+                    <div className="relative flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-secondary">New color variant</p>
+                        <h3 className="text-sm font-medium text-primary">Add color</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={stageNewGroup}
+                        disabled={isSubmitting}
+                        className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary disabled:opacity-60"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add color
+                      </button>
+                    </div>
+                    {groupDraftError && <p className="relative mt-2 text-xs text-red-600">{groupDraftError}</p>}
+                    {pendingNewGroups.length > 0 && (
+                      <p className="relative mt-2 text-[11px] text-tertiary">
+                        {pendingNewGroups.length} color{pendingNewGroups.length > 1 ? 's' : ''} staged. Click <span className="font-medium text-primary">Save changes</span> to submit.
+                      </p>
+                    )}
+
+                    <div className="relative flex flex-col gap-4">
+                      {/* Color + Images */}
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <label className="block text-xs font-medium uppercase tracking-wider text-secondary">Color *</label>
+                          <input
+                            className={getInputClassName(false)}
+                            placeholder="e.g. White"
+                            value={newGroupDraft.color}
+                            onChange={(e) => setNewGroupDraft((p) => ({ ...p, color: e.target.value }))}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-xs font-medium uppercase tracking-wider text-secondary">
+                            Images <span className="normal-case tracking-normal text-tertiary">(up to 5)</span>
+                          </label>
+
+                          {newGroupImageFiles.length > 0 && (
+                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                              {newGroupImageFiles.map((file, fileIdx) => (
+                                <div key={fileIdx} className="group relative h-16 w-16 shrink-0">
+                                  <FilePreview file={file} className="h-16 w-16 rounded-lg object-cover" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setNewGroupImageFiles((prev) => prev.filter((_, i) => i !== fileIdx))}
+                                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white opacity-100 ring-1 ring-black/10 transition-opacity disabled:opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
+                                    aria-label="Remove image"
+                                    disabled={isSubmitting}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {newGroupImageFiles.length < 5 && (
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              multiple
+                              className="w-full cursor-pointer text-xs text-secondary file:mr-2 file:cursor-pointer file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-medium file:uppercase file:tracking-wider file:text-white hover:file:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                              onChange={(e) => {
+                                const incoming = Array.from(e.target.files ?? []);
+                                setNewGroupImageFiles((prev) => [...prev, ...incoming].slice(0, 5));
+                                e.target.value = '';
+                              }}
+                              disabled={isSubmitting}
+                            />
+                          )}
+                          <p className="mt-1 text-[10px] text-tertiary">{newGroupImageFiles.length} / 5 selected</p>
+                        </div>
+                      </div>
+
+                      {/* Sizes */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-xs font-bold uppercase tracking-wider text-secondary">Sizes</p>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNewGroupDraft((prev) => ({
+                                ...prev,
+                                sizes: [
+                                  ...(Array.isArray(prev.sizes) ? prev.sizes : []),
+                                  { size: '', price: '', stockQuantity: '', isActive: true, applyDiscount: false, discount: '' },
+                                ],
+                              }))
+                            }
+                            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary"
+                            disabled={isSubmitting}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Add size
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {(Array.isArray(newGroupDraft.sizes) ? newGroupDraft.sizes : []).map((s, idx) => (
+                            <div key={idx} className="rounded-lg bg-white/70 p-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-xs font-medium text-secondary">Size {idx + 1}</p>
+                                {(newGroupDraft.sizes?.length ?? 0) > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setNewGroupDraft((prev) => ({
+                                        ...prev,
+                                        sizes: prev.sizes.filter((_, i) => i !== idx),
+                                      }))
+                                    }
+                                    className="rounded-full p-1.5 text-secondary hover:bg-red-50 hover:text-red-600"
+                                    aria-label="Remove size"
+                                    disabled={isSubmitting}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                                <input
+                                  className={getInputClassName(false)}
+                                  placeholder="Size (e.g. M)"
+                                  value={s.size}
+                                  onChange={(e) =>
+                                    setNewGroupDraft((prev) => ({
+                                      ...prev,
+                                      sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, size: e.target.value } : row)),
+                                    }))
+                                  }
+                                  disabled={isSubmitting}
+                                />
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  className={getInputClassName(false)}
+                                  placeholder="Price"
+                                  value={s.price}
+                                  onChange={(e) =>
+                                    setNewGroupDraft((prev) => ({
+                                      ...prev,
+                                      sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, price: e.target.value } : row)),
+                                    }))
+                                  }
+                                  disabled={isSubmitting}
+                                />
+                                <input
+                                  type="number"
+                                  min="0"
+                                  className={getInputClassName(false)}
+                                  placeholder="Stock"
+                                  value={s.stockQuantity}
+                                  onChange={(e) =>
+                                    setNewGroupDraft((prev) => ({
+                                      ...prev,
+                                      sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, stockQuantity: e.target.value } : row)),
+                                    }))
+                                  }
+                                  disabled={isSubmitting}
+                                />
+                              </div>
+
+                              <div className="mt-3 flex flex-wrap items-center gap-4">
+                                <label className="flex cursor-pointer select-none items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={s.isActive !== false}
+                                    onChange={(e) =>
+                                      setNewGroupDraft((prev) => ({
+                                        ...prev,
+                                        sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, isActive: e.target.checked } : row)),
+                                      }))
+                                    }
+                                    disabled={isSubmitting}
+                                    className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                                  />
+                                  <span className="text-xs text-primary">Active</span>
+                                </label>
+                                <label className="flex cursor-pointer select-none items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(s.applyDiscount)}
+                                    onChange={(e) =>
+                                      setNewGroupDraft((prev) => ({
+                                        ...prev,
+                                        sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, applyDiscount: e.target.checked } : row)),
+                                      }))
+                                    }
+                                    disabled={isSubmitting}
+                                    className="h-4 w-4 rounded border-border text-primary focus:ring-black"
+                                  />
+                                  <span className="text-xs text-primary">Discount</span>
+                                </label>
+                                {s.applyDiscount && (
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    className={getInputClassName(false)}
+                                    placeholder="Discount"
+                                    value={s.discount}
+                                    onChange={(e) =>
+                                      setNewGroupDraft((prev) => ({
+                                        ...prev,
+                                        sizes: prev.sizes.map((row, i) => (i === idx ? { ...row, discount: e.target.value } : row)),
+                                      }))
+                                    }
+                                    disabled={isSubmitting}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : variants.length > 0 ? (
                 <div className="overflow-x-auto rounded-xl border border-border bg-white">
                   <table className="w-full min-w-[640px] text-left text-sm table-fixed">
                     <thead>
@@ -562,13 +1423,28 @@ export default function EditProductPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {variants.map((v, index) => (
+                      {variants.map((v, index) => {
+                        const existingImageUrl = getVariantMainImageUrl(v);
+                        const pendingFiles = Array.isArray(variantImageFiles[index]) ? variantImageFiles[index] : [];
+                        const existingImages = Array.isArray(v?.images)
+                          ? v.images.filter((img) => img && typeof img.imageUrl === 'string' && img.imageUrl.trim()).slice(0, 5)
+                          : [];
+                        return (
                         <tr key={v.id} className="border-b border-border/50 last:border-0">
                           <td className="w-20 shrink-0 px-3 py-3 align-middle">
-                            {variantImageFiles[index] ? (
-                              <FilePreview file={variantImageFiles[index]} className="h-12 w-12 rounded-lg border border-border object-cover shadow-sm" />
-                            ) : v.imageUrl ? (
-                              <img src={v.imageUrl} alt="" className="h-12 w-12 rounded-lg border border-border object-cover shadow-sm" />
+                            {pendingFiles.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {pendingFiles.slice(0, 5).map((file, fileIndex) => (
+                                  <FilePreview
+                                    // eslint-disable-next-line react/no-array-index-key
+                                    key={fileIndex}
+                                    file={file}
+                                    className="h-10 w-10 rounded-lg border border-border object-cover shadow-sm"
+                                  />
+                                ))}
+                              </div>
+                            ) : existingImageUrl ? (
+                              <img src={existingImageUrl} alt="" className="h-12 w-12 rounded-lg border border-border object-cover shadow-sm" />
                             ) : (
                               <span className="text-[10px] text-tertiary">—</span>
                             )}
@@ -581,45 +1457,113 @@ export default function EditProductPage() {
                           </td>
                           <td className="w-16 shrink-0 px-3 py-3 text-primary">{v.stockQuantity ?? 0}</td>
                           <td className="min-w-[140px] px-3 py-3 align-top">
-                            <label className="block">
-                              <span className="sr-only">Upload image for {v.size} / {v.color}</span>
-                              <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/gif,image/webp"
-                                className="w-full cursor-pointer text-xs text-secondary file:mr-2 file:cursor-pointer file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-medium file:uppercase file:tracking-wider file:text-white hover:file:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0] ?? null;
-                                  setVariantImage(index, file);
-                                }}
-                                disabled={isSubmitting}
-                              />
-                            </label>
-                            {variantImageFiles[index] ? (
-                              <p className="mt-1 truncate text-[10px] text-tertiary" title={variantImageFiles[index].name}>
-                                {variantImageFiles[index].name}
-                              </p>
-                            ) : (
-                              <p className="mt-1 text-[10px] text-tertiary">JPEG, PNG, GIF, WebP</p>
+                            {/* Existing images (horizontal, scrollable) */}
+                            {existingImages.length > 0 && pendingFiles.length === 0 && (
+                              <div className="mb-2 w-full max-w-[220px] overflow-x-auto pb-1 scrollbar-hide sm:max-w-[280px]">
+                                <div className="flex items-center gap-1.5">
+                                {existingImages.map((img, imgIdx) => {
+                                  const imgKey = `${v.id}:${img.id ?? imgIdx}`;
+                                  const removing = removingVariantImageIds.has(imgKey);
+                                  return (
+                                    <div
+                                      key={img.id ?? imgIdx}
+                                      className="group relative h-9 w-9 shrink-0 sm:h-10 sm:w-10 lg:h-12 lg:w-12"
+                                    >
+                                      <img
+                                        src={img.imageUrl}
+                                        alt=""
+                                        className={`h-full w-full rounded-lg border border-border object-cover shadow-sm transition-opacity ${
+                                          removing ? 'opacity-60' : 'opacity-100'
+                                        }`}
+                                      />
+                                      {removing && (
+                                        <div className="absolute inset-0 grid place-items-center">
+                                          <div className="grid h-6 w-6 place-items-center rounded-full bg-white/90 shadow ring-1 ring-border">
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                                          </div>
+                                        </div>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveVariantImage(v.id, index, img.id)}
+                                        disabled={isSubmitting || removing}
+                                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white opacity-100 shadow transition-opacity disabled:opacity-60 sm:h-4 sm:w-4 sm:opacity-0 sm:group-hover:opacity-100"
+                                        aria-label="Delete image"
+                                      >
+                                        <Trash2 className="h-3 w-3 sm:h-2.5 sm:w-2.5" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                                </div>
+                              </div>
                             )}
-                            {(v.imageUrl || variantImageFiles[index]) && (
+
+                            {pendingFiles.length > 0 && (
+                              <div className="mb-2 flex flex-wrap gap-1.5">
+                                {pendingFiles.map((file, fileIdx) => (
+                                  <div key={fileIdx} className="group relative">
+                                    <FilePreview file={file} className="h-10 w-10 rounded-lg border border-border object-cover shadow-sm" />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setVariantImages(index, (cur) =>
+                                          cur.filter((_, i) => i !== fileIdx)
+                                        )
+                                      }
+                                      className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow transition-opacity group-hover:opacity-100"
+                                      aria-label="Remove file"
+                                    >
+                                      <Trash2 className="h-2.5 w-2.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {pendingFiles.length < 5 && (
+                              <label className="block">
+                                <span className="sr-only">Upload images for {v.size} / {v.color}</span>
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/gif,image/webp"
+                                  multiple
+                                  className="w-full cursor-pointer text-xs text-secondary file:mr-2 file:cursor-pointer file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-medium file:uppercase file:tracking-wider file:text-white hover:file:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                                  onChange={(e) => {
+                                    const incoming = Array.from(e.target.files ?? []);
+                                    setVariantImages(index, (current) => {
+                                      const merged = [...current, ...incoming];
+                                      return merged.slice(0, 5);
+                                    });
+                                    e.target.value = '';
+                                  }}
+                                  disabled={isSubmitting}
+                                />
+                              </label>
+                            )}
+                            <p className="mt-1 text-[10px] text-tertiary">
+                              {pendingFiles.length > 0
+                                ? `${pendingFiles.length} / 5 selected`
+                                : 'Up to 5. JPEG, PNG, GIF, WebP'}
+                            </p>
+                            {existingImageUrl && pendingFiles.length === 0 && existingImages.length === 0 && (
                               <button
                                 type="button"
                                 onClick={() => handleRemoveVariantImage(v.id, index)}
-                                disabled={isSubmitting || removingVariantImageIds.has(v.id)}
+                                disabled={isSubmitting || removingVariantImageIds.has(String(v.id))}
                                 className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-red-600 hover:text-red-700 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                                aria-label={`Remove image for ${v.size} / ${v.color}`}
+                                aria-label={`Remove existing images for ${v.size} / ${v.color}`}
                               >
-                                {removingVariantImageIds.has(v.id) ? (
+                                {removingVariantImageIds.has(String(v.id)) ? (
                                   <Loader2 className="h-3 w-3 animate-spin" />
                                 ) : (
                                   <Trash2 className="h-3 w-3" />
                                 )}
-                                Remove image
+                                Remove existing
                               </button>
                             )}
                           </td>
                         </tr>
-                      ))}
+                      );})}
                     </tbody>
                   </table>
                 </div>
@@ -627,134 +1571,6 @@ export default function EditProductPage() {
                 <p className="text-sm text-secondary">No variants yet. Add one below.</p>
               )}
 
-              <div className="mt-6 rounded-xl border border-border bg-gray-50/50 p-5">
-                <h3 className="text-sm font-medium text-primary mb-4">Add variant</h3>
-                {variantAddError && (
-                  <div className="mb-4 rounded-md border border-red-100 bg-red-50 p-3 text-xs text-red-600" role="alert">
-                    {variantAddError}
-                  </div>
-                )}
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="space-y-1">
-                    <label htmlFor="var-size" className="block text-xs font-medium uppercase tracking-wider text-secondary">
-                      Size <span className="text-primary">*</span>
-                    </label>
-                    <input
-                      id="var-size"
-                      type="text"
-                      value={newVariant.size}
-                      onChange={(e) => setNewVariant((prev) => ({ ...prev, size: e.target.value }))}
-                      className={getInputClassName(false)}
-                      placeholder="e.g. M"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="var-color" className="block text-xs font-medium uppercase tracking-wider text-secondary">
-                      Color <span className="text-primary">*</span>
-                    </label>
-                    <input
-                      id="var-color"
-                      type="text"
-                      value={newVariant.color}
-                      onChange={(e) => setNewVariant((prev) => ({ ...prev, color: e.target.value }))}
-                      className={getInputClassName(false)}
-                      placeholder="e.g. Red"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="var-price" className="block text-xs font-medium uppercase tracking-wider text-secondary">
-                      Price <span className="text-primary">*</span>
-                    </label>
-                    <input
-                      id="var-price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={newVariant.price}
-                      onChange={(e) => setNewVariant((prev) => ({ ...prev, price: e.target.value }))}
-                      className={getInputClassName(false)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="var-stock" className="block text-xs font-medium uppercase tracking-wider text-secondary">
-                      Stock
-                    </label>
-                    <input
-                      id="var-stock"
-                      type="number"
-                      min="0"
-                      value={newVariant.stockQuantity}
-                      onChange={(e) => setNewVariant((prev) => ({ ...prev, stockQuantity: e.target.value }))}
-                      className={getInputClassName(false)}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-6 border-t border-border pt-4">
-                  <label className="flex cursor-pointer select-none items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={newVariant.applyDiscount}
-                      onChange={(e) => setNewVariant((prev) => ({ ...prev, applyDiscount: e.target.checked }))}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-black"
-                    />
-                    <span className="text-sm text-primary">Apply discount</span>
-                  </label>
-                  {newVariant.applyDiscount && (
-                    <div className="flex items-center gap-2">
-                      <label htmlFor="var-discount" className="text-xs font-medium uppercase tracking-wider text-secondary whitespace-nowrap">
-                        Discount amount
-                      </label>
-                      <input
-                        id="var-discount"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={newVariant.discount}
-                        onChange={(e) => setNewVariant((prev) => ({ ...prev, discount: e.target.value }))}
-                        className={getInputClassName(false)}
-                        placeholder="0"
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4 space-y-1">
-                  <label htmlFor="var-image-upload" className="block text-xs font-medium uppercase tracking-wider text-secondary">
-                    Variant image
-                  </label>
-                  {newVariantImageFile && (
-                    <div className="mb-2">
-                      <FilePreview file={newVariantImageFile} className="h-24 w-24 rounded-lg border border-border object-cover shadow-sm" />
-                    </div>
-                  )}
-                  <input
-                    key={newVariantImageFile ? newVariantImageFile.name : 'no-file'}
-                    id="var-image-upload"
-                    type="file"
-                    accept="image/jpeg,image/png,image/gif,image/webp"
-                    className="w-full cursor-pointer text-xs text-secondary file:mr-2 file:cursor-pointer file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-xs file:font-medium file:uppercase file:tracking-wider file:text-white hover:file:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                    onChange={(e) => setNewVariantImageFile(e.target.files?.[0] ?? null)}
-                    disabled={variantAdding}
-                  />
-                  {newVariantImageFile ? (
-                    <p className="mt-1 truncate text-[10px] text-tertiary" title={newVariantImageFile.name}>
-                      {newVariantImageFile.name}
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-[10px] text-tertiary">JPEG, PNG, GIF, WebP. Optional.</p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddVariant}
-                  disabled={variantAdding}
-                  className="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary disabled:opacity-70"
-                >
-                  {variantAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                  {variantAdding ? 'Adding…' : 'Add variant'}
-                </button>
-              </div>
             </section>
 
             <div className="flex flex-wrap gap-3 border-t border-border pt-6">

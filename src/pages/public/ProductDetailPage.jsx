@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useParams, useLocation } from 'react-router-dom';
+import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/product/ProductCard';
 import { getProductBySlug, getRelatedProducts } from '@/services/productService';
 import { getProductReviews } from '@/services/reviewService';
+import { addWishlistItem } from '@/services/wishlistService';
 import { useCart } from '@/hooks/useCart';
+import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/context/AuthContext';
 import {
   ArrowLeft,
   Package,
@@ -22,6 +25,7 @@ import {
   Truck,
   ChevronLeft,
   ChevronRight,
+  Heart,
 } from 'lucide-react';
 
 /** Get initials from display name (e.g. "John Doe" → "JD", "Customer" → "C"). */
@@ -132,17 +136,70 @@ function formatPrice(value) {
 
 const REVIEWS_PAGE_SIZE = 5;
 
+function normalizeColorName(raw) {
+  return String(raw || '')
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .trim();
+}
+
+function getColorSwatchValue(color) {
+  const key = normalizeColorName(color);
+
+  const lookup = {
+    black: '#000000',
+    white: '#ffffff',
+    ivory: '#f8f5ec',
+    cream: '#f4efe4',
+    beige: '#e3d4c5',
+    taupe: '#b9aa9b',
+    'iron gray': '#4a4f52',
+    'iron grey': '#4a4f52',
+    charcoal: '#33363a',
+    grey: '#b3b6bd',
+    gray: '#b3b6bd',
+    navy: '#1b2738',
+    'navy blue': '#1b2738',
+    blue: '#335c99',
+    teal: '#1e6f6e',
+    green: '#2f4f3a',
+    forest: '#233729',
+    olive: '#5a5f39',
+    burgundy: '#5b1821',
+    wine: '#5b1821',
+    maroon: '#5b1821',
+    brown: '#6b4b2f',
+    tan: '#c3a583',
+    khaki: '#c1b18a',
+    sand: '#ddc7a2',
+    'light blue': '#cfe5f9',
+    sky: '#cfe5f9',
+    'baby blue': '#cfe5f9',
+  };
+
+  if (lookup[key]) return lookup[key];
+
+  // If backend already sends a valid CSS color token, just use it
+  return color || '#d1d5db';
+}
+
 export default function ProductDetailPage() {
   const { slug } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const { show: showToast } = useToast();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [selectedSizeOption, setSelectedSizeOption] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [addingToWishlist, setAddingToWishlist] = useState(false);
+  const [wishlisted, setWishlisted] = useState(false);
   const [cartError, setCartError] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
@@ -167,12 +224,23 @@ export default function ProductDetailPage() {
     try {
       const data = await getProductBySlug(slug);
       setProduct(data);
-      const variants = Array.isArray(data?.variants) ? data.variants.filter((v) => v.isActive !== false && v.active !== false) : [];
-      setSelectedVariant(variants.length > 0 ? variants[0] : null);
+      const groups = Array.isArray(data?.variantGroups)
+        ? data.variantGroups.filter((g) => g && g.isActive !== false && g.active !== false)
+        : [];
+      const firstGroup = groups.length > 0 ? groups[0] : null;
+      setSelectedGroup(firstGroup);
+      const firstSize =
+        firstGroup && Array.isArray(firstGroup.sizeOptions)
+          ? firstGroup.sizeOptions.find((s) => s && s.isActive !== false && s.active !== false) ?? null
+          : null;
+      setSelectedSizeOption(firstSize);
       setQuantity(1);
+      setWishlisted(false);
     } catch (err) {
       setError(err?.message ?? 'Product not found.');
       setProduct(null);
+      setSelectedGroup(null);
+      setSelectedSizeOption(null);
     } finally {
       setLoading(false);
     }
@@ -210,7 +278,7 @@ export default function ProductDetailPage() {
 
   // Fetch Reviews
   const productId = product?.id != null ? Number(product.id) : null;
-  const selectedVariantId = selectedVariant?.id != null ? Number(selectedVariant.id) : null;
+  const selectedVariantId = selectedSizeOption?.id != null ? Number(selectedSizeOption.id) : null;
   const prevProductIdRef = useRef(null);
   const prevVariantIdRef = useRef(null);
 
@@ -257,48 +325,70 @@ export default function ProductDetailPage() {
   }, [productId, selectedVariantId, reviewPageIndex, fetchReviews]);
 
   // Derived State
-  const variants = Array.isArray(product?.variants) ? product.variants : [];
-  const activeVariants = variants.filter((v) => v.isActive !== false && v.active !== false);
-  const sizes = [...new Set(activeVariants.map((v) => v.size).filter(Boolean))];
-  const colors = [...new Set(activeVariants.map((v) => v.color).filter(Boolean))];
+  const groups = Array.isArray(product?.variantGroups) ? product.variantGroups : [];
+  const activeGroups = groups.filter((g) => g && g.isActive !== false && g.active !== false);
+  const colors = [...new Set(activeGroups.map((g) => g.color).filter(Boolean))];
+  const activeSizeOptions =
+    selectedGroup && Array.isArray(selectedGroup.sizeOptions)
+      ? selectedGroup.sizeOptions.filter((s) => s && s.isActive !== false && s.active !== false)
+      : [];
+  const sizes = [...new Set(activeSizeOptions.map((s) => s.size).filter(Boolean))];
 
-  const actualPrice = selectedVariant != null && typeof selectedVariant.price === 'number'
-    ? selectedVariant.price
+  const actualPrice = selectedSizeOption != null && typeof selectedSizeOption.price === 'number'
+    ? selectedSizeOption.price
     : product?.basePrice;
-  const discountAmount = selectedVariant?.discount ?? 0;
+  // Use size-option discount when provided; otherwise fall back to product-level discount.
+  // This matches the API response shape where `product.discount` may be present even when
+  // some sizeOptions have discount = 0.
+  const sizeDiscount = typeof selectedSizeOption?.discount === 'number' ? selectedSizeOption.discount : null;
+  const productDiscount = typeof product?.discount === 'number' ? product.discount : 0;
+  const discountAmount = sizeDiscount != null ? sizeDiscount : productDiscount;
   const hasDiscount = typeof discountAmount === 'number' && discountAmount > 0;
-  const priceAfterDiscount = hasDiscount ? actualPrice - discountAmount : actualPrice;
+  const priceAfterDiscount = hasDiscount ? Math.max(0, actualPrice - discountAmount) : actualPrice;
   const displayPrice = priceAfterDiscount;
+  const discountPercentOff =
+    hasDiscount && typeof actualPrice === 'number' && actualPrice > 0
+      ? Math.round((discountAmount / actualPrice) * 100)
+      : null;
   
-  // Image Logic
-  const displayImage = selectedVariant?.imageUrl || activeVariants[0]?.imageUrl;
+  // Image Logic — build gallery from selected color group's images[]
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const currentVariantIndex =
-    selectedVariant && activeVariants.length > 0
-      ? Math.max(
-          0,
-          activeVariants.findIndex((v) => v.id === selectedVariant.id)
-        )
-      : 0;
+  const variantImages = (() => {
+    const imgs = (selectedGroup?.images ?? [])
+      .filter((img) => img && typeof img.imageUrl === 'string' && img.imageUrl.trim())
+      .sort((a, b) => {
+        if (a.primary && !b.primary) return -1;
+        if (!a.primary && b.primary) return 1;
+        const aOrder = typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
+        const bOrder = typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
+        return aOrder - bOrder;
+      });
+    if (imgs.length > 0) return imgs;
+    return [];
+  })();
 
-  const goToRelativeVariant = (delta) => {
-    if (!activeVariants.length) return;
-    const safeIndex = Number.isFinite(currentVariantIndex)
-      ? currentVariantIndex
-      : 0;
-    const nextIndex =
-      (safeIndex + delta + activeVariants.length) % activeVariants.length;
-    const nextVariant = activeVariants[nextIndex];
-    if (nextVariant && nextVariant.id !== selectedVariant?.id) {
-      setSelectedVariant(nextVariant);
+  const displayImage = variantImages[activeImageIndex]?.imageUrl ?? variantImages[0]?.imageUrl ?? null;
+
+  // Reset image index when group changes
+  const prevSelectedVariantIdForGallery = useRef(selectedGroup?.id);
+  useEffect(() => {
+    if (prevSelectedVariantIdForGallery.current !== selectedGroup?.id) {
+      prevSelectedVariantIdForGallery.current = selectedGroup?.id;
+      setActiveImageIndex(0);
     }
+  }, [selectedGroup?.id]);
+
+  const goToRelativeImage = (delta) => {
+    if (variantImages.length <= 1) return;
+    setActiveImageIndex((prev) => (prev + delta + variantImages.length) % variantImages.length);
   };
   
-  const maxQty = selectedVariant != null && typeof selectedVariant.stockQuantity === 'number'
-    ? Math.max(0, selectedVariant.stockQuantity)
+  const maxQty = selectedSizeOption != null && typeof selectedSizeOption.stockQuantity === 'number'
+    ? Math.max(0, selectedSizeOption.stockQuantity)
     : 99;
-  const canAddToCart = activeVariants.length === 0 || selectedVariant != null;
-  const outOfStock = selectedVariant != null && (selectedVariant.stockQuantity ?? 0) <= 0;
+  const canAddToCart = activeGroups.length === 0 || selectedSizeOption != null;
+  const outOfStock = selectedSizeOption != null && (selectedSizeOption.stockQuantity ?? 0) <= 0;
 
   // Variant-scoped review count and average (only show rating when there are reviews)
   const variantReviewCount = reviewsPage.totalElements ?? 0;
@@ -309,14 +399,43 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!canAddToCart || outOfStock) return;
-    if (activeVariants.length > 0 && selectedVariant) {
+    if (activeGroups.length > 0 && selectedSizeOption) {
       setCartError(null);
       try {
-        await addToCart(selectedVariant.id, quantity);
+        await addToCart(selectedSizeOption.id, quantity);
         setAddedToCart(true);
       } catch (err) {
         setCartError(err?.message ?? 'Failed to add to cart. Please try again.');
       }
+    }
+  };
+
+  const handleAddToWishlist = async () => {
+    if (!product?.id || addingToWishlist) return;
+
+    if (!isAuthenticated) {
+      showToast({
+        message: 'Please sign in to add this product to wishlist.',
+        variant: 'error',
+      });
+      navigate('/login');
+      return;
+    }
+
+    setAddingToWishlist(true);
+    try {
+      await addWishlistItem(product.id);
+      setWishlisted(true);
+      showToast({ message: 'Added to wishlist', variant: 'success' });
+    } catch (err) {
+      if (err?.status === 409) {
+        setWishlisted(true);
+        showToast({ message: err?.message ?? 'Product already in wishlist.', variant: 'success' });
+      } else {
+        showToast({ message: err?.message ?? 'Failed to add to wishlist.', variant: 'error' });
+      }
+    } finally {
+      setAddingToWishlist(false);
     }
   };
 
@@ -369,48 +488,57 @@ export default function ProductDetailPage() {
           </Link>
         </div>
 
-        <div className="mx-auto max-w-7xl px-3 pb-24 sm:px-6 sm:pb-16 lg:px-8 lg:pb-0">
-          <div className="grid gap-6 lg:grid-cols-2 lg:gap-16 lg:pb-0">
+        <div className="mx-auto max-w-6xl px-3 pb-20 sm:px-6 sm:pb-16 lg:px-8 lg:pb-0">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-10 lg:pb-0">
             
             {/* Left: Image Gallery */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="space-y-3 max-w-md mx-auto lg:mx-0 lg:max-w-none sm:space-y-4"
+              className="space-y-3 max-w-sm mx-auto lg:mx-0 sm:space-y-4"
             >
-              <div className="relative aspect-[3/4] w-full max-w-md mx-auto overflow-hidden rounded-sm bg-[#F0F0F0]">
+              <div className="relative aspect-[4/5] w-full max-w-sm mx-auto overflow-hidden rounded-sm bg-[#F0F0F0]">
                 {(product.newArrival === true || product.new_arrival === true) && (
                   <span className="absolute left-4 top-4 z-10 bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary backdrop-blur-sm">
                     New Arrival
                   </span>
                 )}
+                {hasDiscount && (
+                  <span className="absolute left-4 top-4 z-10 translate-y-[28px] bg-primary/95 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-sm">
+                    Sale{discountPercentOff != null ? ` -${discountPercentOff}%` : ''}
+                  </span>
+                )}
                 {displayImage ? (
-                  <img
+                  <motion.img
+                    key={displayImage}
                     src={displayImage}
                     alt={product.name}
                     className="h-full w-full object-cover"
+                    initial={{ opacity: 0, scale: 1.08, y: 8, filter: 'blur(2px)' }}
+                    animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                    transition={{ duration: 0.55, ease: 'easeInOut' }}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-tertiary">
                     <ImageOff className="h-12 w-12 opacity-30" />
                   </div>
                 )}
-                {activeVariants.length > 1 && (
+                {variantImages.length > 1 && (
                   <>
                     <button
                       type="button"
-                      onClick={() => goToRelativeVariant(-1)}
+                      onClick={() => goToRelativeImage(-1)}
                       className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-r-full bg-white/80 text-primary shadow-sm ring-1 ring-border transition hover:bg-white hover:text-black"
-                      aria-label="Previous variant image"
+                      aria-label="Previous image"
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => goToRelativeVariant(1)}
+                      onClick={() => goToRelativeImage(1)}
                       className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-l-full bg-white/80 text-primary shadow-sm ring-1 ring-border transition hover:bg-white hover:text-black"
-                      aria-label="Next variant image"
+                      aria-label="Next image"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
@@ -418,28 +546,26 @@ export default function ProductDetailPage() {
                 )}
               </div>
               
-              {/* Thumbnail strip (if variants have images) */}
-              {activeVariants.length > 1 && (
+              {/* Thumbnail strip — all images for the selected variant */}
+              {variantImages.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide sm:gap-4">
-                  {activeVariants.map((v) => (
+                  {variantImages.map((img, imgIdx) => (
                     <button
-                      key={v.id}
-                      onClick={() => setSelectedVariant(v)}
+                      key={img.id ?? imgIdx}
+                      onClick={() => setActiveImageIndex(imgIdx)}
                       className={`relative aspect-square w-16 shrink-0 overflow-hidden rounded-sm border transition-all sm:w-20 ${
-                        selectedVariant?.id === v.id 
-                          ? 'border-primary ring-1 ring-primary' 
+                        activeImageIndex === imgIdx
+                          ? 'border-primary ring-1 ring-primary'
                           : 'border-transparent opacity-70 hover:opacity-100'
                       }`}
                     >
-                      {v.imageUrl ? (
-                        <img src={v.imageUrl} alt="" className="h-full w-full object-cover object-center" />
-                      ) : (
-                        <div className="h-full w-full bg-gray-100" />
-                      )}
+                      <img src={img.imageUrl} alt="" className="h-full w-full object-cover object-center" />
                     </button>
                   ))}
                 </div>
               )}
+
+              {/* Removed: variant thumbnail strip. Color selection below drives the gallery thumbnails. */}
             </motion.div>
 
             {/* Right: Product Info */}
@@ -447,7 +573,7 @@ export default function ProductDetailPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex flex-col"
+              className="flex flex-col lg:pl-2"
             >
               <div className="mb-1 flex items-center gap-2 text-xs text-secondary/60 sm:mb-2 sm:text-sm">
                 {product.categoryName && (
@@ -463,7 +589,7 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
-              <h1 className="font-serif text-2xl text-primary sm:text-3xl lg:text-4xl xl:text-5xl">
+              <h1 className="font-serif text-xl text-primary sm:text-2xl lg:text-3xl">
                 {product.name}
               </h1>
 
@@ -472,9 +598,14 @@ export default function ProductDetailPage() {
                   Nu {formatPrice(displayPrice)}
                 </p>
                 {hasDiscount && (
-                  <p className="text-base text-secondary/50 line-through sm:text-lg">
-                    Nu {formatPrice(actualPrice)}
-                  </p>
+                  <>
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+                      Save {discountPercentOff != null ? `${discountPercentOff}%` : formatPrice(discountAmount)}
+                    </span>
+                    <p className="text-base text-secondary/50 line-through sm:text-lg">
+                      Nu {formatPrice(actualPrice)}
+                    </p>
+                  </>
                 )}
               </div>
 
@@ -505,64 +636,139 @@ export default function ProductDetailPage() {
               </div>
 
               {/* Options */}
-              <div className="mt-6 space-y-4 sm:mt-8 sm:space-y-6">
+              <div className="mt-6 space-y-6 border-y border-border py-6 sm:mt-8 sm:space-y-8 sm:py-8">
                 {/* Colors */}
                 {colors.length > 0 && (
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary sm:text-xs">Color: <span className="font-normal text-secondary">{selectedVariant?.color}</span></span>
-                    <div className="mt-2 flex flex-wrap gap-2 sm:mt-3 sm:gap-3">
+                  <section aria-label="Color options">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary sm:text-xs">
+                          Staple Colors
+                        </span>
+                        {selectedGroup?.color && (
+                          <span className="text-xs font-medium text-primary sm:text-sm">
+                            {selectedGroup.color}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="text-[11px] font-semibold uppercase tracking-wide text-secondary underline underline-offset-4 hover:text-primary sm:text-xs"
+                      >
+                        Color Notes
+                      </button>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2.5 sm:mt-4 sm:gap-3">
                       {colors.map((color) => {
-                        const variant = activeVariants.find(v => v.color === color);
-                        const isSelected = selectedVariant?.color === color;
+                        const group = activeGroups.find((g) => g.color === color);
+                        const isSelected = selectedGroup?.color === color;
+                        const swatchColor = getColorSwatchValue(color);
+
                         return (
                           <button
                             key={color}
-                            onClick={() => variant && setSelectedVariant(variant)}
-                            className={`relative flex h-9 min-w-[2.5rem] items-center justify-center rounded-md border px-2.5 text-xs transition-all sm:h-10 sm:min-w-[3rem] sm:px-3 sm:text-sm ${
-                              isSelected 
-                                ? 'border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] text-primary' 
-                                : 'border-border bg-white text-primary hover:border-primary'
-                            }`}
+                            type="button"
+                            onClick={() => {
+                              if (!group) return;
+                              setSelectedGroup(group);
+                              const firstSize =
+                                Array.isArray(group.sizeOptions)
+                                  ? group.sizeOptions.find((s) => s && s.isActive !== false && s.active !== false) ?? null
+                                  : null;
+                              setSelectedSizeOption(firstSize);
+                            }}
+                            className="relative flex h-9 w-9 items-center justify-center rounded-full transition-transform hover:scale-[1.03] sm:h-10 sm:w-10"
+                            aria-label={color}
                           >
-                            {color}
+                            <span
+                              className={`flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 bg-white shadow-sm sm:h-8 sm:w-8 ${
+                                isSelected ? 'ring-[3px] ring-black/80' : ''
+                              }`}
+                            >
+                              <span
+                                className="h-5 w-5 rounded-full sm:h-5.5 sm:w-5.5"
+                                style={{ backgroundColor: swatchColor }}
+                                aria-hidden="true"
+                              />
+                            </span>
+                            {isSelected && (
+                              <span className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-black/60" />
+                            )}
                           </button>
                         );
                       })}
                     </div>
-                  </div>
+                  </section>
                 )}
 
                 {/* Sizes */}
                 {sizes.length > 0 && (
-                  <div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary sm:text-xs">Size: <span className="font-normal text-secondary">{selectedVariant?.size}</span></span>
-                      <button type="button" className="text-[10px] text-secondary underline hover:text-primary sm:text-xs">Size Guide</button>
+                  <section aria-label="Size options">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary sm:text-xs">
+                          Size
+                        </span>
+                        {selectedSizeOption?.size && (
+                          <span className="text-xs font-medium text-primary sm:text-sm">
+                            {selectedSizeOption.size}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="text-[11px] font-semibold uppercase tracking-wide text-secondary underline underline-offset-4 hover:text-primary sm:text-xs"
+                      >
+                        Size Guide
+                      </button>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 sm:mt-3 sm:gap-3">
+
+                    <div className="mt-3 flex flex-wrap gap-2.5 sm:mt-4 sm:gap-3">
                       {sizes.map((size) => {
-                        const variant = activeVariants.find(v => v.size === size);
-                        const isSelected = selectedVariant?.size === size;
-                        const disabled = !variant || (variant.stockQuantity ?? 0) <= 0;
+                        const option = activeSizeOptions.find((s) => s.size === size) ?? null;
+                        const isSelected = selectedSizeOption?.size === size;
+                        const disabled = !option || (option.stockQuantity ?? 0) <= 0;
+                        const optionDiscount =
+                          option && typeof option.discount === 'number' ? option.discount : 0;
+                        const isOnSaleOption = optionDiscount > 0;
+                        const optionDiscountPercentOff =
+                          isOnSaleOption && typeof option.price === 'number' && option.price > 0
+                            ? Math.round((optionDiscount / option.price) * 100)
+                            : null;
+
                         return (
                           <button
                             key={size}
-                            onClick={() => variant && setSelectedVariant(variant)}
+                            type="button"
+                            onClick={() => option && setSelectedSizeOption(option)}
                             disabled={disabled}
-                            className={`relative flex h-9 min-w-[2.5rem] items-center justify-center rounded-md border px-2.5 text-xs transition-all sm:h-10 sm:min-w-[3rem] sm:px-3 sm:text-sm ${
-                              isSelected 
-                                ? 'border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] text-primary' 
+                            className={`flex h-10 min-w-[2.75rem] items-center justify-center rounded-none border px-3 text-xs font-medium tracking-wide transition-colors sm:h-11 sm:min-w-[3rem] sm:px-4 sm:text-sm ${
+                              isSelected
+                                ? isOnSaleOption
+                                  ? 'border-primary bg-primary/5 text-primary'
+                                  : 'border-black text-primary'
                                 : disabled
-                                  ? 'cursor-not-allowed border-transparent bg-gray-100 text-gray-400 decoration-slice line-through'
-                                  : 'border-border bg-white text-primary hover:border-primary'
+                                  ? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 line-through'
+                                  : isOnSaleOption
+                                    ? 'border-primary/60 bg-primary/5 text-primary hover:border-primary'
+                                    : 'border-gray-200 text-secondary hover:border-black hover:text-primary'
                             }`}
+                            aria-pressed={isSelected}
                           >
-                            {size}
+                            <span className="flex items-center gap-2">
+                              {size}
+                              {isOnSaleOption && (
+                                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
+                                  SALE{optionDiscountPercentOff != null ? ` ${optionDiscountPercentOff}%` : ''}
+                                </span>
+                              )}
+                            </span>
                           </button>
                         );
                       })}
                     </div>
-                  </div>
+                  </section>
                 )}
               </div>
 
@@ -593,6 +799,24 @@ export default function ProductDetailPage() {
                 >
                   <ShoppingBag className="h-4 w-4" />
                   {outOfStock ? 'Out of Stock' : 'Add to Cart'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAddToWishlist}
+                  disabled={addingToWishlist}
+                  className={`flex h-12 items-center justify-center gap-2 rounded-full border px-5 text-sm font-bold uppercase tracking-wider transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                    wishlisted
+                      ? 'border-primary/30 bg-primary/5 text-primary'
+                      : 'border-border bg-white text-secondary hover:border-primary hover:text-primary'
+                  }`}
+                >
+                  {addingToWishlist ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Heart className={`h-4 w-4 ${wishlisted ? 'fill-primary/20' : ''}`} />
+                  )}
+                  {wishlisted ? 'Wishlisted' : 'Wishlist'}
                 </button>
               </div>
 
@@ -641,6 +865,23 @@ export default function ProductDetailPage() {
             >
               <ShoppingBag className="h-4 w-4" />
               {outOfStock ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+            <button
+              type="button"
+              onClick={handleAddToWishlist}
+              disabled={addingToWishlist}
+              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors disabled:opacity-60 ${
+                wishlisted
+                  ? 'border-primary/30 bg-primary/5 text-primary'
+                  : 'border-border bg-white text-secondary hover:border-primary hover:text-primary'
+              }`}
+              aria-label={wishlisted ? 'Already in wishlist' : 'Add to wishlist'}
+            >
+              {addingToWishlist ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Heart className={`h-4 w-4 ${wishlisted ? 'fill-primary/20' : ''}`} />
+              )}
             </button>
           </div>
 

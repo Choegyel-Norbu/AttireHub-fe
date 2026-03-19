@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
-import { User, Settings, Shield, Package, ChevronRight } from 'lucide-react';
+import { User, Settings, Shield, Package, Heart, ChevronRight } from 'lucide-react';
 
 function isAdmin(user) {
   return user?.role === 'ADMIN' || user?.role === 'ROLE_ADMIN';
@@ -52,6 +52,22 @@ export default function AccountLayout() {
                       >
                         <Package className="h-4 w-4 shrink-0" aria-hidden />
                         <span className="whitespace-nowrap">Orders</span>
+                        <ChevronRight className="hidden h-4 w-4 shrink-0 opacity-70 lg:block" aria-hidden />
+                      </NavLink>
+                    </li>
+                  )}
+                  {!isAdmin(user) && user && (
+                    <li>
+                      <NavLink
+                        to="/account/wishlist"
+                        className={({ isActive }) =>
+                          `flex flex-none items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition-colors lg:flex-auto lg:rounded-2xl lg:px-3 lg:py-2.5 ${
+                            isActive ? 'bg-primary text-quaternary' : 'text-primary hover:bg-tertiary/20'
+                          }`
+                        }
+                      >
+                        <Heart className="h-4 w-4 shrink-0" aria-hidden />
+                        <span className="whitespace-nowrap">Wishlist</span>
                         <ChevronRight className="hidden h-4 w-4 shrink-0 opacity-70 lg:block" aria-hidden />
                       </NavLink>
                     </li>

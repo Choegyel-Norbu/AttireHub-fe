@@ -75,12 +75,14 @@ export default function OrderDetailPage() {
   // Review state
   const [expandedReviewProductId, setExpandedReviewProductId] = useState(null);
   const [expandedReviewVariantId, setExpandedReviewVariantId] = useState(null);
+  const [expandedReviewScopeKey, setExpandedReviewScopeKey] = useState(null);
+  const [expandedReviewItemKey, setExpandedReviewItemKey] = useState(null);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState(null);
   const [reviewDeletingId, setReviewDeletingId] = useState(null);
-  // key: `${productId}:${variantId || 'null'}` -> review
-  const [myReviewsByVariantKey, setMyReviewsByVariantKey] = useState({});
+  // key: `${productId}:${group-color-or-fallback}` -> review
+  const [myReviewsByScopeKey, setMyReviewsByScopeKey] = useState({});
   const [resolvedProductIdBySlug, setResolvedProductIdBySlug] = useState({});
   const [resolvedItemInfo, setResolvedItemInfo] = useState({});
   const [resolvingSlugForReview, setResolvingSlugForReview] = useState(null);
@@ -123,6 +125,68 @@ export default function OrderDetailPage() {
     return `${Number.isNaN(id) ? '' : id}:${vId != null && !Number.isNaN(vId) ? vId : 'null'}`;
   };
 
+  const makeReviewScopeKey = (productId, color, size, variantId) => {
+    const id = Number(productId);
+    const vId = variantId != null ? Number(variantId) : null;
+    // Prefer concrete variant-level scope so each size can have its own review.
+    if (vId != null && !Number.isNaN(vId)) {
+      return `${Number.isNaN(id) ? '' : id}:variant:${vId}`;
+    }
+
+    const normalizedColor = String(color ?? '').trim().toLowerCase();
+    const normalizedSize = String(size ?? '').trim().toLowerCase();
+    if (normalizedColor || normalizedSize) {
+      return `${Number.isNaN(id) ? '' : id}:opt:${normalizedColor || 'na'}:${normalizedSize || 'na'}`;
+    }
+    return makeReviewKey(productId, variantId);
+  };
+
+  const collectVariantCandidates = useCallback((payload) => {
+    const list = [];
+    const pushCandidate = (raw) => {
+      if (!raw || raw.id == null || Number.isNaN(Number(raw.id))) return;
+      list.push({
+        id: Number(raw.id),
+        sku: raw.sku ?? null,
+        size: raw.size ?? null,
+        color: raw.color ?? null,
+      });
+    };
+
+    const legacyVariants = Array.isArray(payload?.variants) ? payload.variants : [];
+    legacyVariants.forEach(pushCandidate);
+
+    const groups = Array.isArray(payload?.variantGroups) ? payload.variantGroups : [];
+    groups.forEach((g) => {
+      const sizeOptions = Array.isArray(g?.sizeOptions) ? g.sizeOptions : [];
+      sizeOptions.forEach((s) =>
+        pushCandidate({
+          ...s,
+          color: s?.color ?? g?.color,
+        })
+      );
+    });
+
+    return list;
+  }, []);
+
+  const resolveVariantIdFromCandidates = useCallback((item, candidates) => {
+    if (!Array.isArray(candidates) || candidates.length === 0) return null;
+    if (item?.sku) {
+      const bySku = candidates.find((v) => String(v.sku || '').toLowerCase() === String(item.sku).toLowerCase());
+      if (bySku) return Number(bySku.id);
+    }
+    if (item?.size || item?.color) {
+      const byAttrs = candidates.find(
+        (v) =>
+          (!item.size || String(v.size || '').toLowerCase() === String(item.size).toLowerCase()) &&
+          (!item.color || String(v.color || '').toLowerCase() === String(item.color).toLowerCase())
+      );
+      if (byAttrs) return Number(byAttrs.id);
+    }
+    return null;
+  }, []);
+
   // Load existing reviews per product/variant for this order when viewing details.
   // Order items may lack productId/variantId, so resolve them from product name + SKU/size/color.
   useEffect(() => {
@@ -136,7 +200,7 @@ export default function OrderDetailPage() {
       const uniqueNames = [
         ...new Set(
           orderItems
-            .filter((i) => (i.productId ?? i.product_id) == null && i.productName)
+            .filter((i) => i.productName)
             .map((i) => i.productName)
         ),
       ];
@@ -151,11 +215,11 @@ export default function OrderDetailPage() {
                 results.find((r) => r.name?.toLowerCase().trim() === name.toLowerCase().trim()) ??
                 results[0];
               if (!match?.id) return;
-              let variants = Array.isArray(match.variants) ? match.variants : [];
+              let variants = collectVariantCandidates(match);
               if (variants.length === 0 && match.slug) {
                 try {
                   const full = await getProductBySlug(match.slug);
-                  variants = Array.isArray(full?.variants) ? full.variants : [];
+                  variants = collectVariantCandidates(full);
                 } catch {
                   /* use suggestion data as-is */
                 }
@@ -176,6 +240,7 @@ export default function OrderDetailPage() {
 
       const infoMap = {};
       const reviewTasks = [];
+      const seenScopeKeys = new Set();
 
       orderItems.forEach((item, idx) => {
         const itemKey = item.id ?? idx;
@@ -193,29 +258,29 @@ export default function OrderDetailPage() {
           const resolved = productDataByName[item.productName];
           productId = resolved.productId;
           slug = resolved.slug;
-          const variants = resolved.variants;
-          if (item.sku) {
-            const v = variants.find((vt) => vt.sku === item.sku);
-            if (v) variantId = Number(v.id);
+          const resolvedVariantId = resolveVariantIdFromCandidates(item, resolved.variants);
+          if (resolvedVariantId != null && !Number.isNaN(resolvedVariantId)) {
+            variantId = Number(resolvedVariantId);
           }
-          if (variantId == null && (item.size || item.color)) {
-            const v = variants.find(
-              (vt) =>
-                (!item.size || vt.size?.toLowerCase() === item.size?.toLowerCase()) &&
-                (!item.color || vt.color?.toLowerCase() === item.color?.toLowerCase())
-            );
-            if (v) variantId = Number(v.id);
+        } else if (variantId == null && item.productName && productDataByName[item.productName]) {
+          const resolved = productDataByName[item.productName];
+          const resolvedVariantId = resolveVariantIdFromCandidates(item, resolved.variants);
+          if (resolvedVariantId != null && !Number.isNaN(resolvedVariantId)) {
+            variantId = Number(resolvedVariantId);
           }
         }
 
         if (productId != null && !Number.isNaN(productId)) {
-          infoMap[itemKey] = { productId, variantId, slug };
-          const key = makeReviewKey(productId, variantId);
-          reviewTasks.push(
-            getMyProductReview(productId, { variantId })
-              .then((review) => ({ key, review }))
-              .catch(() => null)
-          );
+          const scopeKey = makeReviewScopeKey(productId, item.color, item.size, variantId);
+          infoMap[itemKey] = { productId, variantId, slug, scopeKey };
+          if (!seenScopeKeys.has(scopeKey)) {
+            seenScopeKeys.add(scopeKey);
+            reviewTasks.push(
+              getMyProductReview(productId, { variantId })
+                .then((review) => ({ scopeKey, review }))
+                .catch(() => null)
+            );
+          }
         }
       });
 
@@ -226,10 +291,10 @@ export default function OrderDetailPage() {
       const results = await Promise.all(reviewTasks);
       if (cancelled) return;
 
-      setMyReviewsByVariantKey((prev) => {
+      setMyReviewsByScopeKey((prev) => {
         const next = { ...prev };
         results.forEach((res) => {
-          if (res?.review) next[res.key] = res.review;
+          if (res?.review) next[res.scopeKey] = res.review;
         });
         return next;
       });
@@ -238,11 +303,13 @@ export default function OrderDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [order?.orderNumber, canReview, userId]);
+  }, [order?.orderNumber, canReview, userId, collectVariantCandidates, resolveVariantIdFromCandidates]);
 
-  const openReviewForm = useCallback((productId, existingReview, variantId = null) => {
+  const openReviewForm = useCallback((itemKey, productId, existingReview, variantId = null, scopeKey = null) => {
+    setExpandedReviewItemKey(itemKey ?? null);
     setExpandedReviewProductId(productId);
     setExpandedReviewVariantId(variantId != null && !Number.isNaN(Number(variantId)) ? Number(variantId) : null);
+    setExpandedReviewScopeKey(scopeKey ?? null);
     setReviewError(null);
     if (existingReview) {
       setReviewForm({ rating: existingReview.rating, comment: (existingReview.comment ?? '').trim() });
@@ -252,18 +319,25 @@ export default function OrderDetailPage() {
   }, []);
 
   const closeReviewForm = useCallback(() => {
+    setExpandedReviewItemKey(null);
     setExpandedReviewProductId(null);
     setExpandedReviewVariantId(null);
+    setExpandedReviewScopeKey(null);
     setReviewError(null);
   }, []);
 
   const openReviewFormForItem = useCallback(
-    async (item) => {
-      const itemKey = item.id;
-      const info = resolvedItemInfo[itemKey];
+    async (item, itemKey) => {
+      const resolvedKey = itemKey ?? item?.id;
+      const info = resolvedKey != null ? resolvedItemInfo[resolvedKey] : undefined;
       if (info?.productId) {
-        const key = makeReviewKey(info.productId, info.variantId);
-        openReviewForm(info.productId, myReviewsByVariantKey[key] ?? null, info.variantId);
+        openReviewForm(
+          resolvedKey,
+          info.productId,
+          myReviewsByScopeKey[info.scopeKey] ?? null,
+          info.variantId,
+          info.scopeKey
+        );
         return;
       }
 
@@ -272,9 +346,9 @@ export default function OrderDetailPage() {
       const rawVariantId = item.variantId ?? item.productVariantId ?? item.variant_id ?? null;
       const variantId = rawVariantId != null ? Number(rawVariantId) : null;
       let id = rawId != null ? Number(rawId) : null;
+      const scopeKeyFromRow = id != null ? makeReviewScopeKey(id, item.color, item.size, variantId) : null;
       if (id != null && !Number.isNaN(id)) {
-        const key = makeReviewKey(id, variantId);
-        openReviewForm(id, myReviewsByVariantKey[key] ?? null, variantId);
+        openReviewForm(resolvedKey, id, myReviewsByScopeKey[scopeKeyFromRow] ?? null, variantId, scopeKeyFromRow);
         return;
       }
       if (slug != null && String(slug).trim()) {
@@ -285,8 +359,8 @@ export default function OrderDetailPage() {
           const resolvedId = product?.id != null ? Number(product.id) : null;
           if (resolvedId != null && !Number.isNaN(resolvedId)) {
             setResolvedProductIdBySlug((prev) => ({ ...prev, [slug]: resolvedId }));
-            const key = makeReviewKey(resolvedId, variantId);
-            openReviewForm(resolvedId, myReviewsByVariantKey[key] ?? null, variantId);
+            const scopeKey = makeReviewScopeKey(resolvedId, item.color, item.size, variantId);
+            openReviewForm(resolvedKey, resolvedId, myReviewsByScopeKey[scopeKey] ?? null, variantId, scopeKey);
           } else {
             setReviewError('Could not load product. Try opening the product page to review.');
           }
@@ -299,7 +373,7 @@ export default function OrderDetailPage() {
       }
       setReviewError('Product link is missing.');
     },
-    [openReviewForm, myReviewsByVariantKey, resolvedItemInfo]
+    [openReviewForm, myReviewsByScopeKey, resolvedItemInfo]
   );
 
   const handleReviewSubmit = useCallback(
@@ -307,27 +381,35 @@ export default function OrderDetailPage() {
       e.preventDefault();
       const id = Number(expandedReviewProductId);
       if (Number.isNaN(id)) return;
+      if (expandedReviewVariantId == null || Number.isNaN(Number(expandedReviewVariantId))) {
+        setReviewError('Variant ID is missing for this item. Please reopen the review from the item row.');
+        return;
+      }
       setReviewError(null);
       setReviewSubmitting(true);
       try {
-        const key = makeReviewKey(id, expandedReviewVariantId);
-        const myReview = myReviewsByVariantKey[key];
+        const scopeKey =
+          expandedReviewScopeKey ??
+          makeReviewKey(id, expandedReviewVariantId);
+        const myReview = myReviewsByScopeKey[scopeKey];
         if (myReview) {
           const updated = await updateReview(id, myReview.id, {
             rating: reviewForm.rating,
             comment: reviewForm.comment,
           });
-          setMyReviewsByVariantKey((prev) => ({ ...prev, [key]: updated }));
+          setMyReviewsByScopeKey((prev) => ({ ...prev, [scopeKey]: updated }));
         } else {
           const created = await createReview(id, {
             rating: reviewForm.rating,
             comment: reviewForm.comment,
             variantId: expandedReviewVariantId,
           });
-          setMyReviewsByVariantKey((prev) => ({ ...prev, [key]: created }));
+          setMyReviewsByScopeKey((prev) => ({ ...prev, [scopeKey]: created }));
         }
+        setExpandedReviewItemKey(null);
         setExpandedReviewProductId(null);
         setExpandedReviewVariantId(null);
+        setExpandedReviewScopeKey(null);
         setReviewForm({ rating: 5, comment: '' });
       } catch (err) {
         setReviewError(err?.message ?? 'Failed to save review.');
@@ -335,7 +417,14 @@ export default function OrderDetailPage() {
         setReviewSubmitting(false);
       }
     },
-    [reviewForm.rating, reviewForm.comment, myReviewsByVariantKey, expandedReviewProductId, expandedReviewVariantId]
+    [
+      reviewForm.rating,
+      reviewForm.comment,
+      myReviewsByScopeKey,
+      expandedReviewProductId,
+      expandedReviewVariantId,
+      expandedReviewScopeKey,
+    ]
   );
 
   const handleReviewDelete = useCallback(async (productId, reviewId) => {
@@ -345,7 +434,7 @@ export default function OrderDetailPage() {
     setReviewError(null);
     try {
       await deleteReview(id, reviewId);
-      setMyReviewsByVariantKey((prev) => {
+      setMyReviewsByScopeKey((prev) => {
         const next = { ...prev };
         Object.entries(next).forEach(([key, value]) => {
           if (value && value.id === reviewId) {
@@ -354,7 +443,10 @@ export default function OrderDetailPage() {
         });
         return next;
       });
+      setExpandedReviewItemKey(null);
       setExpandedReviewProductId(null);
+      setExpandedReviewVariantId(null);
+      setExpandedReviewScopeKey(null);
     } catch (err) {
       setReviewError(err?.message ?? 'Failed to delete review.');
     } finally {
@@ -476,9 +568,9 @@ export default function OrderDetailPage() {
                   ?? (productSlug != null ? resolvedProductIdBySlug[productSlug] : null);
                 const variantId = info?.variantId
                   ?? (rawVariantIdForRow != null ? Number(rawVariantIdForRow) : null);
-                const key = id != null ? makeReviewKey(id, variantId) : null;
-                const myReview = key != null ? myReviewsByVariantKey[key] : null;
-                const isFormExpanded = expandedReviewProductId === id;
+                const scopeKey = id != null ? makeReviewScopeKey(id, item.color, item.size, variantId) : null;
+                const myReview = scopeKey != null ? myReviewsByScopeKey[scopeKey] : null;
+                const isFormExpanded = expandedReviewItemKey === itemKey;
                 const isResolving = resolvingSlugForReview === (item.productSlug ?? item.product_slug);
 
                 return (
@@ -528,7 +620,7 @@ export default function OrderDetailPage() {
                           
                           {canReview && !isFormExpanded && !myReview && (
                             <button
-                              onClick={() => openReviewFormForItem(item)}
+                              onClick={() => openReviewFormForItem(item, itemKey)}
                               disabled={isResolving}
                               className="text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary disabled:opacity-50"
                             >
@@ -548,11 +640,11 @@ export default function OrderDetailPage() {
                           exit={{ height: 0, opacity: 0, marginTop: 0 }}
                           className="overflow-hidden"
                         >
-                          <div className="rounded-lg border border-border bg-gray-50/50 p-4">
+                          <div className="rounded-lg bg-gray-50/50 p-4">
                             {myReview && !isFormExpanded ? (
                               <div className="flex gap-4">
                                 <div className="shrink-0">
-                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-blue-500">
                                     <Star className="h-4 w-4 fill-current" />
                                   </div>
                                 </div>
@@ -561,7 +653,7 @@ export default function OrderDetailPage() {
                                     <p className="font-medium text-primary">Your Review</p>
                                     <div className="flex gap-2">
                                       <button
-                                        onClick={() => openReviewForm(id, myReview, variantId)}
+                                        onClick={() => openReviewForm(itemKey, id, myReview, variantId, scopeKey)}
                                         className="p-1 text-secondary hover:text-primary"
                                         title="Edit review"
                                       >
@@ -626,7 +718,7 @@ export default function OrderDetailPage() {
                                   <button
                                     type="submit"
                                     disabled={reviewSubmitting}
-                                    className="rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary disabled:opacity-50"
+                                    className="rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary disabled:opacity-50 shadow-none"
                                   >
                                     {reviewSubmitting ? 'Saving...' : 'Submit Review'}
                                   </button>

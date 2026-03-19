@@ -49,16 +49,17 @@ function getVariantErrorMessage(error) {
 }
 
 /**
- * Build the product JSON payload. No product.imageUrl; variants have no imageUrl (images by index).
+ * Build the product JSON payload.
+ * Preferred (new): variantGroups[] where images belong to the color group and sizes are purchasable rows.
+ * Legacy fallback: variants[].
  * @param {Record<string, unknown>} body
  * @returns {Record<string, unknown>}
  */
 function buildProductPayload(body) {
   return {
     name: body.name,
-    basePrice: Number(body.basePrice),
     categoryId: Number(body.categoryId),
-    isActive: body.isActive !== false,
+    active: body.active ?? (body.isActive !== false),
     featured: Boolean(body.featured ?? body.isFeatured),
     newArrival: Boolean(body.newArrival ?? body.isNewArrival),
     trending: Boolean(body.trending ?? body.isTrending),
@@ -66,51 +67,97 @@ function buildProductPayload(body) {
     slug: body.slug?.trim() || undefined,
     brand: body.brand?.trim() || null,
     material: body.material?.trim() || null,
-    ...(Array.isArray(body.variants) && {
-      variants: body.variants.map((v) => ({
-        size: String(v.size).trim(),
-        color: String(v.color).trim(),
-        price: Number(v.price),
-        stockQuantity: Number(v.stockQuantity) || 0,
-        isActive: v.isActive !== false,
-        discount: Number(v.discount) || 0,
+    ...(Array.isArray(body.variantGroups) && {
+      variantGroups: body.variantGroups.map((g) => ({
+        color: String(g.color).trim(),
+        isActive: g.isActive !== false,
+        sizes: Array.isArray(g.sizes)
+          ? g.sizes.map((s) => ({
+              size: String(s.size).trim(),
+              price: Number(s.price),
+              stockQuantity: Number(s.stockQuantity) || 0,
+              isActive: s.isActive !== false,
+              discount: Number(s.discount) || 0,
+            }))
+          : [],
       })),
     }),
+    ...(!Array.isArray(body.variantGroups) &&
+      Array.isArray(body.variants) && {
+        variants: body.variants.map((v) => ({
+          size: String(v.size).trim(),
+          color: String(v.color).trim(),
+          price: Number(v.price),
+          stockQuantity: Number(v.stockQuantity) || 0,
+          isActive: v.isActive !== false,
+          discount: Number(v.discount) || 0,
+        })),
+      }),
   };
 }
 
 /**
- * One file per variant by index. Use empty File for "no image / no change".
+ * Images by index.
+ * New (preferred): group-level images for variantGroups by index:
+ * `images[0]` → group 0 files, `images[1]` → group 1 files, etc.
+ *
+ * Legacy fallback: variant-level images for variants by index.
+ *
+ * Each index entry may have 0–5 images (append nothing if none).
+ *
+ * Each entry in `imageFilesByIndex` may be:
+ * - a single File
+ * - null/undefined (no image / no change)
+ * - an array of Files (up to the first 5 non-empty files)
+ *
  * @param {Record<string, unknown>} payload
- * @param {(File | null)[]} variantImageFiles - length must match payload.variants.length
+ * @param {Array<File | File[] | null>} imageFilesByIndex - length should match payload.variantGroups.length (preferred) or payload.variants.length (legacy)
  * @returns {FormData}
  */
-function buildFormData(payload, variantImageFiles) {
+function buildFormData(payload, imageFilesByIndex) {
   const formData = new FormData();
   const productBlob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
   formData.append('product', productBlob);
 
-  const files = Array.isArray(variantImageFiles) ? variantImageFiles : [];
-  files.forEach((file) => {
-    formData.append('images', file && file.size > 0 ? file : new File([], ''));
-  });
+  const files = Array.isArray(imageFilesByIndex) ? imageFilesByIndex : [];
+  const indexCount = Array.isArray(payload?.variantGroups)
+    ? payload.variantGroups.length
+    : Array.isArray(payload?.variants)
+      ? payload.variants.length
+      : files.length;
+
+  for (let index = 0; index < indexCount; index += 1) {
+    const entry = files[index];
+    const list =
+      Array.isArray(entry)
+        ? entry
+        : (typeof FileList !== 'undefined' && entry instanceof FileList)
+          ? Array.from(entry)
+          : (entry ? [entry] : []);
+    const normalized = list
+      .filter((f) => f && typeof f.size === 'number' && f.size > 0)
+      .slice(0, 5);
+
+    normalized.forEach((file) => {
+      formData.append(`images[${index}]`, file);
+    });
+  }
   return formData;
 }
 
 /**
- * Create a new product with one image per variant (admin).
- * Sends multipart/form-data: { product: JSON blob (no imageUrl), images: one File per variant in order }
+ * Create a new product with group-level images (admin).
+ * Sends multipart/form-data: { product: JSON blob, images[i]: repeatable files for group/variant by index }
  *
- * @param {Record<string, unknown>} body - product + variants (no product.imageUrl; variant image by index)
- * @param {(File | null)[]} [variantImageFiles] - images[i] = file for variants[i]; use null or empty File for no image
+ * @param {Record<string, unknown>} body - product + variantGroups (preferred) or variants (legacy)
+ * @param {Array<File | File[] | null>} [imageFilesByIndex] - entry per group (preferred) or per variant (legacy)
  * @returns {Promise<Record<string, unknown>>}
  */
-export async function createProduct(body, variantImageFiles = []) {
+export async function createProduct(body, imageFilesByIndex = []) {
   try {
     const payload = buildProductPayload(body);
-    const formData = buildFormData(payload, variantImageFiles);
+    const formData = buildFormData(payload, imageFilesByIndex);
     const response = await api.post(ADMIN_PRODUCTS_PATH, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
       timeout: UPLOAD_TIMEOUT,
     });
     return response?.data ?? response;
@@ -120,35 +167,39 @@ export async function createProduct(body, variantImageFiles = []) {
 }
 
 /**
- * Update an existing product; one image file per variant by index (admin).
- * Sends multipart/form-data: { product: JSON blob (no imageUrl), images: one File per variant in order }
+ * Update an existing product (admin).
+ * Sends multipart/form-data: { product: JSON blob, images[i]: repeatable files for group/variant by index }
  *
  * @param {number} id
  * @param {Record<string, unknown>} body - no product.imageUrl
- * @param {(File | null)[]} [variantImageFiles] - images[i] = new file for variants[i]; null or empty File = no change
+ * @param {Array<File | File[] | null>} [imageFilesByIndex] - entry per group (preferred) or per variant (legacy)
  * @returns {Promise<Record<string, unknown>>}
  */
-export async function updateProduct(id, body, variantImageFiles = []) {
+export async function updateProduct(id, body, imageFilesByIndex = []) {
   try {
     const payload = {};
     if (body.name !== undefined) payload.name = String(body.name).trim();
     if (body.slug !== undefined) payload.slug = body.slug?.trim() || null;
     if (body.description !== undefined) payload.description = body.description?.trim() || null;
-    if (body.basePrice !== undefined) payload.basePrice = Number(body.basePrice);
     if (body.categoryId !== undefined) payload.categoryId = Number(body.categoryId);
     if (body.brand !== undefined) payload.brand = body.brand?.trim() || null;
     if (body.material !== undefined) payload.material = body.material?.trim() || null;
-    if (body.isActive !== undefined) payload.isActive = Boolean(body.isActive);
+    if (body.active !== undefined) payload.active = Boolean(body.active);
+    else if (body.isActive !== undefined) payload.active = Boolean(body.isActive);
     if (body.featured !== undefined) payload.featured = Boolean(body.featured);
     else if (body.isFeatured !== undefined) payload.featured = Boolean(body.isFeatured);
     if (body.newArrival !== undefined) payload.newArrival = Boolean(body.newArrival);
     else if (body.isNewArrival !== undefined) payload.newArrival = Boolean(body.isNewArrival);
     if (body.trending !== undefined) payload.trending = Boolean(body.trending);
     else if (body.isTrending !== undefined) payload.trending = Boolean(body.isTrending);
+    if (Array.isArray(body.variantGroups)) {
+      payload.variantGroups = body.variantGroups;
+    } else if (Array.isArray(body.variants)) {
+      payload.variants = body.variants;
+    }
 
-    const formData = buildFormData(payload, variantImageFiles);
+    const formData = buildFormData(payload, imageFilesByIndex);
     const response = await api.put(`${ADMIN_PRODUCTS_PATH}/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
       timeout: UPLOAD_TIMEOUT,
     });
     return response?.data ?? response;
@@ -165,8 +216,8 @@ export async function updateProduct(id, body, variantImageFiles = []) {
  *   color: string;
  *   price: number;
  *   stockQuantity: number;
- *   imageUrl?: string | null;
  *   isActive?: boolean;
+ *   discount?: number;
  * }} body
  * @returns {Promise<Record<string, unknown>>}
  */
@@ -177,13 +228,86 @@ export async function addVariant(productId, body) {
       color: String(body.color).trim(),
       price: Number(body.price),
       stockQuantity: Number(body.stockQuantity) ?? 0,
-      imageUrl: body.imageUrl?.trim() || null,
       isActive: body.isActive !== false,
       discount: Number(body.discount) || 0,
     };
 
     const response = await api.post(`${ADMIN_PRODUCTS_PATH}/${productId}/variants`, payload);
     return response?.data ?? response;
+  } catch (err) {
+    throw new Error(getVariantErrorMessage(err));
+  }
+}
+
+/**
+ * Add a new size option to an existing variant group (admin).
+ * POST /api/v1/admin/products/{productId}/variant-groups/{groupId}/sizes
+ *
+ * @param {number} productId
+ * @param {number} groupId
+ * @param {{
+ *   size: string;
+ *   price: number;
+ *   stockQuantity: number;
+ *   isActive?: boolean;
+ *   discount?: number;
+ * }} body
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function addSizeOption(productId, groupId, body) {
+  try {
+    const payload = {
+      size: String(body.size).trim(),
+      price: Number(body.price),
+      stockQuantity: Number(body.stockQuantity) ?? 0,
+      isActive: body.isActive !== false,
+      discount: Number(body.discount) || 0,
+    };
+    const response = await api.post(`${ADMIN_PRODUCTS_PATH}/${productId}/variant-groups/${groupId}/sizes`, payload);
+    return response?.data ?? response;
+  } catch (err) {
+    throw new Error(getVariantErrorMessage(err));
+  }
+}
+
+/**
+ * Update a size option (admin).
+ * PUT /api/v1/admin/products/{productId}/size-options/{sizeOptionId}
+ *
+ * @param {number} productId
+ * @param {number} sizeOptionId
+ * @param {Record<string, unknown>} body
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function updateSizeOption(productId, sizeOptionId, body) {
+  try {
+    const payload = {};
+    if (body.sku !== undefined) payload.sku = body.sku?.trim() ?? null;
+    if (body.size !== undefined) payload.size = String(body.size).trim();
+    if (body.price !== undefined) payload.price = Number(body.price);
+    if (body.stockQuantity !== undefined) payload.stockQuantity = Number(body.stockQuantity) || 0;
+    if (body.isActive !== undefined) payload.isActive = Boolean(body.isActive);
+    if (body.discount !== undefined) payload.discount = Number(body.discount) || 0;
+
+    const response = await api.put(`${ADMIN_PRODUCTS_PATH}/${productId}/size-options/${sizeOptionId}`, payload);
+    return response?.data ?? response;
+  } catch (err) {
+    throw new Error(getVariantErrorMessage(err));
+  }
+}
+
+/**
+ * Delete a size option within a specific color group (admin).
+ * DELETE /api/v1/admin/products/{productId}/variant-groups/{groupId}/sizes/{variantId}
+ *
+ * @param {number} productId
+ * @param {number} groupId
+ * @param {number} variantId
+ * @returns {Promise<void>}
+ */
+export async function deleteSizeOption(productId, groupId, variantId) {
+  try {
+    await api.delete(`${ADMIN_PRODUCTS_PATH}/${productId}/variant-groups/${groupId}/sizes/${variantId}`);
   } catch (err) {
     throw new Error(getVariantErrorMessage(err));
   }
@@ -204,7 +328,6 @@ export async function updateVariant(productId, variantId, body) {
     if (body.color !== undefined) payload.color = String(body.color).trim();
     if (body.price !== undefined) payload.price = Number(body.price);
     if (body.stockQuantity !== undefined) payload.stockQuantity = Number(body.stockQuantity) || 0;
-    if (body.imageUrl !== undefined) payload.imageUrl = body.imageUrl?.trim() || null;
     if (body.isActive !== undefined) payload.isActive = Boolean(body.isActive);
     if (body.discount !== undefined) payload.discount = Number(body.discount) || 0;
 
@@ -247,15 +370,57 @@ export async function deleteVariant(productId, variantId) {
 }
 
 /**
- * Remove the image from a variant (admin).
+ * Remove a variant image (admin).
+ * If `imageId` is provided, deletes a specific image:
+ * DELETE .../products/{productId}/variants/{variantId}/images/{imageId}
+ *
+ * Otherwise deletes the (legacy) single variant image:
  * DELETE .../products/{productId}/variants/{variantId}/image
  * @param {number} productId
  * @param {number} variantId
+ * @param {number} [imageId]
  * @returns {Promise<void>}
  */
-export async function deleteVariantImage(productId, variantId) {
+export async function deleteVariantImage(productId, variantId, imageId) {
   try {
-    await api.delete(`${ADMIN_PRODUCTS_PATH}/${productId}/variants/${variantId}/image`);
+    const hasImageId = imageId != null && !Number.isNaN(Number(imageId));
+    const path = hasImageId
+      ? `${ADMIN_PRODUCTS_PATH}/${productId}/variants/${variantId}/images/${Number(imageId)}`
+      : `${ADMIN_PRODUCTS_PATH}/${productId}/variants/${variantId}/image`;
+    await api.delete(path);
+  } catch (err) {
+    throw new Error(getVariantErrorMessage(err));
+  }
+}
+
+/**
+ * Clear all images for a variant group (color group).
+ * DELETE /api/v1/admin/products/{productId}/variant-groups/{groupId}/images
+ *
+ * @param {number} productId
+ * @param {number} groupId
+ * @returns {Promise<void>}
+ */
+export async function clearVariantGroupImages(productId, groupId) {
+  try {
+    await api.delete(`${ADMIN_PRODUCTS_PATH}/${productId}/variant-groups/${groupId}/images`);
+  } catch (err) {
+    throw new Error(getVariantErrorMessage(err));
+  }
+}
+
+/**
+ * Delete one image from a variant group (color group).
+ * DELETE /api/v1/admin/products/{productId}/variant-groups/{groupId}/images/{imageId}
+ *
+ * @param {number} productId
+ * @param {number} groupId
+ * @param {number} imageId
+ * @returns {Promise<void>}
+ */
+export async function deleteVariantGroupImage(productId, groupId, imageId) {
+  try {
+    await api.delete(`${ADMIN_PRODUCTS_PATH}/${productId}/variant-groups/${groupId}/images/${imageId}`);
   } catch (err) {
     throw new Error(getVariantErrorMessage(err));
   }

@@ -23,6 +23,13 @@ api.interceptors.request.use(
     if (isNgrokUrl) {
       config.headers['ngrok-skip-browser-warning'] = 'true';
     }
+    // If sending multipart/form-data via FormData, do NOT set Content-Type manually.
+    // The browser will add the correct boundary; keeping application/json breaks uploads.
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      // axios headers can be a plain object OR AxiosHeaders (which has a .delete method).
+      if (config.headers?.delete) config.headers.delete('Content-Type');
+      else if (config.headers) delete config.headers['Content-Type'];
+    }
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

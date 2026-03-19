@@ -353,7 +353,7 @@ export default function ProductListPage() {
                       setFilters(updated);
                       applyFilters(updated);
                     }}
-                    className="appearance-none rounded-md border-none bg-transparent py-1 pr-8 text-sm font-medium text-primary focus:ring-0 cursor-pointer hover:text-secondary"
+                    className="appearance-none cursor-pointer rounded-full border border-border/50 bg-white px-3 pr-8 py-1.5 text-sm font-medium text-primary focus:border-primary focus:outline-none focus:ring-0 hover:text-secondary"
                   >
                     {SORT_OPTIONS.map((opt) => (
                       <option key={opt.value || 'default'} value={opt.value}>

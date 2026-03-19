@@ -11,7 +11,6 @@ import {
   ShoppingCart,
   Trash2,
   ImageOff,
-  Loader2,
   ArrowRight,
   Minus,
   Plus,
@@ -36,6 +35,7 @@ export default function CartPage() {
     removeFromCart,
     clearCart,
   } = useCart();
+  const [initialLoading, setInitialLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState(null);
@@ -44,9 +44,23 @@ export default function CartPage() {
   const { show: showToast } = useToast();
 
   useEffect(() => {
+    let cancelled = false;
     if (isAuthenticated && fetchCart) {
-      fetchCart();
+      (async () => {
+        try {
+          await fetchCart();
+        } finally {
+          if (!cancelled) {
+            setInitialLoading(false);
+          }
+        }
+      })();
+    } else {
+      setInitialLoading(false);
     }
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated, fetchCart]);
 
   useEffect(() => {
@@ -132,7 +146,7 @@ export default function CartPage() {
       <Header />
       
       <main className="flex-1">
-        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 lg:h-[calc(100vh-96px)] lg:overflow-hidden lg:flex lg:flex-col">
           <div className="flex items-end justify-between border-b border-border pb-4">
             <h1 className="font-serif text-3xl text-primary">Shopping Bag</h1>
             <p className="text-xs font-medium text-secondary">
@@ -146,7 +160,58 @@ export default function CartPage() {
             </div>
           )}
 
-          {items.length === 0 ? (
+          {initialLoading ? (
+            <div className="mt-8 lg:grid lg:grid-cols-12 lg:gap-10">
+              {/* Skeleton Cart Items */}
+              <div className="lg:col-span-8 space-y-4">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="flex py-6 border-b border-border/70 last:border-b-0"
+                  >
+                    <div className="h-24 w-20 shrink-0 overflow-hidden rounded-sm bg-gray-100 sm:h-28 sm:w-24" />
+                    <div className="ml-4 flex flex-1 flex-col justify-between">
+                      <div className="flex justify-between gap-4">
+                        <div className="space-y-2">
+                          <div className="h-4 w-40 rounded-full bg-gray-100" />
+                          <div className="h-3 w-24 rounded-full bg-gray-100" />
+                        </div>
+                        <div className="h-4 w-16 rounded-full bg-gray-100" />
+                      </div>
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="flex items-center rounded-full border border-border px-3 py-1 gap-3">
+                          <div className="h-3 w-3 rounded-full bg-gray-100" />
+                          <div className="h-3 w-6 rounded-full bg-gray-100" />
+                          <div className="h-3 w-3 rounded-full bg-gray-100" />
+                        </div>
+                        <div className="h-3 w-16 rounded-full bg-gray-100" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Skeleton Order Summary */}
+              <div className="mt-10 rounded-xl bg-gray-50 p-6 lg:col-span-4 lg:mt-0">
+                <div className="h-4 w-32 rounded-full bg-gray-100" />
+                <div className="mt-6 space-y-3">
+                  <div className="flex justify-between">
+                    <div className="h-3 w-16 rounded-full bg-gray-100" />
+                    <div className="h-3 w-12 rounded-full bg-gray-100" />
+                  </div>
+                  <div className="flex justify-between border-t border-border pt-4">
+                    <div className="h-3 w-20 rounded-full bg-gray-100" />
+                    <div className="h-4 w-16 rounded-full bg-gray-100" />
+                  </div>
+                  <div className="mt-2 h-3 w-40 rounded-full bg-gray-100" />
+                </div>
+                <div className="mt-8 space-y-3">
+                  <div className="h-11 w-full rounded-full bg-gray-100" />
+                  <div className="h-5 w-32 mx-auto rounded-full bg-gray-100" />
+                </div>
+              </div>
+            </div>
+          ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <p className="text-sm sm:text-base text-secondary">
                 Your shopping bag is currently empty.
@@ -159,85 +224,90 @@ export default function CartPage() {
               </Link>
             </div>
           ) : (
-            <div className="mt-8 lg:grid lg:grid-cols-12 lg:gap-10">
+            <div className="mt-8 lg:grid lg:grid-cols-12 lg:gap-10 lg:flex-1 lg:min-h-0">
               {/* Cart Items */}
-              <div className="lg:col-span-8">
-                <ul className="divide-y divide-border">
-                  {items.map((item) => (
-                    <motion.li 
-                      key={item.id}
-                      layout
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="flex py-6"
-                    >
-                      <div className="h-24 w-20 shrink-0 overflow-hidden rounded-sm border border-border bg-gray-50 sm:h-28 sm:w-24">
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt={item.productName}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-tertiary">
-                            <ImageOff className="h-8 w-8 opacity-30" />
-                          </div>
-                        )}
-                      </div>
+              <div className="lg:col-span-8 lg:min-h-0 lg:flex lg:flex-col">
+                <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto scrollbar-hide">
+                  <ul className="divide-y divide-border">
+                    {items.map((item) => (
+                      <motion.li
+                        key={item.id}
+                        layout
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex py-6"
+                      >
+                        <div className="h-24 w-20 shrink-0 overflow-hidden rounded-sm border border-border bg-gray-50 sm:h-28 sm:w-24">
+                          {item.imageUrl || item.image_url || item.productImageUrl ? (
+                            <img
+                              src={item.imageUrl || item.image_url || item.productImageUrl}
+                              alt={item.productName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-tertiary">
+                              <ImageOff className="h-8 w-8 opacity-30" />
+                            </div>
+                          )}
+                        </div>
 
-                      <div className="ml-4 flex flex-1 flex-col justify-between">
-                        <div className="flex justify-between">
-                          <div>
-                            <h3 className="font-serif text-base font-medium text-primary">
-                              <Link to={`/products/${item.productId}`} className="hover:underline">
-                                {item.productName}
-                              </Link>
-                            </h3>
-                            <p className="mt-1 text-xs text-secondary">
-                              {[item.size, item.color].filter(Boolean).join(' | ')}
+                        <div className="ml-4 flex flex-1 flex-col justify-between">
+                          <div className="flex justify-between">
+                            <div>
+                              <h3 className="font-serif text-base font-medium text-primary">
+                                <Link to={`/products/${item.productId}`} className="hover:underline">
+                                  {item.productName}
+                                </Link>
+                              </h3>
+                              <p className="mt-1 text-xs text-secondary">
+                                {[item.size, item.color].filter(Boolean).join(' | ')}
+                              </p>
+                            </div>
+                            <p className="text-lg font-medium text-primary">
+                              Nu {formatPrice(item.totalPrice)}
                             </p>
                           </div>
-                          <p className="text-lg font-medium text-primary">
-                            Nu {formatPrice(item.totalPrice)}
-                          </p>
-                        </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center rounded-full border border-border px-3 py-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center rounded-full border border-border px-3 py-1">
+                              <button
+                                onClick={() => handleUpdateQty(item.id, Math.max(1, item.quantity - 1))}
+                                disabled={updatingId === item.id || item.quantity <= 1}
+                                className="p-1 text-secondary hover:text-primary disabled:opacity-30"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="mx-3 min-w-[1.5rem] text-center text-xs font-medium text-primary">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => handleUpdateQty(item.id, item.quantity + 1)}
+                                disabled={
+                                  updatingId === item.id ||
+                                  (item.availableStock != null && item.quantity >= item.availableStock)
+                                }
+                                className="p-1 text-secondary hover:text-primary disabled:opacity-30"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
+
                             <button
-                              onClick={() => handleUpdateQty(item.id, Math.max(1, item.quantity - 1))}
-                              disabled={updatingId === item.id || item.quantity <= 1}
-                              className="p-1 text-secondary hover:text-primary disabled:opacity-30"
+                              onClick={() => handleRemoveClick(item)}
+                              className="text-[11px] font-medium text-secondary underline hover:text-red-600"
                             >
-                              <Minus className="h-3 w-3" />
-                            </button>
-                            <span className="mx-3 min-w-[1.5rem] text-center text-xs font-medium text-primary">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => handleUpdateQty(item.id, item.quantity + 1)}
-                              disabled={updatingId === item.id || (item.availableStock != null && item.quantity >= item.availableStock)}
-                              className="p-1 text-secondary hover:text-primary disabled:opacity-30"
-                            >
-                              <Plus className="h-3 w-3" />
+                              Remove
                             </button>
                           </div>
-
-                          <button
-                            onClick={() => handleRemoveClick(item)}
-                            className="text-[11px] font-medium text-secondary underline hover:text-red-600"
-                          >
-                            Remove
-                          </button>
                         </div>
-                      </div>
-                    </motion.li>
-                  ))}
-                </ul>
-                
-                <div className="mt-8 flex justify-between border-t border-border pt-8">
-                   <button
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-8 flex justify-between border-t border-border pt-8 lg:mt-0 lg:shrink-0 lg:bg-white">
+                  <button
                     onClick={() => setShowClearCartConfirm(true)}
                     className="text-sm font-medium text-red-600 hover:text-red-700"
                   >
@@ -247,7 +317,7 @@ export default function CartPage() {
               </div>
 
               {/* Order Summary */}
-              <div className="mt-10 rounded-xl bg-gray-50 p-6 lg:col-span-4 lg:mt-0">
+              <div className="mt-10 rounded-xl bg-gray-50 p-6 lg:col-span-4 lg:mt-0 lg:self-start lg:sticky lg:top-24">
                 <h2 className="font-serif text-lg font-medium text-primary">Order Summary</h2>
                 
                 <dl className="mt-6 space-y-3 text-sm text-secondary">

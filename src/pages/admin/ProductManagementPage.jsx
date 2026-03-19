@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { getProducts } from '@/services/productService';
 import { getCategories, flattenCategoriesWithSlug } from '@/services/categoryService';
-import { updateVariant, deleteVariant, deleteProduct } from '@/services/adminProductService';
+import { updateVariant, deleteVariant, deleteProduct, updateSizeOption, deleteSizeOption } from '@/services/adminProductService';
+import { getProductCardImageUrl } from '@/utils/productImages';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 const SORT_OPTIONS = [
@@ -49,16 +50,16 @@ export default function ProductManagementPage() {
   const [productDeleting, setProductDeleting] = useState(false);
   const [productDeleteError, setProductDeleteError] = useState(null);
   const [actionsMenuProductId, setActionsMenuProductId] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
-  const openEditVariant = (productId, productName, variant) => {
-    setEditVariant({ productId, productName, variant });
+  const openEditVariant = (productId, productName, variant, mode = 'variant') => {
+    setEditVariant({ productId, productName, variant, mode });
     setVariantForm({
       sku: variant.sku ?? '',
       size: variant.size ?? '',
       color: variant.color ?? '',
       price: typeof variant.price === 'number' ? variant.price : '',
       stockQuantity: variant.stockQuantity ?? 0,
-      imageUrl: variant.imageUrl ?? '',
       isActive: variant.isActive !== false && variant.active !== false,
       applyDiscount: (variant.discount ?? 0) > 0,
       discount: variant.discount ?? '',
@@ -78,16 +79,21 @@ export default function ProductManagementPage() {
     setVariantSubmitError(null);
     setVariantSaving(true);
     try {
-      await updateVariant(editVariant.productId, editVariant.variant.id, {
+      const payload = {
         sku: variantForm.sku?.trim() || undefined,
         size: variantForm.size?.trim() || undefined,
         color: variantForm.color?.trim() || undefined,
         price: variantForm.price !== '' ? Number(variantForm.price) : undefined,
         stockQuantity: variantForm.stockQuantity != null ? Number(variantForm.stockQuantity) : undefined,
-        imageUrl: variantForm.imageUrl?.trim() || null,
         isActive: variantForm.isActive,
         discount: variantForm.applyDiscount ? (Number(variantForm.discount) || 0) : 0,
-      });
+      };
+
+      if (editVariant.mode === 'sizeOption') {
+        await updateSizeOption(editVariant.productId, editVariant.variant.id, payload);
+      } else {
+        await updateVariant(editVariant.productId, editVariant.variant.id, payload);
+      }
       closeEditVariant();
       fetchProducts();
     } catch (err) {
@@ -97,8 +103,8 @@ export default function ProductManagementPage() {
     }
   };
 
-  const openDeleteVariantConfirm = (productId, productName, variant) => {
-    setVariantToDelete({ productId, productName, variant });
+  const openDeleteVariantConfirm = (productId, productName, variant, mode = 'variant') => {
+    setVariantToDelete({ productId, productName, variant, mode });
     setVariantDeleteError(null);
   };
 
@@ -112,7 +118,11 @@ export default function ProductManagementPage() {
     setVariantDeleting(true);
     setVariantDeleteError(null);
     try {
-      await deleteVariant(variantToDelete.productId, variantToDelete.variant.id);
+      if (variantToDelete.mode === 'sizeOption') {
+        await deleteSizeOption(variantToDelete.productId, variantToDelete.variant.groupId, variantToDelete.variant.id);
+      } else {
+        await deleteVariant(variantToDelete.productId, variantToDelete.variant.id);
+      }
       closeDeleteVariantConfirm();
       fetchProducts();
     } catch (err) {
@@ -220,6 +230,15 @@ export default function ProductManagementPage() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [editVariant]);
+
+  useEffect(() => {
+    if (!imagePreview) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setImagePreview(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [imagePreview]);
 
   useEffect(() => {
     if (actionsMenuProductId == null) return;
@@ -342,14 +361,19 @@ export default function ProductManagementPage() {
                 ) : (
                   products.map((p, index) => {
                     const variants = Array.isArray(p.variants) ? p.variants : [];
+                    const groups = Array.isArray(p.variantGroups) ? p.variantGroups : [];
+                    const totalSizeOptions = groups.reduce(
+                      (acc, g) => acc + (Array.isArray(g?.sizeOptions) ? g.sizeOptions.length : 0),
+                      0
+                    );
                     const isExpanded = expandedId === p.id;
                     const isLastRow = index === products.length - 1;
-                    const firstVariantImage = variants.find((v) => v.imageUrl)?.imageUrl ?? p.imageUrl;
+                    const previewSrc = getProductCardImageUrl(p);
                     return (
                       <Fragment key={p.id}>
                         <tr className="group hover:bg-gray-50/50 transition-colors">
                           <td className="py-4 pl-6 pr-2">
-                            {variants.length > 0 && (
+                            {(groups.length > 0 || variants.length > 0) && (
                               <button
                                 onClick={() => setExpandedId(isExpanded ? null : p.id)}
                                 className="rounded p-1 text-secondary hover:bg-gray-200 hover:text-primary"
@@ -361,8 +385,15 @@ export default function ProductManagementPage() {
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-4">
                               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border bg-gray-100">
-                                {firstVariantImage ? (
-                                  <img src={firstVariantImage} alt="" className="h-full w-full object-cover" />
+                                {previewSrc ? (
+                                  <button
+                                    type="button"
+                                    className="h-full w-full focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    onClick={() => setImagePreview({ src: previewSrc, name: p.name })}
+                                    aria-label={`Preview image for ${p.name}`}
+                                  >
+                                    <img src={previewSrc} alt="" className="h-full w-full object-cover" />
+                                  </button>
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-tertiary">
                                     <ImageOff className="h-4 w-4" />
@@ -376,16 +407,34 @@ export default function ProductManagementPage() {
                             </div>
                           </td>
                           <td className="py-4 px-4 font-medium text-primary">
-                            {variants.length > 0 && typeof variants[0].price === 'number'
-                              ? variants[0].price.toLocaleString(undefined, { maximumFractionDigits: 0 })
-                              : typeof p.basePrice === 'number'
-                                ? p.basePrice.toLocaleString(undefined, { maximumFractionDigits: 0 })
-                                : '—'}
+                            {(() => {
+                              const firstGroup = groups[0];
+                              const firstSize = Array.isArray(firstGroup?.sizeOptions) ? firstGroup.sizeOptions[0] : null;
+                              if (firstSize && typeof firstSize.price === 'number') {
+                                return firstSize.price.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                              }
+                              if (variants.length > 0 && typeof variants[0].price === 'number') {
+                                return variants[0].price.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                              }
+                              if (typeof p.basePrice === 'number') {
+                                return p.basePrice.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                              }
+                              return '—';
+                            })()}
                           </td>
                           <td className="py-4 px-4 text-secondary">{p.categoryName ?? '—'}</td>
                           <td className="py-4 px-4 text-secondary">{p.brand ?? '—'}</td>
                           <td className="py-4 px-4 text-secondary">
-                            {variants.length > 0 ? (
+                            {groups.length > 0 ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-primary">
+                                  {groups.length} color{groups.length === 1 ? '' : 's'}
+                                </span>
+                                <span className="text-[11px] text-tertiary">
+                                  {totalSizeOptions} size{totalSizeOptions === 1 ? '' : 's'}
+                                </span>
+                              </div>
+                            ) : variants.length > 0 ? (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-primary">
                                 {variants.length}
                               </span>
@@ -455,7 +504,7 @@ export default function ProductManagementPage() {
                             </div>
                           </td>
                         </tr>
-                        {isExpanded && variants.length > 0 && (
+                        {isExpanded && (groups.length > 0 || variants.length > 0) && (
                           <tr className="bg-gray-50/30">
                             <td colSpan={8} className="px-6 py-4">
                               <div className="rounded-lg border border-border bg-white overflow-hidden">
@@ -467,43 +516,38 @@ export default function ProductManagementPage() {
                                       <th className="py-2 px-4 text-left font-medium text-secondary">Color</th>
                                       <th className="py-2 px-4 text-left font-medium text-secondary">Price</th>
                                       <th className="py-2 px-4 text-left font-medium text-secondary">Stock</th>
-                                      <th className="py-2 px-4 text-right font-medium text-secondary">Actions</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-border">
-                                    {variants.map((v) => (
-                                      <tr key={v.id}>
-                                        <td className="py-2 px-4 font-mono text-xs text-primary">{v.sku ?? '—'}</td>
-                                        <td className="py-2 px-4 text-primary">{v.size ?? '—'}</td>
-                                        <td className="py-2 px-4 text-primary">{v.color ?? '—'}</td>
-                                        <td className="py-2 px-4 text-primary">
-                                          {typeof v.price === 'number'
-                                            ? v.price.toLocaleString(undefined, { maximumFractionDigits: 0 })
-                                            : v.price ?? '—'}
-                                        </td>
-                                        <td className="py-2 px-4 text-primary">{v.stockQuantity ?? 0}</td>
-                                        <td className="py-2 px-4 text-right">
-                                          <div className="flex items-center justify-end gap-3">
-                                            <button
-                                              onClick={() => openEditVariant(p.id, p.name, v)}
-                                              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-secondary hover:underline"
-                                            >
-                                              <Pencil className="h-3.5 w-3.5" />
-                                              Edit
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => openDeleteVariantConfirm(p.id, p.name, v)}
-                                              className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 hover:underline"
-                                              aria-label={`Delete variant ${v.sku ?? `${v.size} / ${v.color}`}`}
-                                            >
-                                              <Trash2 className="h-3.5 w-3.5" />
-                                              Delete
-                                            </button>
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    ))}
+                                    {groups.length > 0
+                                      ? groups.flatMap((g) =>
+                                          (Array.isArray(g.sizeOptions) ? g.sizeOptions : []).map((s) => (
+                                            <tr key={s.id}>
+                                              <td className="py-2 px-4 font-mono text-xs text-primary">{s.sku ?? '—'}</td>
+                                              <td className="py-2 px-4 text-primary">{s.size ?? '—'}</td>
+                                              <td className="py-2 px-4 text-primary">{g.color ?? s.color ?? '—'}</td>
+                                              <td className="py-2 px-4 text-primary">
+                                                {typeof s.price === 'number'
+                                                  ? s.price.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                                                  : s.price ?? '—'}
+                                              </td>
+                                              <td className="py-2 px-4 text-primary">{s.stockQuantity ?? 0}</td>
+                                            </tr>
+                                          ))
+                                        )
+                                      : variants.map((v) => (
+                                          <tr key={v.id}>
+                                            <td className="py-2 px-4 font-mono text-xs text-primary">{v.sku ?? '—'}</td>
+                                            <td className="py-2 px-4 text-primary">{v.size ?? '—'}</td>
+                                            <td className="py-2 px-4 text-primary">{v.color ?? '—'}</td>
+                                            <td className="py-2 px-4 text-primary">
+                                              {typeof v.price === 'number'
+                                                ? v.price.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                                                : v.price ?? '—'}
+                                            </td>
+                                            <td className="py-2 px-4 text-primary">{v.stockQuantity ?? 0}</td>
+                                          </tr>
+                                        ))}
                                   </tbody>
                                 </table>
                               </div>
@@ -538,6 +582,47 @@ export default function ProductManagementPage() {
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Dialog */}
+      {imagePreview?.src && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setImagePreview(null)}
+            aria-label="Close image preview"
+          />
+          <div
+            className="relative w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label={imagePreview.name ? `Image preview: ${imagePreview.name}` : 'Image preview'}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-primary">
+                  {imagePreview.name ?? 'Image preview'}
+                </p>
+                <p className="truncate text-xs text-secondary">Click outside or press Esc to close</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setImagePreview(null)}
+                className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+            <div className="bg-black/5 p-4">
+              <img
+                src={imagePreview.src}
+                alt={imagePreview.name ?? 'Preview'}
+                className="mx-auto max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
+              />
             </div>
           </div>
         </div>

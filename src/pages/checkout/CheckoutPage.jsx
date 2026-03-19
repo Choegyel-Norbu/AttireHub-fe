@@ -283,36 +283,38 @@ useEffect(() => {
             <div className="lg:col-span-5">
               <section className="sticky top-24 rounded-xl bg-gray-50 p-6">
                 <h2 className="font-serif text-lg font-medium text-primary">Order Summary</h2>
-                <ul className="mt-4 space-y-4">
-                  {items.map((item) => (
-                    <li key={item.id} className="flex gap-4 border-b border-border/50 pb-4 last:border-0">
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-sm bg-gray-100 sm:h-18 sm:w-18">
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt=""
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-tertiary">
-                            <ImageOff className="h-6 w-6" aria-hidden />
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-primary sm:text-base">
-                          {item.productName}
-                        </p>
-                        <p className="mt-0.5 text-xs text-secondary sm:text-[13px]">
-                          {item.size} / {item.color} × {item.quantity}
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-primary sm:text-base">
-                          Nu {formatPrice(item.totalPrice)} /-
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-4 max-h-[calc(100vh-340px)] overflow-y-auto scrollbar-hide">
+                  <ul className="space-y-4">
+                    {items.map((item) => (
+                      <li key={item.id} className="flex gap-4 border-b border-border/50 pb-4 last:border-0">
+                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-sm bg-gray-100 sm:h-18 sm:w-18">
+                          {item.imageUrl || item.image_url || item.productImageUrl ? (
+                            <img
+                              src={item.imageUrl || item.image_url || item.productImageUrl}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-tertiary">
+                              <ImageOff className="h-6 w-6" aria-hidden />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-primary sm:text-base">
+                            {item.productName}
+                          </p>
+                          <p className="mt-0.5 text-xs text-secondary sm:text-[13px]">
+                            {item.size} / {item.color} × {item.quantity}
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-primary sm:text-base">
+                            Nu {formatPrice(item.totalPrice)} /-
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
                 <div className="mt-4 border-t border-border pt-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-secondary">Subtotal</span>
