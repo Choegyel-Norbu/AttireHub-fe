@@ -489,6 +489,71 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="mx-auto max-w-6xl px-3 pb-20 sm:px-6 sm:pb-16 lg:px-8 lg:pb-0">
+          {/* Mobile-first: keep color toggles above gallery for easier access */}
+          {colors.length > 0 && (
+            <section aria-label="Color options" className="mb-4 lg:hidden">
+              <div className="flex items-baseline justify-between gap-3">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">
+                    Staple Colors
+                  </span>
+                  {selectedGroup?.color && (
+                    <span className="text-xs font-medium text-primary">
+                      {selectedGroup.color}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="text-[11px] font-semibold uppercase tracking-wide text-secondary underline underline-offset-4 hover:text-primary"
+                >
+                  Color Notes
+                </button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2.5">
+                {colors.map((color) => {
+                  const group = activeGroups.find((g) => g.color === color);
+                  const isSelected = selectedGroup?.color === color;
+                  const swatchColor = getColorSwatchValue(color);
+
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => {
+                        if (!group) return;
+                        setSelectedGroup(group);
+                        const firstSize =
+                          Array.isArray(group.sizeOptions)
+                            ? group.sizeOptions.find((s) => s && s.isActive !== false && s.active !== false) ?? null
+                            : null;
+                        setSelectedSizeOption(firstSize);
+                      }}
+                      className="relative flex h-9 w-9 items-center justify-center rounded-full transition-transform hover:scale-[1.03]"
+                      aria-label={color}
+                    >
+                      <span
+                        className={`flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 bg-white shadow-sm ${
+                          isSelected ? 'ring-[3px] ring-black/80' : ''
+                        }`}
+                      >
+                        <span
+                          className="h-5 w-5 rounded-full"
+                          style={{ backgroundColor: swatchColor }}
+                          aria-hidden="true"
+                        />
+                      </span>
+                      {isSelected && (
+                        <span className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-black/60" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-10 lg:pb-0">
             
             {/* Left: Image Gallery */}
@@ -639,7 +704,7 @@ export default function ProductDetailPage() {
               <div className="mt-6 space-y-6 border-y border-border py-6 sm:mt-8 sm:space-y-8 sm:py-8">
                 {/* Colors */}
                 {colors.length > 0 && (
-                  <section aria-label="Color options">
+                  <section aria-label="Color options" className="hidden lg:block">
                     <div className="flex items-baseline justify-between gap-3">
                       <div className="flex flex-wrap items-baseline gap-2">
                         <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary sm:text-xs">
