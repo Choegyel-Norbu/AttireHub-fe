@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "lint:fonts": "node scripts/check-font-convention.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

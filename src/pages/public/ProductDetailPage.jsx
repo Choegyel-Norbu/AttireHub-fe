@@ -457,7 +457,7 @@ export default function ProductDetailPage() {
         <Header />
         <main className="flex-1 flex flex-col items-center justify-center px-4 text-center">
           <Package className="h-16 w-16 text-tertiary/50" />
-          <h1 className="mt-4 text-2xl font-serif text-primary">Product Not Found</h1>
+          <h1 className="mt-4 text-2xl font-brand text-primary">Product Not Found</h1>
           <p className="mt-2 text-secondary/70">{error ?? 'This product may have been removed.'}</p>
           <Link
             to="/products"
@@ -589,7 +589,7 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
-              <h1 className="font-serif text-xl text-primary sm:text-2xl lg:text-3xl">
+              <h1 className="font-brand text-xl text-primary sm:text-2xl lg:text-3xl">
                 {product.name}
               </h1>
 
@@ -888,7 +888,7 @@ export default function ProductDetailPage() {
           {/* Reviews Section */}
           <div id="reviews" className="mt-12 border-t border-border pt-10 sm:mt-24 sm:pt-16">
             <div className="mb-6 flex flex-col gap-3 sm:mb-10 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="font-serif text-xl text-primary sm:text-2xl lg:text-3xl">Customer Reviews</h2>
+              <h2 className="font-brand text-xl text-primary sm:text-2xl lg:text-3xl">Customer Reviews</h2>
               <div className="flex items-center gap-2">
                 {variantAverageRating != null ? (
                   <>
@@ -984,7 +984,7 @@ export default function ProductDetailPage() {
           {/* Related Products */}
           {relatedProducts.length > 0 && (
             <div className="mt-12 border-t border-border pt-10 pb-16 sm:mt-24 sm:pt-16 sm:pb-24">
-              <h2 className="mb-6 font-serif text-xl text-primary sm:mb-10 sm:text-2xl lg:text-3xl">You May Also Like</h2>
+              <h2 className="mb-6 font-brand text-xl text-primary sm:mb-10 sm:text-2xl lg:text-3xl">You May Also Like</h2>
               <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-4">
                 {relatedProducts.map((p) => (
                   <ProductCard key={p.id} product={p} />

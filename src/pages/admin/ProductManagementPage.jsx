@@ -264,7 +264,7 @@ export default function ProductManagementPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-3xl text-primary">Products</h1>
+          <h1 className="font-brand text-3xl text-primary">Products</h1>
           <p className="mt-1 text-secondary">Manage your product catalog.</p>
         </div>
         <Link

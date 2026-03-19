@@ -171,7 +171,7 @@ export default function NotificationsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-12">
       <div>
-        <h1 className="font-serif text-xl text-primary">Notifications</h1>
+        <h1 className="font-brand text-xl text-primary">Notifications</h1>
         <p className="mt-0.5 text-xs text-secondary/70">
           Order updates and promotions. Tap a notification to open the related order.
         </p>
@@ -357,7 +357,7 @@ export default function NotificationsPage() {
         {/* Sidebar */}
         <div className="hidden lg:block">
           <div className="sticky top-24 rounded-xl border border-border bg-gray-50/50 p-6">
-            <h3 className="font-serif text-lg text-primary">About Notifications</h3>
+            <h3 className="font-brand text-lg text-primary">About Notifications</h3>
             <p className="mt-2 text-sm leading-relaxed text-secondary/80">
               You’ll receive notifications for new orders, shipping updates, and occasional promotions. Tap a notification to open the related order.
             </p>

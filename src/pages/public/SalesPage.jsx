@@ -243,7 +243,7 @@ export default function SalesPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="font-serif text-2xl text-primary sm:text-3xl"
+            className="font-brand text-2xl text-primary sm:text-3xl"
           >
             Sale
           </motion.h1>
@@ -295,7 +295,7 @@ export default function SalesPage() {
                   className="fixed inset-y-0 right-0 z-50 w-full max-w-xs overflow-y-auto bg-white p-6 shadow-xl lg:hidden"
                 >
                   <div className="mb-8 flex items-center justify-between">
-                    <h2 className="text-lg font-serif font-medium text-primary">Filters</h2>
+                    <h2 className="text-lg font-brand font-medium text-primary">Filters</h2>
                     <button onClick={() => setShowMobileFilters(false)}>
                       <X className="h-6 w-6 text-secondary" />
                     </button>

@@ -127,7 +127,7 @@ export default function CartPage() {
         <Header />
         <main className="flex-1 flex flex-col items-center justify-center px-4 text-center">
           <ShoppingCart className="h-16 w-16 text-tertiary/50" strokeWidth={1} />
-          <h1 className="mt-6 font-serif text-3xl text-primary">Your Bag is Empty</h1>
+          <h1 className="mt-6 font-brand text-3xl text-primary">Your Bag is Empty</h1>
           <p className="mt-2 text-secondary/70">Sign in to view your saved items.</p>
           <Link
             to="/login"
@@ -148,7 +148,7 @@ export default function CartPage() {
       <main className="flex-1">
         <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 lg:h-[calc(100vh-96px)] lg:overflow-hidden lg:flex lg:flex-col">
           <div className="flex items-end justify-between border-b border-border pb-4">
-            <h1 className="font-serif text-3xl text-primary">Shopping Bag</h1>
+            <h1 className="font-brand text-3xl text-primary">Shopping Bag</h1>
             <p className="text-xs font-medium text-secondary">
               {totalItems} {totalItems === 1 ? 'Item' : 'Items'}
             </p>
@@ -255,7 +255,7 @@ export default function CartPage() {
                         <div className="ml-4 flex flex-1 flex-col justify-between">
                           <div className="flex justify-between">
                             <div>
-                              <h3 className="font-serif text-base font-medium text-primary">
+                              <h3 className="font-brand text-base font-medium text-primary">
                                 <Link to={`/products/${item.productId}`} className="hover:underline">
                                   {item.productName}
                                 </Link>
@@ -318,7 +318,7 @@ export default function CartPage() {
 
               {/* Order Summary */}
               <div className="mt-10 rounded-xl bg-gray-50 p-6 lg:col-span-4 lg:mt-0 lg:self-start lg:sticky lg:top-24">
-                <h2 className="font-serif text-lg font-medium text-primary">Order Summary</h2>
+                <h2 className="font-brand text-lg font-medium text-primary">Order Summary</h2>
                 
                 <dl className="mt-6 space-y-3 text-sm text-secondary">
                   <div className="flex justify-between">

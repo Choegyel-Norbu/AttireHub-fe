@@ -30,7 +30,7 @@ export default function Footer() {
           {/* Brand & Newsletter */}
           <div className="lg:col-span-5 space-y-8">
             <div>
-              <Link to="/" className="font-serif text-2xl tracking-tight text-primary sm:text-3xl">
+              <Link to="/" className="font-brand text-2xl tracking-tight text-primary sm:text-3xl">
                 AttireHub
               </Link>
               <p className="mt-4 max-w-sm text-sm text-secondary/70 leading-relaxed">

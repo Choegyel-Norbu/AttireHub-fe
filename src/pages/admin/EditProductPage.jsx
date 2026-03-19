@@ -874,7 +874,7 @@ export default function EditProductPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 ring-8 ring-green-50">
                 <CheckCircle className="h-8 w-8 text-green-600" strokeWidth={2} />
               </div>
-              <h2 className="font-serif text-2xl text-primary">Update Successful</h2>
+              <h2 className="font-brand text-2xl text-primary">Update Successful</h2>
               <p className="mt-2 text-sm text-secondary">
                 <span className="font-medium text-primary">{p.name}</span> has been updated.
               </p>
@@ -923,7 +923,7 @@ export default function EditProductPage() {
           <ArrowLeft className="h-3.5 w-3.5" />
           Products
         </Link>
-        <h1 className="font-serif text-xl text-primary">Edit product</h1>
+        <h1 className="font-brand text-xl text-primary">Edit product</h1>
         <p className="mt-0.5 text-xs text-secondary/70">
           Update product details and manage variants.
         </p>
@@ -1598,7 +1598,7 @@ export default function EditProductPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-4">
               <Package className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="font-serif text-lg text-primary">Edit product</h3>
+            <h3 className="font-brand text-lg text-primary">Edit product</h3>
             <p className="mt-2 text-sm leading-relaxed text-secondary/80">
               Change name, slug, price, category, and flags. Each variant has one image; use “Replace” to upload a new image (order matches variant order). Add new variants below.
             </p>

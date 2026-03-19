@@ -266,7 +266,7 @@ export default function ProductListPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="font-serif text-xl text-primary sm:text-2xl lg:text-3xl"
+            className="font-brand text-xl text-primary sm:text-2xl lg:text-3xl"
           >
             {pageTitle}
           </motion.h1>
@@ -320,7 +320,7 @@ export default function ProductListPage() {
                   className="fixed inset-y-0 right-0 z-50 w-full max-w-[min(100vw-2rem,20rem)] overflow-y-auto bg-white p-4 shadow-xl lg:hidden sm:p-6 pr-[max(1rem,env(safe-area-inset-right))]"
                 >
                   <div className="mb-6 flex items-center justify-between sm:mb-8">
-                    <h2 className="text-base font-serif font-medium text-primary sm:text-lg">Filters</h2>
+                    <h2 className="text-base font-brand font-medium text-primary sm:text-lg">Filters</h2>
                     <button
                       type="button"
                       onClick={() => setShowMobileFilters(false)}

@@ -256,7 +256,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-3xl text-primary">Dashboard</h1>
+          <h1 className="font-brand text-3xl text-primary">Dashboard</h1>
           <p className="mt-1 text-sm text-secondary">
             Welcome back. Here's what's happening with your store today.
           </p>
@@ -305,7 +305,7 @@ export default function DashboardPage() {
         {/* Recent Orders - Takes up 2 columns */}
         <div className="lg:col-span-2 rounded-xl border border-border bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between border-b border-border p-6">
-            <h2 className="font-serif text-lg text-primary">Recent Orders</h2>
+            <h2 className="font-brand text-lg text-primary">Recent Orders</h2>
             <Link to="/admin/orders" className="text-xs font-bold uppercase tracking-wider text-primary hover:text-secondary flex items-center gap-1">
               View All <ArrowRight className="h-3 w-3" />
             </Link>
@@ -352,7 +352,7 @@ export default function DashboardPage() {
           {/* Order Status Breakdown */}
           <div className="rounded-xl border border-border bg-white p-6 shadow-sm flex flex-col">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-serif text-lg text-primary">Order Status</h2>
+              <h2 className="font-brand text-lg text-primary">Order Status</h2>
               <div className="p-2 bg-gray-50 rounded-lg">
                 <PieChart className="h-4 w-4 text-secondary" />
               </div>
@@ -450,7 +450,7 @@ export default function DashboardPage() {
           {/* Low Stock Alerts */}
           <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-serif text-lg text-primary">Low Stock</h2>
+              <h2 className="font-brand text-lg text-primary">Low Stock</h2>
               <button
                 type="button"
                 onClick={() => setIsLowStockModalOpen(true)}

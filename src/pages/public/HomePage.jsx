@@ -66,7 +66,7 @@ export default function HomePage() {
             viewport={{ once: true, amount: 0.6 }}
             transition={{ duration: 0.45, ease: 'easeOut' }}
           >
-            <h2 className="font-serif text-xl font-medium tracking-tight text-primary sm:text-2xl lg:text-3xl">
+            <h2 className="font-brand text-xl font-medium tracking-tight text-primary sm:text-2xl lg:text-3xl">
               {title}
             </h2>
             {subtitle && (
@@ -125,7 +125,7 @@ export default function HomePage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-primary/70">
               Curated For Every Wardrobe
             </p>
-            <h2 className="font-serif text-2xl font-medium text-primary sm:text-3xl lg:text-4xl">
+            <h2 className="font-brand text-2xl font-medium text-primary sm:text-3xl lg:text-4xl">
               Shop by Category
             </h2>
             <p className="max-w-xl text-sm text-secondary/70 sm:mt-1 sm:text-base">
@@ -174,7 +174,7 @@ export default function HomePage() {
                     <span className="mb-2 inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary/80 backdrop-blur">
                       Category
                     </span>
-                    <h3 className="font-serif text-lg font-semibold text-white sm:text-xl lg:text-2xl">
+                    <h3 className="font-brand text-lg font-semibold text-white sm:text-xl lg:text-2xl">
                       {category.name}
                     </h3>
                     <div className="mt-2 flex items-center gap-2 text-xs font-medium text-white/90">
@@ -226,7 +226,7 @@ export default function HomePage() {
            />
         </div>
         <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="font-serif text-xl font-medium text-white sm:text-2xl lg:text-3xl">
+          <h2 className="font-brand text-xl font-medium text-white sm:text-2xl lg:text-3xl">
             Elevate Your Everyday
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-xs text-white/80 sm:mt-3 sm:text-sm">

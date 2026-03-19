@@ -235,7 +235,7 @@ export default function Header() {
           {/* Logo (Center) */}
           <Link
             to="/"
-            className="absolute left-1/2 -translate-x-1/2 font-serif text-xl font-medium tracking-tight text-primary sm:text-2xl lg:static lg:transform-none lg:text-3xl"
+            className="absolute left-1/2 -translate-x-1/2 font-brand text-2xl font-normal tracking-normal text-primary sm:text-3xl lg:static lg:transform-none lg:text-[2.2rem]"
             aria-label="AttireHub Home"
           >
             AttireHub
@@ -440,7 +440,7 @@ export default function Header() {
               className="fixed inset-y-0 left-0 z-50 w-full max-w-[min(100vw,22rem)] flex flex-col bg-white shadow-2xl lg:hidden pl-[env(safe-area-inset-left)]"
             >
               <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4 sm:p-6">
-                <span className="font-serif text-xl tracking-tight text-primary sm:text-2xl">Menu</span>
+                <span className="font-brand text-xl tracking-tight text-primary sm:text-2xl">Menu</span>
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
@@ -464,7 +464,7 @@ export default function Header() {
                       >
                         <Link
                           to={to}
-                          className="block py-2 text-3xl font-serif font-light text-secondary hover:text-primary transition-colors sm:text-3xl"
+                          className="block py-2 text-3xl font-brand font-light text-secondary hover:text-primary transition-colors sm:text-3xl"
                           onClick={() => setMobileOpen(false)}
                         >
                           {label}
@@ -568,7 +568,7 @@ export default function Header() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white p-6 shadow-2xl"
             >
-              <h2 className="text-lg font-serif font-medium text-primary">Sign Out</h2>
+              <h2 className="text-lg font-brand font-medium text-primary">Sign Out</h2>
               <p className="mt-2 text-sm text-secondary">
                 Are you sure you want to sign out of your account?
               </p>

@@ -346,7 +346,7 @@ export default function AccountSettingsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-12">
       <div>
-        <h1 className="font-serif text-xl text-primary">Settings</h1>
+        <h1 className="font-brand text-xl text-primary">Settings</h1>
         <p className="mt-0.5 text-xs text-secondary/70">
           Manage your personal information and delivery addresses.
         </p>
@@ -583,7 +583,7 @@ export default function AccountSettingsPage() {
                       ) : (
                         <>
                           <div className="mb-6 flex items-center justify-between">
-                            <h3 className="font-serif text-lg text-primary">
+                            <h3 className="font-brand text-lg text-primary">
                               {editingAddressId ? 'Edit Address' : 'New Address'}
                             </h3>
                             <button 
@@ -708,7 +708,7 @@ export default function AccountSettingsPage() {
         {/* Sidebar / Info */}
         <div className="hidden lg:block">
           <div className="sticky top-24 rounded-xl border border-border bg-gray-50/50 p-6">
-            <h3 className="font-serif text-lg text-primary">Need Help?</h3>
+            <h3 className="font-brand text-lg text-primary">Need Help?</h3>
             <p className="mt-2 text-sm text-secondary/80 leading-relaxed">
               If you have questions about your account or need assistance with an order, our support team is here to help.
             </p>
@@ -743,7 +743,7 @@ export default function AccountSettingsPage() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white p-6 shadow-2xl"
             >
-              <h2 className="text-base font-serif text-primary">Remove Address?</h2>
+              <h2 className="text-base font-brand text-primary">Remove Address?</h2>
               <p className="mt-2 text-xs text-secondary/80 leading-relaxed">
                 Are you sure you want to remove this address? This action cannot be undone.
               </p>

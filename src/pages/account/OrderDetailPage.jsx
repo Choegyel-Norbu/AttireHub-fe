@@ -535,7 +535,7 @@ export default function OrderDetailPage() {
         
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-serif text-3xl text-primary">
+            <h1 className="font-brand text-3xl text-primary">
               Order #{order.orderNumber ?? order.id}
             </h1>
             <p className="mt-1 flex items-center gap-2 text-sm text-secondary">
@@ -749,7 +749,7 @@ export default function OrderDetailPage() {
         {/* Sidebar - Summary */}
         <div className="space-y-6">
           <div className="rounded-xl border border-border bg-white p-6">
-            <h2 className="mb-4 font-serif text-lg text-primary">Order Summary</h2>
+            <h2 className="mb-4 font-brand text-lg text-primary">Order Summary</h2>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between text-secondary">
                 <dt>Subtotal</dt>
@@ -779,7 +779,7 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="rounded-xl border border-border bg-white p-6">
-            <h2 className="mb-4 font-serif text-lg text-primary">Delivery Details</h2>
+            <h2 className="mb-4 font-brand text-lg text-primary">Delivery Details</h2>
             <div className="flex items-start gap-3">
               <MapPin className="mt-0.5 h-5 w-5 text-secondary" />
               <div className="text-sm text-secondary">

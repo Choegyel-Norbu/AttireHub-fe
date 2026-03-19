@@ -103,7 +103,7 @@ export default function WishlistPage() {
     <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex flex-col gap-2 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-serif text-xl text-primary">Wishlist</h1>
+          <h1 className="font-brand text-xl text-primary">Wishlist</h1>
           <p className="mt-1 text-sm text-secondary/70">
             Save your favorites and move them to cart anytime.
           </p>

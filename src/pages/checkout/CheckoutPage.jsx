@@ -114,7 +114,7 @@ useEffect(() => {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Package className="h-6 w-6" aria-hidden />
               </div>
-              <h1 className="mt-4 font-serif text-2xl text-primary">Thank you for your order</h1>
+              <h1 className="mt-4 font-brand text-2xl text-primary">Thank you for your order</h1>
               <p className="mt-2 text-sm text-secondary">
                 Order number:{' '}
                 <strong className="text-primary">{placedOrder.orderNumber}</strong>
@@ -153,7 +153,7 @@ useEffect(() => {
           <div className="flex items-end justify-between border-b border-border pb-4">
             <div className="flex items-center gap-2 text-secondary">
               <Package className="h-5 w-5" aria-hidden />
-              <h1 className="font-serif text-3xl text-primary">Checkout</h1>
+              <h1 className="font-brand text-3xl text-primary">Checkout</h1>
             </div>
             <p className="text-xs font-medium text-secondary">
               {totalItems} {totalItems === 1 ? 'item' : 'items'}
@@ -282,7 +282,7 @@ useEffect(() => {
 
             <div className="lg:col-span-5">
               <section className="sticky top-24 rounded-xl bg-gray-50 p-6">
-                <h2 className="font-serif text-lg font-medium text-primary">Order Summary</h2>
+                <h2 className="font-brand text-lg font-medium text-primary">Order Summary</h2>
                 <div className="mt-4 max-h-[calc(100vh-340px)] overflow-y-auto scrollbar-hide">
                   <ul className="space-y-4">
                     {items.map((item) => (

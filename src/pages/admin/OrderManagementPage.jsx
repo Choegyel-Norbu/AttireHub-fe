@@ -146,7 +146,7 @@ function OrderDetailRow({
     >
       <div className="p-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <h3 className="text-lg font-serif text-primary">Order Details</h3>
+          <h3 className="text-lg font-brand text-primary">Order Details</h3>
           <button
             type="button"
             onClick={onClose}
@@ -552,7 +552,7 @@ export default function OrderManagementPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-3xl text-primary">Orders</h1>
+          <h1 className="font-brand text-3xl text-primary">Orders</h1>
           <p className="mt-1 text-sm text-secondary/70">
             Manage customer orders and status updates.
           </p>

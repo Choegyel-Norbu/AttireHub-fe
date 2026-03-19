@@ -160,7 +160,7 @@ export default function OrdersPage() {
     <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-xl text-primary">Order History</h1>
+          <h1 className="font-brand text-xl text-primary">Order History</h1>
           <p className="mt-1 text-sm text-secondary/70">
             Track and manage your recent purchases.
           </p>
@@ -401,7 +401,7 @@ export default function OrdersPage() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white p-5 shadow-2xl"
             >
-              <h2 className="text-lg font-serif text-primary">Cancel Order?</h2>
+              <h2 className="text-lg font-brand text-primary">Cancel Order?</h2>
               <p className="mt-1.5 text-sm leading-relaxed text-secondary/80">
                 Are you sure you want to cancel order <span className="font-mono font-medium text-primary">#{cancelConfirmOrderNumber}</span>? This action cannot be undone.
               </p>
@@ -441,7 +441,7 @@ export default function OrdersPage() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white p-5 shadow-2xl"
             >
-              <h2 className="text-lg font-serif text-primary">Confirm Delivery</h2>
+              <h2 className="text-lg font-brand text-primary">Confirm Delivery</h2>
               <p className="mt-1.5 text-sm leading-relaxed text-secondary/80">
                 Please confirm that you have received order <span className="font-mono font-medium text-primary">#{deliverConfirmOrderNumber}</span>.
               </p>

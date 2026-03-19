@@ -396,7 +396,7 @@ export default function AddProductPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-12">
       <div>
-        <h1 className="font-serif text-xl text-primary">Add Product</h1>
+        <h1 className="font-brand text-xl text-primary">Add Product</h1>
         <p className="mt-0.5 text-xs text-secondary/70">
           Create a new product with color variants, images, and sizes.
         </p>
@@ -420,7 +420,7 @@ export default function AddProductPage() {
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 ring-8 ring-green-50">
                       <CheckCircle className="h-8 w-8 text-green-600" strokeWidth={2} />
                     </div>
-                    <h2 className="font-serif text-2xl text-primary">Product Created</h2>
+                    <h2 className="font-brand text-2xl text-primary">Product Created</h2>
                     <p className="mt-2 text-sm text-secondary">
                       <span className="font-medium text-primary">{createdProduct.name}</span> has been added to your catalog.
                     </p>
@@ -683,7 +683,7 @@ export default function AddProductPage() {
         {/* Sidebar */}
         <div className="hidden lg:block">
           <div className="sticky top-24 rounded-xl border border-border bg-gray-50/50 p-6">
-            <h3 className="font-serif text-lg text-primary">Tips</h3>
+            <h3 className="font-brand text-lg text-primary">Tips</h3>
             <p className="mt-2 text-sm leading-relaxed text-secondary/80">
               Add at least one color variant. Each color has up to 5 images (shared across sizes), and each size row can have its own price and stock.
             </p>

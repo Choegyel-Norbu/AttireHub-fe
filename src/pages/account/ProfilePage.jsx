@@ -95,12 +95,12 @@ export default function ProfilePage() {
         transition={{ duration: 0.6 }}
         className="mb-12 flex flex-col items-center text-center sm:flex-row sm:text-left sm:gap-8"
       >
-        <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-primary text-2xl font-serif font-medium text-white shadow-xl sm:h-32 sm:w-32 sm:text-4xl">
+        <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-primary text-2xl font-brand font-medium text-white shadow-xl sm:h-32 sm:w-32 sm:text-4xl">
           {initials}
         </div>
         
         <div className="mt-6 sm:mt-0">
-          <h1 className="font-serif text-3xl text-primary sm:text-4xl">
+          <h1 className="font-brand text-3xl text-primary sm:text-4xl">
             Welcome back, {displayName.split(' ')[0]}
           </h1>
           <p className="mt-2 text-secondary/70">{email}</p>
@@ -144,7 +144,7 @@ export default function ProfilePage() {
                   <item.icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-serif text-sm text-primary sm:text-base">{item.label}</p>
+                  <p className="font-brand text-sm text-primary sm:text-base">{item.label}</p>
                   <p className="mt-0.5 text-[11px] text-secondary/70 sm:text-xs line-clamp-2">{item.description}</p>
                 </div>
               </div>
@@ -166,7 +166,7 @@ export default function ProfilePage() {
         <div>
           <div className="flex items-baseline justify-between gap-3">
             <div>
-              <h2 className="font-serif text-base text-primary sm:text-lg">Default address</h2>
+              <h2 className="font-brand text-base text-primary sm:text-lg">Default address</h2>
               <p className="mt-0.5 text-[11px] text-secondary/70 sm:text-xs">
                 Used for shipping unless you choose another at checkout.
               </p>

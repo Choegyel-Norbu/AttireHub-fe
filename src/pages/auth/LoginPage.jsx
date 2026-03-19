@@ -210,7 +210,7 @@ export default function LoginPage() {
               className="relative z-10 w-full max-w-sm overflow-hidden bg-white shadow-2xl"
             >
               <div className="p-8 text-center">
-                <h2 className="text-xl font-serif text-primary mb-2">
+                <h2 className="text-xl font-brand text-primary mb-2">
                   Verify your email
                 </h2>
                 <p className="text-sm text-secondary mb-8 leading-relaxed">

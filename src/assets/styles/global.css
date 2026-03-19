@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Hoover (Fontshare) - direct @font-face for reliable loading */
+@font-face {
+  font-family: "Hoover";
+  src:
+    url("https://cdn.fontshare.com/wf/OQWQQBPOJ6JEQJV3IQRYIO6O37L3RDLS/64EBY5K6OPMMQUI6U3GHDF7ETCSNWW67/5PIX6GR4DQXNGX56EQFMKN7WIMTAIE26.woff2")
+      format("woff2"),
+    url("https://cdn.fontshare.com/wf/OQWQQBPOJ6JEQJV3IQRYIO6O37L3RDLS/64EBY5K6OPMMQUI6U3GHDF7ETCSNWW67/5PIX6GR4DQXNGX56EQFMKN7WIMTAIE26.woff")
+      format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /**
  * Primary (darkest) → Secondary → Tertiary → Quaternary (lightest).
  */
@@ -54,6 +67,7 @@
   body {
     background-color: #FFFFFF;
     color: var(--color-primary);
+    font-family: "Hoover";
     min-height: 100%;
     overflow-x: clip;
     /* Safe area for notched devices */
@@ -95,6 +109,12 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
   }
+
+  /* Brand wordmark font (AttireHub logo text) */
+  .font-brand {
+    font-family: "Hoover", ui-sans-serif, system-ui, sans-serif;
+  }
+
 }
 
 /*

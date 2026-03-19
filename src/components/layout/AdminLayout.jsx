@@ -22,7 +22,7 @@ export default function AdminLayout() {
           <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden lg:p-6">
             {/* Desktop Header - Hidden on mobile */}
             <div className="hidden px-2 mb-8 lg:block">
-              <h2 className="font-serif text-xl text-primary">Dashboard</h2>
+              <h2 className="font-brand text-xl text-primary">Dashboard</h2>
               <p className="mt-1 text-xs text-secondary/60">Manage your store</p>
             </div>
 
@@ -58,7 +58,7 @@ export default function AdminLayout() {
 
             {/* Desktop Tips - Hidden on mobile */}
             <div className="mt-10 hidden rounded-xl bg-gray-50 p-4 lg:block">
-              <h3 className="font-serif text-sm text-primary">Quick Tips</h3>
+              <h3 className="font-brand text-sm text-primary">Quick Tips</h3>
               <p className="mt-2 text-xs text-secondary/70 leading-relaxed">
                 Check the orders page daily for new shipments. Keep product inventory up to date.
               </p>

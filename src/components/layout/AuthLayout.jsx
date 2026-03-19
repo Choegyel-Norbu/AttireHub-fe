@@ -32,7 +32,7 @@ export default function AuthLayout({ children, title, subtitle }) {
             transition={{ delay: 0.1, duration: 0.5 }}
             className="mb-10 text-center"
           >
-            <h1 className="text-3xl font-serif text-primary mb-3">{title}</h1>
+            <h1 className="text-3xl font-brand text-primary mb-3">{title}</h1>
             {subtitle && (
               <p className="text-secondary text-base">{subtitle}</p>
             )}
