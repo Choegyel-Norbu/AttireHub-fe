@@ -283,12 +283,12 @@ const ProductCard = ({ product }) => {
         </div>
 
         {/* Name */}
-        <h3 className="line-clamp-2 min-w-0 text-xs font-medium text-primary underline-offset-4 group-hover:underline sm:text-sm">
+        <h3 className="font-display line-clamp-2 min-w-0 text-xs font-medium text-primary underline-offset-4 group-hover:underline sm:text-sm">
           {product.name}
         </h3>
 
         {/* Price block */}
-        <div className="mt-0.5 flex items-baseline gap-2">
+        <div className="font-display mt-0.5 flex items-baseline gap-2">
           <span className="text-xs font-semibold text-primary sm:text-sm">
             Nu {formatPrice(priceAfterDiscount ?? displayPrice)}
           </span>

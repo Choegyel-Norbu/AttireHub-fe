@@ -30,7 +30,7 @@ const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
-              className="mb-6 font-brand text-4xl font-medium leading-[1.1] text-primary sm:mb-8 sm:text-6xl sm:leading-[1.05] lg:text-7xl xl:text-[5rem]"
+              className="font-display mb-6 text-4xl font-semibold leading-[1.1] text-primary sm:mb-8 sm:text-6xl sm:leading-[1.05] lg:text-7xl xl:text-[5rem]"
             >
               Curated <br />
               <span className="italic text-secondary/70">Elegance.</span>

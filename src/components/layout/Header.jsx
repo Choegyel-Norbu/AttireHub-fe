@@ -235,7 +235,7 @@ export default function Header() {
           {/* Logo (Center) */}
           <Link
             to="/"
-            className="absolute left-1/2 -translate-x-1/2 font-brand text-2xl font-normal tracking-normal text-primary sm:text-3xl lg:static lg:transform-none lg:text-[2.2rem]"
+            className="font-display absolute left-1/2 -translate-x-1/2 text-2xl font-normal tracking-normal text-primary sm:text-3xl lg:static lg:transform-none lg:text-[2.2rem]"
             aria-label="AttireHub Home"
           >
             AttireHub

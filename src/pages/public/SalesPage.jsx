@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/product/ProductCard';
+import ProductGridSkeleton from '@/components/product/ProductGridSkeleton';
 import { getProducts } from '@/services/productService';
 import { getCategories, flattenCategoriesWithSlug } from '@/services/categoryService';
 import {
@@ -13,7 +14,6 @@ import {
   Search,
   SlidersHorizontal,
   ArrowDownWideNarrow,
-  Loader2,
   Tag,
 } from 'lucide-react';
 
@@ -337,9 +337,7 @@ export default function SalesPage() {
             </div>
 
             {loading ? (
-              <div className="flex h-96 w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
-              </div>
+              <ProductGridSkeleton count={12} />
             ) : error ? (
               <div className="rounded-lg bg-red-50 p-4 text-center text-sm text-red-600">
                 {error}
