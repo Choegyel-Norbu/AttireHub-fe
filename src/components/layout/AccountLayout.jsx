@@ -19,7 +19,7 @@ export default function AccountLayout() {
           <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
             {/* Left sidebar navigation */}
             <aside
-              className="w-full shrink-0 border-b border-border bg-white/95 backdrop-blur sm:rounded-2xl sm:border sm:bg-white sm:px-2 sm:py-2 sm:shadow lg:w-56 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:shadow-none"
+              className="w-full shrink-0 border-b border-border bg-white/95 backdrop-blur sm:rounded-2xl sm:border sm:bg-white sm:px-2 sm:py-2 sm:shadow lg:w-56 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:shadow-none lg:sticky lg:top-[7rem] lg:self-start"
               aria-label="Account navigation"
             >
               <nav className="w-full overflow-x-auto scrollbar-hide px-2 py-3 sm:px-3 sm:py-2 lg:overflow-visible lg:px-0 lg:py-0">

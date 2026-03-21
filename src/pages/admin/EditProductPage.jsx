@@ -134,6 +134,9 @@ function VariantGroupEditor({
   groupDraft,
   onChangeGroupDraft,
   onDeleteSizeOption,
+  onDeleteColorVariant,
+  deleteColorDisabled,
+  isDeletingColorVariant,
 }) {
   const [addError, setAddError] = useState(null);
   const [deletingSizeIds, setDeletingSizeIds] = useState(() => new Set());
@@ -141,7 +144,10 @@ function VariantGroupEditor({
 
   const sizeRows = Array.isArray(groupDraft?.sizes) ? groupDraft.sizes : [];
 
-  const colorLabel = String(group?.color ?? `Group ${groupIndex + 1}`).trim();
+  /** Draft wins so renames show immediately; API `group` updates after save / reload. */
+  const colorInputValue =
+    groupDraft != null ? String(groupDraft.color ?? '') : String(group?.color ?? '');
+  const colorLabel = colorInputValue.trim() || `Group ${groupIndex + 1}`;
   const sizeCount = sizeRows.length;
   const sizesSectionId = `group-sizes-${group?.id ?? groupIndex}`;
   const isMulti = Number(totalGroups) > 1;
@@ -157,30 +163,52 @@ function VariantGroupEditor({
           <p className="text-sm font-semibold text-primary">{colorLabel}</p>
           <p className="text-[11px] text-tertiary">Images are shared by all sizes in this color.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setSizesOpen((v) => {
-              const next = !v;
-              if (next) {
-                // wait for the sizes section to render expanded, then scroll
-                setTimeout(() => {
-                  document.getElementById(sizesSectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 0);
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {onDeleteColorVariant ? (
+            <button
+              type="button"
+              onClick={onDeleteColorVariant}
+              disabled={isSubmitting || isDeletingColorVariant || deleteColorDisabled}
+              title={
+                deleteColorDisabled
+                  ? 'Add another color variant first — a product must keep at least one color.'
+                  : 'Remove this color variant and all its sizes and images'
               }
-              return next;
-            });
-          }}
-          className="relative inline-flex items-center gap-1.5 rounded-full border border-border bg-white/70 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-white"
-          aria-expanded={sizesOpen}
-          aria-controls={sizesSectionId}
-        >
-          {sizesOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          {sizesOpen ? 'Hide sizes' : 'Show sizes'}
-          <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-secondary">
-            {sizeCount}
-          </span>
-        </button>
+              className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-white/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isDeletingColorVariant ? (
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              )}
+              {isDeletingColorVariant ? 'Removing…' : 'Remove color'}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              setSizesOpen((v) => {
+                const next = !v;
+                if (next) {
+                  // wait for the sizes section to render expanded, then scroll
+                  setTimeout(() => {
+                    document.getElementById(sizesSectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 0);
+                }
+                return next;
+              });
+            }}
+            className="relative inline-flex items-center gap-1.5 rounded-full border border-border bg-white/70 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-white"
+            aria-expanded={sizesOpen}
+            aria-controls={sizesSectionId}
+          >
+            {sizesOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {sizesOpen ? 'Hide sizes' : 'Show sizes'}
+            <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-secondary">
+              {sizeCount}
+            </span>
+          </button>
+        </div>
       </div>
 
       <div className="relative flex flex-col gap-4">
@@ -491,6 +519,9 @@ export default function EditProductPage() {
   const [groupImageFiles, setGroupImageFiles] = useState([]);
   /** Set of image keys currently being removed (for loading state) */
   const [removingVariantImageIds, setRemovingVariantImageIds] = useState(() => new Set());
+  const [deletingGroupId, setDeletingGroupId] = useState(null);
+  /** Pending delete: which color group to remove after user confirms in the dialog. */
+  const [deleteGroupConfirm, setDeleteGroupConfirm] = useState(null);
   const [groupDrafts, setGroupDrafts] = useState([]);
   const [pendingNewGroups, setPendingNewGroups] = useState([]);
   const [newGroupDraft, setNewGroupDraft] = useState(() => ({
@@ -564,6 +595,7 @@ export default function EditProductPage() {
               sizes: Array.isArray(g.sizeOptions)
                 ? g.sizeOptions.map((s) => ({
                     id: s.id,
+                    variantId: s.variantId ?? s.productVariantId ?? null,
                     sku: s.sku ?? '',
                     size: s.size ?? '',
                     price: typeof s.price === 'number' ? s.price : s.price ?? '',
@@ -807,6 +839,66 @@ export default function EditProductPage() {
         next.delete(key);
         return next;
       });
+    }
+  };
+
+  const openDeleteGroupDialog = (groupId, groupIndex) => {
+    if (!product?.id || groupId == null) return;
+    const groups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
+    if (groups.length <= 1) {
+      showToast({
+        title: 'Cannot remove',
+        message: 'Add another color variant first. A product must keep at least one color.',
+        variant: 'error',
+      });
+      return;
+    }
+    const label = String(groups[groupIndex]?.color ?? '').trim() || 'this color';
+    setDeleteGroupConfirm({ groupId, groupIndex, label });
+  };
+
+  const closeDeleteGroupDialog = () => {
+    if (deletingGroupId != null) return;
+    setDeleteGroupConfirm(null);
+  };
+
+  const confirmDeleteVariantGroup = async () => {
+    if (!deleteGroupConfirm || !product?.id) return;
+    const { groupId, groupIndex, label } = deleteGroupConfirm;
+    setDeletingGroupId(groupId);
+    try {
+      await adminProductService.deleteVariantGroup(product.id, groupId);
+      showToast({
+        title: 'Color variant removed',
+        message: `"${label}" was deleted.`,
+        variant: 'success',
+      });
+      setProduct((prev) => {
+        if (!prev) return prev;
+        const nextGroups = (Array.isArray(prev.variantGroups) ? prev.variantGroups : []).filter(
+          (gg) => gg?.id !== groupId
+        );
+        return { ...prev, variantGroups: nextGroups };
+      });
+      setGroupDrafts((prev) => {
+        const arr = Array.isArray(prev) ? [...prev] : [];
+        arr.splice(groupIndex, 1);
+        return arr;
+      });
+      setGroupImageFiles((prev) => {
+        const arr = Array.isArray(prev) ? [...prev] : [];
+        arr.splice(groupIndex, 1);
+        return arr;
+      });
+      setDeleteGroupConfirm(null);
+    } catch (err) {
+      showToast({
+        title: 'Delete failed',
+        message: err?.message ?? 'Could not remove this color variant.',
+        variant: 'error',
+      });
+    } finally {
+      setDeletingGroupId(null);
     }
   };
 
@@ -1174,6 +1266,11 @@ export default function EditProductPage() {
                             return arr;
                           });
                         }}
+                        onDeleteColorVariant={
+                          g?.id != null ? () => openDeleteGroupDialog(g.id, groupIndex) : undefined
+                        }
+                        deleteColorDisabled={variantGroups.length <= 1}
+                        isDeletingColorVariant={deletingGroupId === g.id}
                       />
                     );
                   })}
@@ -1605,6 +1702,65 @@ export default function EditProductPage() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {deleteGroupConfirm && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            role="presentation"
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeDeleteGroupDialog}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              aria-hidden
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-color-variant-title"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-white p-6 shadow-2xl"
+            >
+              <h3 id="delete-color-variant-title" className="font-brand text-lg text-primary">
+                Remove color variant?
+              </h3>
+              <p className="mt-2 text-sm text-secondary">
+                Delete{' '}
+                <span className="font-medium text-primary">
+                  &ldquo;{deleteGroupConfirm.label}&rdquo;
+                </span>
+                ? This removes all sizes and images for this color. This cannot be undone.
+              </p>
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeDeleteGroupDialog}
+                  disabled={deletingGroupId != null}
+                  className="rounded-full border border-border px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteVariantGroup}
+                  disabled={deletingGroupId != null}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {deletingGroupId != null ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : null}
+                  {deletingGroupId != null ? 'Removing…' : 'Remove color'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

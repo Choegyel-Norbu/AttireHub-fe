@@ -11,6 +11,7 @@ import { addWishlistItem } from '@/services/wishlistService';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/context/AuthContext';
+import { useWishlist } from '@/context/WishlistContext';
 import {
   ArrowLeft,
   Package,
@@ -190,6 +191,7 @@ export default function ProductDetailPage() {
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
   const { show: showToast } = useToast();
+  const { wishlistVariantIds, addLocalWishlistItem } = useWishlist();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -199,7 +201,6 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
   const [cartError, setCartError] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
@@ -229,13 +230,14 @@ export default function ProductDetailPage() {
         : [];
       const firstGroup = groups.length > 0 ? groups[0] : null;
       setSelectedGroup(firstGroup);
-      const firstSize =
+      const activeSizeOptions =
         firstGroup && Array.isArray(firstGroup.sizeOptions)
-          ? firstGroup.sizeOptions.find((s) => s && s.isActive !== false && s.active !== false) ?? null
-          : null;
+          ? firstGroup.sizeOptions.filter((s) => s && s.isActive !== false && s.active !== false)
+          : [];
+      const firstSize =
+        activeSizeOptions.find((s) => (s.stockQuantity ?? 0) > 0) ?? activeSizeOptions[0] ?? null;
       setSelectedSizeOption(firstSize);
       setQuantity(1);
-      setWishlisted(false);
     } catch (err) {
       setError(err?.message ?? 'Product not found.');
       setProduct(null);
@@ -279,6 +281,8 @@ export default function ProductDetailPage() {
   // Fetch Reviews
   const productId = product?.id != null ? Number(product.id) : null;
   const selectedVariantId = selectedSizeOption?.id != null ? Number(selectedSizeOption.id) : null;
+  const wishlisted =
+    selectedVariantId != null && wishlistVariantIds.has(String(selectedVariantId));
   const prevProductIdRef = useRef(null);
   const prevVariantIdRef = useRef(null);
 
@@ -411,7 +415,7 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToWishlist = async () => {
-    if (!product?.id || addingToWishlist) return;
+    if (!product?.id || selectedVariantId == null || addingToWishlist || outOfStock) return;
 
     if (!isAuthenticated) {
       showToast({
@@ -424,13 +428,14 @@ export default function ProductDetailPage() {
 
     setAddingToWishlist(true);
     try {
-      await addWishlistItem(product.id);
-      setWishlisted(true);
+      await addWishlistItem(product.id, selectedVariantId);
+      addLocalWishlistItem(product.id, selectedVariantId);
       showToast({ message: 'Added to wishlist', variant: 'success' });
     } catch (err) {
       if (err?.status === 409) {
-        setWishlisted(true);
-        showToast({ message: err?.message ?? 'Product already in wishlist.', variant: 'success' });
+        addLocalWishlistItem(product.id, selectedVariantId);
+        // Backend conflict message may include productId; keep the toast human-friendly.
+        showToast({ message: 'Already in your wishlist.', variant: 'success' });
       } else {
         showToast({ message: err?.message ?? 'Failed to add to wishlist.', variant: 'error' });
       }
@@ -524,10 +529,11 @@ export default function ProductDetailPage() {
                       onClick={() => {
                         if (!group) return;
                         setSelectedGroup(group);
+                        const activeSizeOptions = Array.isArray(group.sizeOptions)
+                          ? group.sizeOptions.filter((s) => s && s.isActive !== false && s.active !== false)
+                          : [];
                         const firstSize =
-                          Array.isArray(group.sizeOptions)
-                            ? group.sizeOptions.find((s) => s && s.isActive !== false && s.active !== false) ?? null
-                            : null;
+                          activeSizeOptions.find((s) => (s.stockQuantity ?? 0) > 0) ?? activeSizeOptions[0] ?? null;
                         setSelectedSizeOption(firstSize);
                       }}
                       className="relative flex h-9 w-9 items-center justify-center rounded-full transition-transform hover:scale-[1.03]"
@@ -572,6 +578,11 @@ export default function ProductDetailPage() {
                 {hasDiscount && (
                   <span className="absolute left-4 top-4 z-10 translate-y-[28px] bg-primary/95 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-sm">
                     Sale{discountPercentOff != null ? ` -${discountPercentOff}%` : ''}
+                  </span>
+                )}
+                {outOfStock && (
+                  <span className="absolute right-4 top-4 z-10 bg-red-600/95 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-sm">
+                    Out of Stock
                   </span>
                 )}
                 {displayImage ? (
@@ -718,9 +729,9 @@ export default function ProductDetailPage() {
                       </div>
                       <button
                         type="button"
-                        className="text-[11px] font-semibold uppercase tracking-wide text-secondary underline underline-offset-4 hover:text-primary sm:text-xs"
+                        className="text-[10px] font-semibold tracking-wide text-secondary underline underline-offset-4 hover:text-primary sm:text-[11px]"
                       >
-                        Color Notes
+                        COLOR NOTES
                       </button>
                     </div>
 
@@ -737,10 +748,11 @@ export default function ProductDetailPage() {
                             onClick={() => {
                               if (!group) return;
                               setSelectedGroup(group);
+                              const activeSizeOptions = Array.isArray(group.sizeOptions)
+                                ? group.sizeOptions.filter((s) => s && s.isActive !== false && s.active !== false)
+                                : [];
                               const firstSize =
-                                Array.isArray(group.sizeOptions)
-                                  ? group.sizeOptions.find((s) => s && s.isActive !== false && s.active !== false) ?? null
-                                  : null;
+                                activeSizeOptions.find((s) => (s.stockQuantity ?? 0) > 0) ?? activeSizeOptions[0] ?? null;
                               setSelectedSizeOption(firstSize);
                             }}
                             className="relative flex h-9 w-9 items-center justify-center rounded-full transition-transform hover:scale-[1.03] sm:h-10 sm:w-10"
@@ -783,9 +795,9 @@ export default function ProductDetailPage() {
                       </div>
                       <button
                         type="button"
-                        className="text-[11px] font-semibold uppercase tracking-wide text-secondary underline underline-offset-4 hover:text-primary sm:text-xs"
+                        className="text-[10px] font-semibold tracking-wide text-secondary underline underline-offset-4 hover:text-primary sm:text-[11px]"
                       >
-                        Size Guide
+                        SIZE GUIDE
                       </button>
                     </div>
 
@@ -793,7 +805,10 @@ export default function ProductDetailPage() {
                       {sizes.map((size) => {
                         const option = activeSizeOptions.find((s) => s.size === size) ?? null;
                         const isSelected = selectedSizeOption?.size === size;
-                        const disabled = !option || (option.stockQuantity ?? 0) <= 0;
+                        const hasOption = !!option;
+                        const isSoldOut = hasOption && (option.stockQuantity ?? 0) <= 0;
+                        // Keep sold-out sizes clickable (to switch selection), but disable selection only when the option doesn't exist.
+                        const disabled = !hasOption;
                         const optionDiscount =
                           option && typeof option.discount === 'number' ? option.discount : 0;
                         const isOnSaleOption = optionDiscount > 0;
@@ -813,8 +828,8 @@ export default function ProductDetailPage() {
                                 ? isOnSaleOption
                                   ? 'border-primary bg-primary/5 text-primary'
                                   : 'border-black text-primary'
-                                : disabled
-                                  ? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 line-through'
+                                : isSoldOut
+                                  ? 'border-gray-200 bg-gray-50 text-gray-400 line-through'
                                   : isOnSaleOption
                                     ? 'border-primary/60 bg-primary/5 text-primary hover:border-primary'
                                     : 'border-gray-200 text-secondary hover:border-black hover:text-primary'
@@ -823,6 +838,11 @@ export default function ProductDetailPage() {
                           >
                             <span className="flex items-center gap-2">
                               {size}
+                              {isSoldOut && (
+                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-green-700">
+                                  SOLD OUT
+                                </span>
+                              )}
                               {isOnSaleOption && (
                                 <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
                                   SALE{optionDiscountPercentOff != null ? ` ${optionDiscountPercentOff}%` : ''}
@@ -849,7 +869,7 @@ export default function ProductDetailPage() {
                   </button>
                   <span className="font-medium text-primary">{quantity}</span>
                   <button 
-                    onClick={() => setQuantity(q => Math.min(maxQty, q + 1))}
+                    onClick={() => setQuantity(q => Math.max(1, Math.min(maxQty, q + 1)))}
                     className="text-secondary hover:text-primary"
                   >
                     <Plus className="h-4 w-4" />
@@ -860,7 +880,7 @@ export default function ProductDetailPage() {
                 <button
                   onClick={handleAddToCart}
                   disabled={!canAddToCart || outOfStock}
-                  className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-8 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-secondary disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                  className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-6 text-sm font-bold uppercase leading-none tracking-wide text-white transition-colors hover:bg-[#1f201f] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 cursor-pointer"
                 >
                   <ShoppingBag className="h-4 w-4" />
                   {outOfStock ? 'Out of Stock' : 'Add to Cart'}
@@ -869,17 +889,17 @@ export default function ProductDetailPage() {
                 <button
                   type="button"
                   onClick={handleAddToWishlist}
-                  disabled={addingToWishlist}
+                  disabled={addingToWishlist || outOfStock}
                   className={`flex h-12 items-center justify-center gap-2 rounded-full border px-5 text-sm font-bold uppercase tracking-wider transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
                     wishlisted
-                      ? 'border-primary/30 bg-primary/5 text-primary'
+                      ? 'border-pink-500/30 bg-pink-500/5 text-pink-600'
                       : 'border-border bg-white text-secondary hover:border-primary hover:text-primary'
                   }`}
                 >
                   {addingToWishlist ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Heart className={`h-4 w-4 ${wishlisted ? 'fill-primary/20' : ''}`} />
+                    <Heart className={`h-4 w-4 ${wishlisted ? 'fill-pink-500 text-pink-600' : ''}`} />
                   )}
                   {wishlisted ? 'Wishlisted' : 'Wishlist'}
                 </button>
@@ -916,7 +936,7 @@ export default function ProductDetailPage() {
               <span className="text-sm font-medium text-primary">{quantity}</span>
               <button
                 type="button"
-                onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                onClick={() => setQuantity((q) => Math.max(1, Math.min(maxQty, q + 1)))}
                 className="flex h-8 w-8 items-center justify-center text-secondary hover:text-primary"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -926,7 +946,7 @@ export default function ProductDetailPage() {
               type="button"
               onClick={handleAddToCart}
               disabled={!canAddToCart || outOfStock}
-              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-xs font-bold uppercase tracking-wider text-white hover:bg-secondary disabled:bg-gray-200 disabled:text-gray-400"
+              className="flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-3 text-xs font-bold uppercase leading-none tracking-wide text-white transition-colors hover:bg-[#1f201f] disabled:bg-gray-200 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed"
             >
               <ShoppingBag className="h-4 w-4" />
               {outOfStock ? 'Out of Stock' : 'Add to Cart'}
@@ -934,10 +954,10 @@ export default function ProductDetailPage() {
             <button
               type="button"
               onClick={handleAddToWishlist}
-              disabled={addingToWishlist}
+              disabled={addingToWishlist || outOfStock}
               className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors disabled:opacity-60 ${
                 wishlisted
-                  ? 'border-primary/30 bg-primary/5 text-primary'
+                  ? 'border-pink-500/30 bg-pink-500/5 text-pink-600'
                   : 'border-border bg-white text-secondary hover:border-primary hover:text-primary'
               }`}
               aria-label={wishlisted ? 'Already in wishlist' : 'Add to wishlist'}
@@ -945,7 +965,7 @@ export default function ProductDetailPage() {
               {addingToWishlist ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Heart className={`h-4 w-4 ${wishlisted ? 'fill-primary/20' : ''}`} />
+                <Heart className={`h-4 w-4 ${wishlisted ? 'fill-pink-500 text-pink-600' : ''}`} />
               )}
             </button>
           </div>

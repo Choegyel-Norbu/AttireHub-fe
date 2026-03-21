@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Loader2, ImageOff, ShoppingBag } from 'lucide-react';
+import { Heart, Loader2, ImageOff, ShoppingBag, Trash2 } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/useToast';
 import { getWishlistItems, deleteWishlistItem } from '@/services/wishlistService';
 import { getProductCardImageUrl } from '@/utils/productImages';
+import { useWishlist } from '@/context/WishlistContext';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -30,14 +31,26 @@ function pickFirstVariantId(product) {
   return null;
 }
 
+function resolveWishlistVariantId(entry, product) {
+  return (
+    entry?.variantId ??
+    entry?.productVariantId ??
+    entry?.variant?.id ??
+    entry?.sizeOption?.id ??
+    pickFirstVariantId(product)
+  );
+}
+
 export default function WishlistPage() {
   const { addToCart } = useCart();
   const { show: showToast } = useToast();
+  const { removeLocalWishlistItem } = useWishlist();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [movingId, setMovingId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
   const fetchWishlist = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -69,7 +82,7 @@ export default function WishlistPage() {
           slug: product?.slug,
           categoryName: product?.categoryName,
           imageUrl: product ? getProductCardImageUrl(product) : null,
-          variantId: pickFirstVariantId(product),
+          variantId: resolveWishlistVariantId(entry, product),
         };
       }),
     [items]
@@ -80,9 +93,10 @@ export default function WishlistPage() {
     setMovingId(entry.wishlistItemId);
     try {
       await addToCart(entry.variantId, 1);
-      await deleteWishlistItem(entry.productId);
+      await deleteWishlistItem(entry.productId, entry.variantId);
+      removeLocalWishlistItem(entry.productId, entry.variantId);
       setItems((prev) =>
-        prev.filter((w) => String(w?.product?.id) !== String(entry.productId))
+        prev.filter((w) => String(w?.id) !== String(entry.wishlistItemId))
       );
       showToast({
         title: 'Moved to cart',
@@ -96,6 +110,30 @@ export default function WishlistPage() {
       });
     } finally {
       setMovingId(null);
+    }
+  };
+
+  const handleRemoveFromWishlist = async (entry) => {
+    if (!entry?.productId || removingId != null) return;
+    setRemovingId(entry.wishlistItemId);
+    try {
+      await deleteWishlistItem(entry.productId, entry.variantId);
+      removeLocalWishlistItem(entry.productId, entry.variantId);
+      setItems((prev) =>
+        prev.filter((w) => String(w?.id) !== String(entry.wishlistItemId))
+      );
+      showToast({
+        title: 'Removed from wishlist',
+        message: `${entry.name} removed.`,
+        variant: 'success',
+      });
+    } catch (err) {
+      showToast({
+        message: err?.message ?? 'Could not remove from wishlist.',
+        variant: 'error',
+      });
+    } finally {
+      setRemovingId(null);
     }
   };
 
@@ -140,6 +178,7 @@ export default function WishlistPage() {
         <div className="space-y-3">
           {normalizedItems.map((entry) => {
             const disabled = !entry.variantId || movingId === entry.wishlistItemId;
+            const removeDisabled = !entry.productId || removingId === entry.wishlistItemId;
             return (
               <div
                 key={entry.wishlistItemId}
@@ -168,19 +207,36 @@ export default function WishlistPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleMoveToCart(entry)}
-                  disabled={disabled}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-[#f4d7c5] hover:border-[#f4d7c5] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {movingId === entry.wishlistItemId ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <ShoppingBag className="h-3.5 w-3.5" />
-                  )}
-                  {!entry.variantId ? 'Unavailable' : 'Move to Cart'}
-                </button>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleMoveToCart(entry)}
+                    disabled={disabled}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-[#f4d7c5] hover:border-[#f4d7c5] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {movingId === entry.wishlistItemId ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <ShoppingBag className="h-3.5 w-3.5" />
+                    )}
+                    {!entry.variantId ? 'Unavailable' : 'Move to Cart'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFromWishlist(entry)}
+                    disabled={removeDisabled}
+                    aria-label="Remove from wishlist"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-red-600 transition-colors hover:bg-red-100 hover:border-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {removingId === entry.wishlistItemId ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                    Remove
+                  </button>
+                </div>
               </div>
             );
           })}

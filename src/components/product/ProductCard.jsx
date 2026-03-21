@@ -5,6 +5,7 @@ import { ImageOff, ShoppingBag, Loader2, Check, Heart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/context/AuthContext';
+import { useWishlist } from '@/context/WishlistContext';
 import { getProductCardImageUrl } from '@/utils/productImages';
 import { addWishlistItem } from '@/services/wishlistService';
 
@@ -13,16 +14,17 @@ const ProductCard = ({ product }) => {
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
   const [wishlisting, setWishlisting] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
   const { show: showToast } = useToast();
+  const { wishlistVariantIds, addLocalWishlistItem } = useWishlist();
 
   const variantGroups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
+  const activeVariantGroups = variantGroups.filter((g) => g && g.active !== false && g.isActive !== false);
   const legacyVariants = Array.isArray(product.variants) ? product.variants : [];
 
   // Flatten sizeOptions from all active groups (new model).
-  const sizeOptions = variantGroups.flatMap((g) =>
+  const sizeOptions = activeVariantGroups.flatMap((g) =>
     Array.isArray(g?.sizeOptions)
       ? g.sizeOptions.map((s) => ({
           ...s,
@@ -30,11 +32,26 @@ const ProductCard = ({ product }) => {
         }))
       : []
   );
+  const activeSizeOptions = sizeOptions.filter((s) => s && s.active !== false && s.isActive !== false);
 
-  // Pick a primary purchasable variant: first active size in first active group, else legacy first variant.
+  // Prefer an in-stock active size option; fall back to first active option for display consistency.
   const primarySizeOption =
-    sizeOptions.find((s) => s.active !== false && s.isActive !== false) || sizeOptions[0] || null;
+    activeSizeOptions.find((s) => typeof s?.stockQuantity !== 'number' || s.stockQuantity > 0) ||
+    activeSizeOptions[0] ||
+    null;
   const firstVariant = primarySizeOption || (legacyVariants.length > 0 ? legacyVariants[0] : null);
+  const hasInStockSizeOption = activeSizeOptions.some(
+    (s) => typeof s?.stockQuantity !== 'number' || s.stockQuantity > 0
+  );
+  const hasInStockLegacyVariant = legacyVariants.some(
+    (v) => typeof v?.stockQuantity !== 'number' || v.stockQuantity > 0
+  );
+  const isOutOfStock =
+    activeSizeOptions.length > 0
+      ? !hasInStockSizeOption
+      : legacyVariants.length > 0
+        ? !hasInStockLegacyVariant
+        : false;
 
   const displayImage = getProductCardImageUrl(product);
   // Pricing & discount logic with variantGroups support.
@@ -126,10 +143,13 @@ const ProductCard = ({ product }) => {
       : value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  const selectedVariantId = firstVariant?.id != null ? String(firstVariant.id) : null;
+  const wishlisted = selectedVariantId != null && wishlistVariantIds.has(selectedVariantId);
+
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!firstVariant?.id || adding) return;
+    if (!firstVariant?.id || adding || isOutOfStock) return;
     setAdding(true);
     setAdded(false);
     try {
@@ -147,7 +167,7 @@ const ProductCard = ({ product }) => {
   const handleAddToWishlist = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!product?.id || wishlisting) return;
+    if (!product?.id || !firstVariant?.id || wishlisting || isOutOfStock) return;
 
     if (!isAuthenticated) {
       showToast({
@@ -159,13 +179,14 @@ const ProductCard = ({ product }) => {
 
     setWishlisting(true);
     try {
-      await addWishlistItem(product.id);
-      setWishlisted(true);
+      await addWishlistItem(product.id, firstVariant.id);
+      addLocalWishlistItem(product.id, firstVariant.id);
       showToast({ message: 'Added to wishlist', variant: 'success' });
     } catch (err) {
       if (err?.status === 409) {
-        setWishlisted(true);
-        showToast({ message: err?.message ?? 'Product already in wishlist.', variant: 'success' });
+        addLocalWishlistItem(product.id, firstVariant.id);
+        // Backend conflict message may include productId; keep the toast human-friendly.
+        showToast({ message: 'Already in your wishlist.', variant: 'success' });
       } else {
         showToast({ message: err?.message ?? 'Could not add to wishlist', variant: 'error' });
       }
@@ -192,6 +213,11 @@ const ProductCard = ({ product }) => {
           {hasDiscount && discountPercent != null && (
             <span className="inline-flex items-center rounded-full bg-primary text-[10px] font-semibold uppercase tracking-[0.18em] text-white/95 px-2 py-0.5">
               -{discountPercent}%
+            </span>
+          )}
+          {isOutOfStock && (
+            <span className="inline-flex items-center rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white">
+              Out of Stock
             </span>
           )}
         </div>
@@ -224,7 +250,7 @@ const ProductCard = ({ product }) => {
             >
               <button
                 type="button"
-                disabled={!firstVariant || adding}
+                disabled={!firstVariant || adding || isOutOfStock}
                 onClick={handleAddToCart}
                 className="flex flex-1 items-center justify-center gap-2 rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary shadow-sm transition-all hover:bg-[#f4d7c5] hover:border-[#f4d7c5] disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -235,7 +261,7 @@ const ProductCard = ({ product }) => {
                 ) : (
                   <ShoppingBag className="h-3.5 w-3.5" />
                 )}
-                {adding ? 'Adding…' : added ? 'Added' : 'Add to Cart'}
+                {adding ? 'Adding…' : isOutOfStock ? 'Out of Stock' : added ? 'Added' : 'Add to Cart'}
               </button>
             </motion.div>
           )}
@@ -285,7 +311,7 @@ const ProductCard = ({ product }) => {
           <div className="mt-1.5 space-y-2 sm:mt-2">
             <button
               type="button"
-              disabled={adding}
+              disabled={adding || isOutOfStock}
               onClick={handleAddToCart}
               className="flex w-full min-h-8 items-center justify-center gap-1.5 rounded-full border border-[var(--color-accent-blush)] bg-[var(--color-accent-blush)] py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary transition-all hover:bg-[#f4d7c5] hover:border-[#f4d7c5] disabled:opacity-60 sm:py-2 sm:text-xs lg:hidden"
             >
@@ -296,23 +322,25 @@ const ProductCard = ({ product }) => {
               ) : (
                 <ShoppingBag className="h-3.5 w-3.5" />
               )}
-              {adding ? 'Adding…' : added ? 'Added' : 'Add to Cart'}
+              {adding ? 'Adding…' : isOutOfStock ? 'Out of Stock' : added ? 'Added' : 'Add to Cart'}
             </button>
 
             <button
               type="button"
-              disabled={wishlisting}
+              disabled={wishlisting || isOutOfStock}
               onClick={handleAddToWishlist}
               className={`flex w-full min-h-8 items-center justify-center gap-1.5 rounded-full border py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] transition-all sm:py-2 sm:text-xs ${
                 wishlisted
-                  ? 'border-primary/30 bg-primary/5 text-primary'
+                  ? 'border-pink-500/30 bg-pink-500/5 text-pink-600'
                   : 'border-border bg-white text-secondary hover:border-primary hover:text-primary'
               } disabled:opacity-60`}
             >
               {wishlisting ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Heart className={`h-3.5 w-3.5 ${wishlisted ? 'fill-primary/20' : ''}`} />
+                <Heart
+                  className={`h-3.5 w-3.5 ${wishlisted ? 'fill-pink-500 text-pink-600' : ''}`}
+                />
               )}
               {wishlisted ? 'Wishlisted' : 'Add to Wishlist'}
             </button>

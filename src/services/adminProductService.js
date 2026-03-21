@@ -425,3 +425,19 @@ export async function deleteVariantGroupImage(productId, groupId, imageId) {
     throw new Error(getVariantErrorMessage(err));
   }
 }
+
+/**
+ * Delete a whole color variant group (all size options and group images).
+ * DELETE /api/v1/admin/products/{productId}/variant-groups/{groupId}
+ *
+ * @param {number} productId
+ * @param {number} groupId
+ * @returns {Promise<void>}
+ */
+export async function deleteVariantGroup(productId, groupId) {
+  try {
+    await api.delete(`${ADMIN_PRODUCTS_PATH}/${productId}/variant-groups/${groupId}`);
+  } catch (err) {
+    throw new Error(getVariantErrorMessage(err));
+  }
+}

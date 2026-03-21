@@ -23,16 +23,18 @@ export async function getWishlistItems() {
 }
 
 /**
- * Add product to authenticated user's wishlist.
- * Backend contract:
+ * Add a wishlist item for a specific product + variant selection.
+ * Backend commonly accepts:
  * POST /wishlist
- * { productId: "<uuid|string>" }
+ * { productId: "<id>", variantId?: "<variantId>" }
  */
-export async function addWishlistItem(productId) {
+export async function addWishlistItem(productId, variantId = null) {
   try {
-    const body = await api.post(WISHLIST_PATH, {
+    const payload = {
       productId: String(productId),
-    });
+      ...(variantId != null ? { variantId: String(variantId) } : {}),
+    };
+    const body = await api.post(WISHLIST_PATH, payload);
     return body?.data ?? null;
   } catch (err) {
     const message =
@@ -46,12 +48,19 @@ export async function addWishlistItem(productId) {
 }
 
 /**
- * Remove product from authenticated user's wishlist.
- * DELETE /wishlist/{productId}
+ * Remove item from wishlist by product, optionally scoped to variant.
+ * DELETE /wishlist/{productId}[?variantId=...]
  */
-export async function deleteWishlistItem(productId) {
+export async function deleteWishlistItem(productId, variantId = null) {
   try {
-    await api.delete(`${WISHLIST_PATH}/${encodeURIComponent(String(productId))}`);
+    const path = `${WISHLIST_PATH}/${encodeURIComponent(String(productId))}`;
+    if (variantId != null) {
+      await api.delete(path, {
+        params: { variantId: String(variantId) },
+      });
+      return;
+    }
+    await api.delete(path);
   } catch (err) {
     const message =
       err?.response?.data?.message ??
