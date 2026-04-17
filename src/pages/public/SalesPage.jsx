@@ -17,7 +17,8 @@ import {
   Tag,
 } from 'lucide-react';
 
-const PAGE_SIZE = 24;
+const DEFAULT_PAGE_SIZE = 20;
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20, 25];
 
 const SORT_OPTIONS = [
   { value: '', label: 'Recommended' },
@@ -37,10 +38,16 @@ function getFiltersFromSearchParams(searchParams) {
   };
 }
 
+function getPageSizeFromSearchParams(searchParams) {
+  const raw = Number(searchParams.get('size'));
+  return PAGE_SIZE_OPTIONS.includes(raw) ? raw : DEFAULT_PAGE_SIZE;
+}
+
 export default function SalesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(getPageSizeFromSearchParams(searchParams));
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [last, setLast] = useState(true);
@@ -57,6 +64,7 @@ export default function SalesPage() {
     const fromUrl = getFiltersFromSearchParams(searchParams);
     setFilters(fromUrl);
     setAppliedFilters(fromUrl);
+    setPageSize(getPageSizeFromSearchParams(searchParams));
     setPage(0);
   }, [searchParams]);
 
@@ -76,7 +84,7 @@ export default function SalesPage() {
     try {
       const params = {
         page,
-        size: PAGE_SIZE,
+        size: pageSize,
         onSale: true,
         search: appliedFilters.search.trim() || undefined,
         category: appliedFilters.category || undefined,
@@ -95,7 +103,7 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, appliedFilters]);
+  }, [page, pageSize, appliedFilters]);
 
   useEffect(() => {
     fetchProducts();
@@ -124,12 +132,25 @@ export default function SalesPage() {
     setSearchParams({}, { replace: true });
   };
 
+  const handlePageSizeChange = (nextSize) => {
+    const normalized = Number(nextSize);
+    if (!PAGE_SIZE_OPTIONS.includes(normalized)) return;
+    setPageSize(normalized);
+    setPage(0);
+    const params = new URLSearchParams(searchParams);
+    if (normalized === DEFAULT_PAGE_SIZE) params.delete('size');
+    else params.set('size', String(normalized));
+    setSearchParams(params, { replace: true });
+  };
+
   const hasActiveFilters =
     appliedFilters.search ||
     appliedFilters.category ||
     appliedFilters.sort ||
     appliedFilters.minPrice !== '' ||
     appliedFilters.maxPrice !== '';
+  const from = totalElements === 0 ? 0 : page * pageSize + 1;
+  const to = Math.min((page + 1) * pageSize, totalElements);
 
   const filterSidebarContent = (
     <div className="space-y-8">
@@ -311,7 +332,8 @@ export default function SalesPage() {
             {/* Top Bar (Sort & Count) */}
             <div className="mb-8 hidden items-center justify-between lg:flex">
               <p className="text-sm text-secondary">
-                Showing <span className="font-medium text-primary">{totalElements}</span> results
+                Showing <span className="font-medium text-primary">{from}–{to}</span> of{' '}
+                <span className="font-medium text-primary">{totalElements}</span> results
               </p>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-secondary">Sort by:</span>
@@ -377,6 +399,24 @@ export default function SalesPage() {
                       <ProductCard product={product} />
                     </motion.div>
                   ))}
+                </div>
+
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <label htmlFor="sales-page-size" className="text-sm text-secondary">
+                    Items per page:
+                  </label>
+                  <select
+                    id="sales-page-size"
+                    value={pageSize}
+                    onChange={(e) => handlePageSizeChange(e.target.value)}
+                    className="cursor-pointer rounded-full border border-border/60 bg-white px-3 py-1.5 text-sm font-medium text-primary focus:border-primary focus:outline-none focus:ring-0"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {totalPages > 1 && (

@@ -34,6 +34,21 @@ const editProductSchema = z.object({
   isTrending: z.boolean().optional(),
 });
 
+/** Read product-level {@code active} / {@code isActive} when the API sends a boolean. */
+function readProductActiveFlag(p) {
+  if (!p || typeof p !== 'object') return undefined;
+  if (typeof p.active === 'boolean') return p.active;
+  if (typeof p.isActive === 'boolean') return p.isActive;
+  return undefined;
+}
+
+/**
+ * Prefer {@code active} from public detail when present; otherwise admin list row (your list payload shape).
+ */
+function resolveFormIsActive(detail, adminListRow) {
+  return readProductActiveFlag(detail) ?? readProductActiveFlag(adminListRow) ?? true;
+}
+
 function getInputClassName(error) {
   const base =
     'w-full rounded-none border-b border-border bg-transparent px-3 py-3 text-sm text-primary placeholder-tertiary outline-none transition-colors focus:border-black focus:ring-0';
@@ -537,6 +552,7 @@ export default function EditProductPage() {
     handleSubmit,
     setValue,
     getValues,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(editProductSchema),
@@ -564,25 +580,31 @@ export default function EditProductPage() {
     let cancelled = false;
     setLoading(true);
     setLoadError(null);
-    Promise.all([getProductBySlug(slug), getCategories()])
-      .then(([productData, categoryTree]) => {
+    Promise.all([
+      getProductBySlug(slug),
+      getCategories(),
+      adminProductService.fetchAdminProductRowBySlug(slug),
+    ])
+      .then(([productData, categoryTree, adminListRow]) => {
         if (cancelled) return;
         const flat = flattenCategoriesWithSlug(Array.isArray(categoryTree) ? categoryTree : []);
         setCategoryOptions(flat);
         setProduct(productData);
         const p = productData;
         const categoryId = p?.categoryId ?? (flat.find((c) => c.slug === (p?.categorySlug ?? ''))?.id ?? flat[0]?.id ?? 1);
-        setValue('name', p?.name ?? '');
-        setValue('slug', p?.slug ?? '');
-        setValue('description', p?.description ?? '');
-        setValue('basePrice', p?.basePrice ?? 0);
-        setValue('categoryId', categoryId);
-        setValue('brand', p?.brand ?? '');
-        setValue('material', p?.material ?? '');
-        setValue('isActive', p?.isActive !== false);
-        setValue('isFeatured', Boolean(p?.featured ?? p?.isFeatured));
-        setValue('isNewArrival', Boolean(p?.newArrival ?? p?.isNewArrival));
-        setValue('isTrending', Boolean(p?.trending ?? p?.isTrending));
+        reset({
+          name: p?.name ?? '',
+          slug: p?.slug ?? '',
+          description: p?.description ?? '',
+          basePrice: p?.basePrice ?? 0,
+          categoryId,
+          brand: p?.brand ?? '',
+          material: p?.material ?? '',
+          isActive: resolveFormIsActive(p, adminListRow),
+          isFeatured: Boolean(p?.featured ?? p?.isFeatured),
+          isNewArrival: Boolean(p?.newArrival ?? p?.isNewArrival),
+          isTrending: Boolean(p?.trending ?? p?.isTrending),
+        });
         const groupsCount = (p?.variantGroups || []).length;
         if (groupsCount > 0) {
           setGroupImageFiles(Array.from({ length: groupsCount }, () => []));
@@ -635,7 +657,7 @@ export default function EditProductPage() {
         }
       });
     return () => { cancelled = true; };
-  }, [slug, setValue]);
+  }, [slug, reset]);
 
   const onSubmit = async (data) => {
     if (!product?.id) return;

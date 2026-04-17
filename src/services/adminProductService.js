@@ -27,6 +27,88 @@ function getErrorMessage(error) {
 }
 
 /**
+ * Admin paginated product list (GET /api/v1/admin/products).
+ * Same optional query params as the public products list; response shape matches getProducts.
+ * @param {Record<string, unknown>} [params] page, size, sort, category, filters, etc.
+ */
+export async function getAdminProducts(params = {}) {
+  try {
+    const searchParams = new URLSearchParams();
+    if (params.page != null) searchParams.set('page', String(params.page));
+    if (params.size != null) searchParams.set('size', String(params.size));
+    if (params.sort != null && params.sort.trim()) searchParams.set('sort', params.sort.trim());
+    if (params.category != null && params.category.trim()) searchParams.set('category', params.category.trim());
+    if (params.size_filter != null && params.size_filter.trim()) {
+      searchParams.set('size_filter', params.size_filter.trim());
+    }
+    if (params.color != null && params.color.trim()) searchParams.set('color', params.color.trim());
+    if (params.minPrice != null) searchParams.set('minPrice', String(params.minPrice));
+    if (params.maxPrice != null) searchParams.set('maxPrice', String(params.maxPrice));
+    if (params.search != null && params.search.trim()) searchParams.set('search', params.search.trim());
+    if (params.featured === true) searchParams.set('featured', 'true');
+    if (params.featured === false) searchParams.set('featured', 'false');
+    if (params.trending === true) searchParams.set('trending', 'true');
+    if (params.trending === false) searchParams.set('trending', 'false');
+    if (params.newArrivalsOnly === true) searchParams.set('newArrivalsOnly', 'true');
+    if (params.onSale === true) searchParams.set('onSale', 'true');
+
+    const query = searchParams.toString();
+    const url = query ? `${ADMIN_PRODUCTS_PATH}?${query}` : ADMIN_PRODUCTS_PATH;
+    const response = await api.get(url);
+    const body = response?.data ?? response;
+    const list = body?.data ?? body;
+    if (!list || !Array.isArray(list.content)) {
+      return {
+        content: [],
+        page: 0,
+        size: params.size ?? 20,
+        totalElements: 0,
+        totalPages: 0,
+        last: true,
+      };
+    }
+    return {
+      content: list.content,
+      page: Number(list.page) ?? 0,
+      size: Number(list.size) ?? 20,
+      totalElements: Number(list.totalElements) ?? 0,
+      totalPages: Number(list.totalPages) ?? 0,
+      last: Boolean(list.last),
+    };
+  } catch (err) {
+    throw new Error(getErrorMessage(err));
+  }
+}
+
+const ADMIN_LIST_PAGE_SIZE = 100;
+
+/**
+ * Find one product row from the admin list by slug (includes product-level {@code active}).
+ * Paginates until found or catalog ends. Used when public detail omits {@code active}.
+ * @param {string} slug
+ * @returns {Promise<Record<string, unknown> | null>}
+ */
+export async function fetchAdminProductRowBySlug(slug) {
+  if (!slug || typeof slug !== 'string') return null;
+  const target = slug.trim();
+  if (!target) return null;
+  try {
+    let page = 0;
+    const maxPages = 50;
+    while (page < maxPages) {
+      const res = await getAdminProducts({ page, size: ADMIN_LIST_PAGE_SIZE });
+      const row = (res.content || []).find((p) => String(p?.slug ?? '').trim() === target);
+      if (row) return row;
+      if (res.last || !(res.content || []).length) break;
+      page += 1;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * @param {import('axios').AxiosError} error
  * @returns {string}
  */

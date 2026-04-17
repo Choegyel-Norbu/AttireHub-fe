@@ -8,15 +8,48 @@ const AUTH_BASE = '/auth';
  * @returns {string}
  */
 function getErrorMessage(error) {
-  const data = error.response?.data;
-  if (data && typeof data === 'object') {
-    if (typeof data.message === 'string') return data.message;
-    if (typeof data.error === 'string') return data.error;
-    if (Array.isArray(data.errors) && data.errors.length > 0) {
-      const first = data.errors[0];
-      return typeof first === 'string' ? first : (first?.message || first?.defaultMessage) ?? 'Validation failed';
+  const readMessage = (value) => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed.length === 0) return null;
+
+      // Some backends return JSON as a string body. Parse and keep extracting.
+      if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+        try {
+          return readMessage(JSON.parse(trimmed));
+        } catch {
+          // Not valid JSON, use the raw backend message.
+        }
+      }
+      return trimmed;
     }
-  }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = readMessage(item);
+        if (found) return found;
+      }
+      return null;
+    }
+    if (!value || typeof value !== 'object') return null;
+
+    const directKeys = ['message', 'error', 'detail', 'title', 'description'];
+    for (const key of directKeys) {
+      const found = readMessage(value[key]);
+      if (found) return found;
+    }
+
+    // Common wrapper keys from backend APIs (ApiResponse/problem details/validation).
+    const nestedKeys = ['data', 'errors', 'details', 'violations', 'fieldErrors'];
+    for (const key of nestedKeys) {
+      const found = readMessage(value[key]);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const data = error.response?.data;
+  const backendMessage = readMessage(data);
+  if (backendMessage) return backendMessage;
   if (error.response?.status === 409) return 'An account with this email already exists.';
   if (error.response?.status === 401) return 'Invalid email or password.';
   if (error.response?.status === 403) return 'Please verify your email before signing in. Check your mail inbox for the verification link.';

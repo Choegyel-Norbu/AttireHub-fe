@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Fragment } from 'react';
+import { useState, useEffect, useCallback, Fragment, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShoppingCart,
@@ -137,12 +137,33 @@ function OrderDetailRow({
   onCancelOrder,
   onClose,
 }) {
+  const detailsPanelRef = useRef(null);
+  const hasRevealHandledRef = useRef(false);
+
+  /** Run once when the open animation finishes: bring panel into view, then focus without changing scroll. */
+  const showAndFocusDetailsPanel = useCallback(() => {
+    const el = detailsPanelRef.current;
+    if (!el || hasRevealHandledRef.current) return;
+    hasRevealHandledRef.current = true;
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    el.focus({ preventScroll: true });
+  }, []);
+
   return (
-    <motion.div 
+    <motion.div
+      ref={detailsPanelRef}
+      role="region"
+      aria-label="Order details"
+      tabIndex={-1}
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="bg-gray-50/50 border-t border-border"
+      transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
+      onAnimationComplete={showAndFocusDetailsPanel}
+      className="scroll-mt-4 bg-gray-50/50 border-t border-border outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
     >
       <div className="p-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">

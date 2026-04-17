@@ -17,7 +17,8 @@ import {
   ArrowDownWideNarrow,
 } from 'lucide-react';
 
-const PAGE_SIZE = 24;
+const DEFAULT_PAGE_SIZE = 20;
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20, 25];
 
 const SORT_OPTIONS = [
   { value: '', label: 'Featured' },
@@ -37,10 +38,16 @@ function getFiltersFromSearchParams(searchParams) {
   };
 }
 
+function getPageSizeFromSearchParams(searchParams) {
+  const raw = Number(searchParams.get('size'));
+  return PAGE_SIZE_OPTIONS.includes(raw) ? raw : DEFAULT_PAGE_SIZE;
+}
+
 export default function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(getPageSizeFromSearchParams(searchParams));
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [last, setLast] = useState(true);
@@ -58,6 +65,7 @@ export default function ProductListPage() {
     const fromUrl = getFiltersFromSearchParams(searchParams);
     setFilters(fromUrl);
     setAppliedFilters(fromUrl);
+    setPageSize(getPageSizeFromSearchParams(searchParams));
     setPage(0);
   }, [searchParams]);
 
@@ -82,7 +90,7 @@ export default function ProductListPage() {
       const trending = searchParams.get('trending') === 'true';
       const params = {
         page,
-        size: PAGE_SIZE,
+        size: pageSize,
         search: appliedFilters.search.trim() || undefined,
         category: appliedFilters.category || undefined,
         sort: appliedFilters.sort || undefined,
@@ -102,7 +110,7 @@ export default function ProductListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, appliedFilters, searchParams]);
+  }, [page, pageSize, appliedFilters, searchParams]);
 
   useEffect(() => {
     fetchProducts();
@@ -137,6 +145,17 @@ export default function ProductListPage() {
     setSearchParams({}, { replace: true });
   };
 
+  const handlePageSizeChange = (nextSize) => {
+    const normalized = Number(nextSize);
+    if (!PAGE_SIZE_OPTIONS.includes(normalized)) return;
+    setPageSize(normalized);
+    setPage(0);
+    const params = new URLSearchParams(searchParams);
+    if (normalized === DEFAULT_PAGE_SIZE) params.delete('size');
+    else params.set('size', String(normalized));
+    setSearchParams(params, { replace: true });
+  };
+
   const hasActiveFilters =
     appliedFilters.search ||
     appliedFilters.category ||
@@ -144,8 +163,8 @@ export default function ProductListPage() {
     appliedFilters.minPrice !== '' ||
     appliedFilters.maxPrice !== '';
 
-  const from = totalElements === 0 ? 0 : page * PAGE_SIZE + 1;
-  const to = Math.min((page + 1) * PAGE_SIZE, totalElements);
+  const from = totalElements === 0 ? 0 : page * pageSize + 1;
+  const to = Math.min((page + 1) * pageSize, totalElements);
   const pageTitle = searchParams.get('newArrivalsOnly') === 'true' ? 'New Arrivals' : 'All Products';
 
   // Sidebar Filter Content
@@ -341,7 +360,8 @@ export default function ProductListPage() {
             {/* Top Bar (Sort & Count) */}
             <div className="mb-8 hidden items-center justify-between lg:flex">
               <p className="text-sm text-secondary">
-                Showing <span className="font-medium text-primary">{totalElements}</span> results
+                Showing <span className="font-medium text-primary">{from}–{to}</span> of{' '}
+                <span className="font-medium text-primary">{totalElements}</span> results
               </p>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-secondary">Sort by:</span>
@@ -397,6 +417,24 @@ export default function ProductListPage() {
                       <ProductCard product={product} />
                     </motion.div>
                   ))}
+                </div>
+
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <label htmlFor="page-size" className="text-sm text-secondary">
+                    Items per page:
+                  </label>
+                  <select
+                    id="page-size"
+                    value={pageSize}
+                    onChange={(e) => handlePageSizeChange(e.target.value)}
+                    className="cursor-pointer rounded-full border border-border/60 bg-white px-3 py-1.5 text-sm font-medium text-primary focus:border-primary focus:outline-none focus:ring-0"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Pagination */}

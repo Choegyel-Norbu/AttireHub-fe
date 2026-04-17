@@ -14,9 +14,15 @@ import {
   Filter,
   MoreHorizontal,
 } from 'lucide-react';
-import { getProducts } from '@/services/productService';
 import { getCategories, flattenCategoriesWithSlug } from '@/services/categoryService';
-import { updateVariant, deleteVariant, deleteProduct, updateSizeOption, deleteSizeOption } from '@/services/adminProductService';
+import {
+  getAdminProducts,
+  updateVariant,
+  deleteVariant,
+  deleteProduct,
+  updateSizeOption,
+  deleteSizeOption,
+} from '@/services/adminProductService';
 import { getProductCardImageUrl } from '@/utils/productImages';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -27,6 +33,18 @@ const SORT_OPTIONS = [
   { value: 'name,asc', label: 'Name (A–Z)' },
   { value: 'name,desc', label: 'Name (Z–A)' },
 ];
+
+/**
+ * Product-level storefront visibility from the admin list API.
+ * - Prefer `active` when the backend sends it (your current API shape).
+ * - Fall back to `isActive` for older/other payloads that used that name instead.
+ * (Variant rows can also have their own `active` / `isActive`; this is only the product row.)
+ */
+function isProductCatalogActive(product) {
+  if (typeof product?.active === 'boolean') return product.active;
+  if (typeof product?.isActive === 'boolean') return product.isActive;
+  return true;
+}
 
 export default function ProductManagementPage() {
   const [products, setProducts] = useState([]);
@@ -201,7 +219,7 @@ export default function ProductManagementPage() {
             ? undefined
             : appliedFilters.featured === 'true',
       };
-      const result = await getProducts(params);
+      const result = await getAdminProducts(params);
       setProducts(result.content);
       setTotalElements(result.totalElements);
       setTotalPages(result.totalPages);
@@ -346,6 +364,7 @@ export default function ProductManagementPage() {
                   <th className="py-4 px-4 font-bold text-primary">Price</th>
                   <th className="py-4 px-4 font-bold text-primary">Category</th>
                   <th className="py-4 px-4 font-bold text-primary">Brand</th>
+                  <th className="py-4 px-4 font-bold text-primary">Status</th>
                   <th className="py-4 px-4 font-bold text-primary">Variants</th>
                   <th className="py-4 px-4 font-bold text-primary">Flags</th>
                   <th className="py-4 px-4 text-right font-bold text-primary pr-6">Actions</th>
@@ -354,7 +373,7 @@ export default function ProductManagementPage() {
               <tbody className="divide-y divide-border">
                 {products.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-secondary">
+                    <td colSpan={9} className="py-12 text-center text-secondary">
                       No products found.
                     </td>
                   </tr>
@@ -369,6 +388,7 @@ export default function ProductManagementPage() {
                     const isExpanded = expandedId === p.id;
                     const isLastRow = index === products.length - 1;
                     const previewSrc = getProductCardImageUrl(p);
+                    const catalogActive = isProductCatalogActive(p);
                     return (
                       <Fragment key={p.id}>
                         <tr className="group hover:bg-gray-50/50 transition-colors">
@@ -424,6 +444,17 @@ export default function ProductManagementPage() {
                           </td>
                           <td className="py-4 px-4 text-secondary">{p.categoryName ?? '—'}</td>
                           <td className="py-4 px-4 text-secondary">{p.brand ?? '—'}</td>
+                          <td className="py-4 px-4">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                catalogActive
+                                  ? 'border-primary/20 bg-primary/5 text-primary'
+                                  : 'border-gray-200 bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              {catalogActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
                           <td className="py-4 px-4 text-secondary">
                             {groups.length > 0 ? (
                               <div className="flex flex-col gap-0.5">
@@ -506,7 +537,7 @@ export default function ProductManagementPage() {
                         </tr>
                         {isExpanded && (groups.length > 0 || variants.length > 0) && (
                           <tr className="bg-gray-50/30">
-                            <td colSpan={8} className="px-6 py-4">
+                            <td colSpan={9} className="px-6 py-4">
                               <div className="rounded-lg border border-border bg-white overflow-hidden">
                                 <table className="w-full text-sm">
                                   <thead className="bg-gray-50 border-b border-border">
